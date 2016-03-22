@@ -1,0 +1,11 @@
+add_library(lsdn 
+   network.c 
+   port.c
+   node.c
+   static_switch.c
+   netdev.c
+   internal.h
+   nettypes.c
+   errors.h
+   lsdn.h
+)
