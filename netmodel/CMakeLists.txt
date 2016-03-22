@@ -6,6 +6,7 @@ add_library(lsdn
    netdev.c
    internal.h
    nettypes.c
+   tc.c
    errors.h
    lsdn.h
 )

@@ -6,11 +6,6 @@
 
 struct lsdn_node;
 
-struct lsdn_network{
-        char* name;
-        struct lsdn_node* head;
-        struct lsdn_node* tail;
-};
 
 struct lsdn_network *lsdn_network_new(const char* netname)
 {
@@ -38,6 +33,17 @@ void lsdn_commit_to_network(struct lsdn_node *node)
                 net->tail->next = node;
                 net->tail = node;
 
+        }
+}
+
+void lsdn_network_create(struct lsdn_network *network){
+        for(struct lsdn_node* n = network->head; n; n = n->next)
+        {
+                n->ops->update_ports(n);
+        }
+        for(struct lsdn_node* n = network->head; n; n = n->next)
+        {
+                n->ops->update_tc_rules(n);
         }
 }
 
