@@ -4,7 +4,8 @@
 #include "internal.h"
 
 
-struct lsdn_netdev{
+struct lsdn_netdev
+{
         struct lsdn_node node;
         char* linux_if;
         struct lsdn_port port;
@@ -32,7 +33,8 @@ static void free_netdev(struct lsdn_node *node)
         free(lsdn_as_netdev(node)->linux_if);
 }
 
-struct lsdn_node_ops lsdn_netdev_ops = {
+struct lsdn_node_ops lsdn_netdev_ops =
+{
         free_netdev,
         get_netdev_port,
 };

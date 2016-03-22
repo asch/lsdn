@@ -9,7 +9,8 @@ struct lsdn_static_switch
         struct rule* first_rule;
 };
 
-struct rule{
+struct rule
+{
         lsdn_mac_t mac;
         size_t port;
         struct rule* next;
@@ -61,7 +62,8 @@ static void free_sswitch(struct lsdn_node* node)
         struct lsdn_static_switch *sswitch = lsdn_as_static_switch(node);
         free(sswitch->ports);
         struct rule* rule = sswitch->first_rule;
-        while(rule){
+        while(rule)
+        {
                 struct rule* next = rule->next;
                 free(rule);
                 rule = next;
@@ -69,7 +71,8 @@ static void free_sswitch(struct lsdn_node* node)
 }
 
 
-struct lsdn_node_ops lsdn_static_switch_ops = {
+struct lsdn_node_ops lsdn_static_switch_ops =
+{
         free_sswitch,
         get_port
 };

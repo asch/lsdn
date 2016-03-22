@@ -33,7 +33,7 @@ void lsdn_commit_to_network(struct lsdn_node *node)
         {
                 net->head = node;
                 net->tail = node;
-        }else{
+        } else {
                 node->previous = net->tail;
                 net->tail->next = node;
                 net->tail = node;

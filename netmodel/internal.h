@@ -9,7 +9,8 @@ struct lsdn_network;
 
 
 
-struct lsdn_node_ops{
+struct lsdn_node_ops
+{
         void (*free_private_data)(struct lsdn_node *node);
         struct lsdn_port *(*get_port)(struct lsdn_node *node, size_t index);
 };
@@ -24,7 +25,8 @@ struct lsdn_node
         size_t port_count;
 };
 
-struct lsdn_port{
+struct lsdn_port
+{
         struct lsdn_port *peer;
         struct lsdn_node *owner;
         size_t index;
