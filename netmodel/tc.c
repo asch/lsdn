@@ -4,11 +4,11 @@
 
 void runcmd(const char* format, ...)
 {
-        char cmdbuf[120];
-        va_list args;
-        va_start(args, format);
-        vsnprintf(cmdbuf, sizeof(cmdbuf), format, args);
-        va_end(args);
-        printf("Running: %s\n", cmdbuf);
-        system(cmdbuf);
+	char cmdbuf[120];
+	va_list args;
+	va_start(args, format);
+	vsnprintf(cmdbuf, sizeof(cmdbuf), format, args);
+	va_end(args);
+	printf("Running: %s\n", cmdbuf);
+	system(cmdbuf);
 }
