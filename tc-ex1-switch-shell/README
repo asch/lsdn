@@ -2,9 +2,9 @@ a) Je to ten priklad se trema switchema
 b) Vytvorte si vyrtualni rozhrani sp-ex1-{a-f} pomoci 'bash create-vm.sh'
 c) Vytvorte TC switche pomoci 'bash create-tc-bridge.sh'
 d) Nastavte v NS manualne ARP (neumime zatim broadcast) (priklad pro a a b)
-   netns exec sp-ex1-a arp -s 192.168.59.2 00:00:00:00:00:02
-   netns exec sp-ex1-b arp -s 192.168.59.1 00:00:00:00:00:01
+   ip netns exec sp-ex1-a arp -s 192.168.59.2 00:00:00:00:00:02
+   ip netns exec sp-ex1-b arp -s 192.168.59.1 00:00:00:00:00:01
 e) pingejte
-   netns exec sp-ex1-a ping 192.168.56.2
+   ip netns exec sp-ex1-a ping 192.168.59.2
 f) smazte ten balast pomoci 'bash cleanup.sh'
 	
