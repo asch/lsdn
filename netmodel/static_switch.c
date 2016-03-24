@@ -74,13 +74,14 @@ static void free_sswitch(struct lsdn_node* node)
 static void mkrule(struct lsdn_static_switch* sswitch, struct rule *rule, struct lsdn_port* port)
 {
 	runcmd("tc filter add dev %s parent 1: protocol all "
-	       "u32 match u32 0x%x at -12 "
+	       "u32 match u32 0x%x 0xFFFFFFFF at -12 "
 	       "action mirred egress redirect dev %s",
-	       port->ifname, ntohl(rule->mac.high_32),
+	       port->ifname, lsdn_mac_low32(&rule->mac),
 	       sswitch->ports[rule->port].peer->ifname);
 }
 static lsdn_err_t update_tc(struct lsdn_node *node)
 {
+	// PS: In theory we could have single interface backing our port.
 	struct lsdn_static_switch *sswitch = lsdn_as_static_switch(node);
 	for (size_t i = 0; i < node->port_count; i++) {
 		for (struct rule *r = sswitch->first_rule; r; r = r->next) {

@@ -5,7 +5,7 @@
 
 void runcmd(const char* format, ...)
 {
-	char cmdbuf[120];
+	char cmdbuf[256];
 	va_list args;
 	va_start(args, format);
 	vsnprintf(cmdbuf, sizeof(cmdbuf), format, args);

@@ -66,6 +66,8 @@ lsdn_err_t lsdn_update_ports_default(struct lsdn_node *node)
 			return LSDNE_NOMEM;
 		snprintf(port->ifname, maxname, "%s-%d", node->network->name, portseq++);
 		runcmd("ip link add name %s type dummy", port->ifname);
+		runcmd("tc qdisc add dev %s root handle 1: htb", port->ifname);
+		runcmd("ip link set %s up", port->ifname);
 	}
 	return LSDNE_OK;
 }
