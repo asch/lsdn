@@ -11,9 +11,9 @@ struct lsdn_port;
 #define LSDN_DEFINE_NODE(name) \
 	struct lsdn_##name; \
 	extern struct lsdn_node_ops lsdn_##name##_ops; \
-	static inline struct lsdn_##name *lsdn_as_##name(struct lsdn_node* node)\
+	static inline struct lsdn_##name *lsdn_as_##name(struct lsdn_node* node) \
 	{ \
-		lsdn_check_cast(node, &lsdn_##name##_ops);\
+		lsdn_check_cast(node, &lsdn_##name##_ops); \
 		return (struct lsdn_##name*) node; \
 	}
 

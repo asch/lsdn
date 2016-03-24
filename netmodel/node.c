@@ -12,7 +12,7 @@ struct lsdn_node *lsdn_node_new(
 		size_t size)
 {
 	struct lsdn_node * node = malloc(size);
-	if(!node)
+	if (!node)
 		return NULL;
 
 	node->network = net;
@@ -39,11 +39,9 @@ void lsdn_check_cast(struct lsdn_node* node, struct lsdn_node_ops* ops)
 
 lsdn_err_t lsdn_free_default_ports(struct lsdn_node *node)
 {
-	for(size_t i = 0; i < node->port_count; i++)
-	{
+	for(size_t i = 0; i < node->port_count; i++) {
 		struct lsdn_port* port = lsdn_get_port(node, i);
-		if(port->ifname)
-		{
+		if (port->ifname) {
 			runcmd("ip link delete %s", port->ifname);
 			free(port->ifname);
 			port->ifname = NULL;
@@ -56,15 +54,14 @@ lsdn_err_t lsdn_update_ports_default(struct lsdn_node *node)
 {
 	// TODO: better naming of ports
 	static int portseq = 1;
-	for(size_t i = 0; i < node->port_count; i++)
-	{
+	for (size_t i = 0; i < node->port_count; i++) {
 		struct lsdn_port* port = lsdn_get_port(node, i);
-		if(port->ifname)
+		if (port->ifname)
 			continue;
 
 		size_t maxname = 20 + strlen(node->network->name);
 		port->ifname = malloc(maxname);
-		if(!port->ifname)
+		if (!port->ifname)
 			// the partial result should not cause any problems here
 			return LSDNE_NOMEM;
 		snprintf(port->ifname, maxname, "%s-%d", node->network->name, portseq++);
