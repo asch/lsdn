@@ -15,7 +15,7 @@ void lsdn_port_init(
 
 void lsdn_connect(struct lsdn_port* a, struct lsdn_port* b)
 {
-	assert(a->peer == NULL && a->peer == NULL);
+	assert(a->peer == NULL && b->peer == NULL);
 	a->peer = b;
 	b->peer = a;
 }
