@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "tc.h"
 
 void runcmd(const char* format, ...)

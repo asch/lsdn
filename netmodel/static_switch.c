@@ -1,6 +1,8 @@
 #include <stdlib.h>
+#include <arpa/inet.h>
 #include "static_switch.h"
 #include "internal.h"
+#include "tc.h"
 
 struct lsdn_static_switch {
 	struct lsdn_node node;
@@ -69,9 +71,22 @@ static void free_sswitch(struct lsdn_node* node)
 		rule = next;
 	}
 }
-
+static void mkrule(struct lsdn_static_switch* sswitch, struct rule *rule, struct lsdn_port* port)
+{
+	runcmd("tc filter add dev %s parent 1: protocol all "
+	       "u32 match u32 0x%x at -12 "
+	       "action mirred egress redirect dev %s",
+	       port->ifname, ntohl(rule->mac.high_32),
+	       sswitch->ports[rule->port].peer->ifname);
+}
 static lsdn_err_t update_tc(struct lsdn_node *node)
 {
+	struct lsdn_static_switch *sswitch = lsdn_as_static_switch(node);
+	for (size_t i = 0; i < node->port_count; i++) {
+		for (struct rule *r = sswitch->first_rule; r; r = r->next) {
+			mkrule(sswitch, r, &sswitch->ports[i]);
+		}
+	}
 	return LSDNE_OK;
 }
 
