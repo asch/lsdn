@@ -27,7 +27,7 @@ int main(){
 		vm[i] = lsdn_netdev_new(net, ifname);
 	}
 
-	/* TODO: Include some better solution in the library (so we don't have to typecast
+/* TODO: Include some better solution in the library (so we don't have to typecast
  * like crazy or use these macros)
  */
 #define PORTOF(node, port) lsdn_get_port((struct lsdn_node*)(node), port)

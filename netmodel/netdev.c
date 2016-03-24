@@ -2,6 +2,7 @@
 #include <string.h>
 #include "netdev.h"
 #include "internal.h"
+#include "tc.h"
 
 
 struct lsdn_netdev {
@@ -38,6 +39,12 @@ static lsdn_err_t update_netdev_ports(struct lsdn_node *node)
 }
 static lsdn_err_t update_tc_rules(struct lsdn_node *node)
 {
+	// TODO: delete the old rules
+	struct lsdn_netdev* netdev = lsdn_as_netdev(node);
+	runcmd("tc qdisc add dev %s handle ffff: ingress", netdev->linux_if);
+	runcmd("tc filter add dev %s parent ffff: protocol all u32 match "
+	       "u32 0 0 action mirred egress redirect dev %s",
+	       netdev->linux_if, netdev->port.peer->ifname);
 	return LSDNE_OK;
 }
 
