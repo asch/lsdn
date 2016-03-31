@@ -16,7 +16,7 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t* mac, const char* ascii);
 static inline uint16_t lsdn_mac_low16(const lsdn_mac_t* mac)
 {
 	const uint8_t* b = mac->bytes;
-	return (b[5] << 8) | b[6];
+	return (b[4] << 8) | b[5];
 }
 static inline uint32_t lsdn_mac_low32(const lsdn_mac_t* mac)
 {
