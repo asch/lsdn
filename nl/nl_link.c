@@ -293,21 +293,37 @@ int nl_link_ingress_add_qdisc(const char* if_name)
 
 	qdisc = rtnl_qdisc_alloc();
 	if (!qdisc) {
-		err = -1; // TODO
-		nl_perror(err, "Unable to create qdisc");
+		err = NLE_NOMEM;
+		nl_perror(err, "Cannot allocate rtnl_qdisc");
 		nl_close(sk);
 		nl_socket_free(sk);
 		return err;
 	}
-	rtnl_tc_set_parent(TC_CAST(qdisc), TC_H_INGRESS); // TODO error handling
-	rtnl_tc_set_handle(TC_CAST(qdisc), 0xFFFF0000);   // TODO error handling
-	rtnl_qdisc_add(sk, qdisc, NLM_F_REPLACE);  // TODO error handling
+
+    rtnl_tc_set_link(TC_CAST(qdisc), link);
+    rtnl_tc_set_parent(TC_CAST(qdisc), TC_H_INGRESS);
+    rtnl_tc_set_handle(TC_CAST(qdisc), TC_HANDLE(0xffff, 0));
+    err = rtnl_tc_set_kind(TC_CAST(qdisc), "ingress");
+    if (err < 0){
+        nl_perror(err, "Can not allocate ingress");
+		return err;
+	}
+	err = rtnl_qdisc_add(sk, qdisc, NLM_F_CREATE);
+	if (err < 0){
+		nl_perror(err, "Unable to add qdisc");
+		nl_cache_free(cache);
+		rtnl_qdisc_put(qdisc);
+		rtnl_link_put(link);
+		nl_close(sk);
+		nl_socket_free(sk);
+		return err;
+	}
 	
 	nl_cache_free(cache);
+	rtnl_qdisc_put(qdisc);
 	rtnl_link_put(link);
 	nl_close(sk);
 	nl_socket_free(sk);
-	rtnl_qdisc_put(qdisc);
 
 	return NLE_SUCCESS;
 }

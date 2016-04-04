@@ -7,6 +7,6 @@ int main(int argc, char** argv){
         printf("Usage: %s <DEVICE NAME>\n", argv[0]);
         return 1;
     }
-    nl_link_create_dummy(argv[1]);
+    nl_link_ingress_add_qdisc(argv[1]);
     return 0;
 }
