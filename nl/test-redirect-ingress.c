@@ -53,8 +53,8 @@ int main(int argc, char** argv){
 	rtnl_mirred_set_policy(act2, TC_ACT_STOLEN);
 	rtnl_mirred_set_ifindex(act2, rtnl_link_name2i(cache, if_redir_name));
 
-	int ret = u32_add_filter_with_hashmask(sk, link, 11,
-			0, 0, 16, 0, act2);
+	int ret = u32_add_filter_with_action(sk, link, 11,
+			0, 0, 16, 0, act2, 0xffff, 0);
 
 	// Create hash table with priority 10, htid 1 and divisor 50
 	/*

@@ -486,13 +486,13 @@ int get_u32_handle(__u32 *handle, const char *str)
 }
 
 /*
- * Same as: 'tc filter add dev <rtnlLink> parent major:minor protocol all prio <prio> \
- *           u32 match u32 <keyval> <keymask> at <keyoff> <act>'
+ * Same as: 'tc filter add dev <link> parent <major>:<minor> protocol all prio <prio> \
+ *           u32 match u32 <val> <mask> at <off> <act>'
  *    (e.g. act = action mirred egress redirect dev qwer)
  */
-// TODO: find out what 'keyoffmask' is good for?
-int u32_add_filter_with_hashmask(struct nl_sock *sock, struct rtnl_link *rtnlLink, uint32_t prio, 
-		uint32_t keyval, uint32_t keymask, int keyoff, int keyoffmask, struct rtnl_act *act,
+// TODO: find out what 'offmask' is good for?
+int u32_add_filter_with_action(struct nl_sock *sock, struct rtnl_link *link, uint32_t prio, 
+		uint32_t val, uint32_t mask, int off, int offmask, struct rtnl_act *act,
 		uint32_t major, uint32_t minor)
 {
 
@@ -506,7 +506,7 @@ int u32_add_filter_with_hashmask(struct nl_sock *sock, struct rtnl_link *rtnlLin
 		exit(1);
 	}
 
-	rtnl_tc_set_link(TC_CAST(cls), rtnlLink);
+	rtnl_tc_set_link(TC_CAST(cls), link);
 
 	if ((err = rtnl_tc_set_kind(TC_CAST(cls), "u32"))) {
 		printf("Can not set classifier as u32\n");
@@ -517,7 +517,7 @@ int u32_add_filter_with_hashmask(struct nl_sock *sock, struct rtnl_link *rtnlLin
 	rtnl_cls_set_protocol(cls, ETH_P_ALL);
 	rtnl_tc_set_parent(TC_CAST(cls), TC_HANDLE(major, minor));
 
-	rtnl_u32_add_key_uint32(cls, keyval, keymask, keyoff, keyoffmask);
+	rtnl_u32_add_key_uint32(cls, val, mask, off, offmask);
 
 	rtnl_u32_add_action(cls, act);
 
@@ -526,4 +526,5 @@ int u32_add_filter_with_hashmask(struct nl_sock *sock, struct rtnl_link *rtnlLin
 		return -1;
 	}
 	rtnl_cls_put(cls);
+	return 0;
 }

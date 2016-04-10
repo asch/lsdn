@@ -58,9 +58,9 @@ int main(int argc, char** argv)
 
 	// Add filter to qdisc with handle 1:. The filter matches on
 	// the lower 4 bytes of destination MAC address.
-	int ret = u32_add_filter_with_hashmask(sk, link, 10, dst_mac_addr, 0xFFFFFFFF, -12, 0, act, 0x1, 0x0);
-	if (ret != NLE_SUCCESS) {
-		printf("Adding filter failed.\n");
+	int ret = u32_add_filter_with_action(sk, link, 10, dst_mac_addr, 0xFFFFFFFF, -12, 0, act, 0x1, 0x0);
+	if (ret != 0) {
+		printf("Adding filter failed\n");
 		return -1;
 	}
 
