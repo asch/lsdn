@@ -328,6 +328,74 @@ int nl_link_ingress_add_qdisc(const char* if_name)
 	return NLE_SUCCESS;
 }
 
+int nl_link_egress_add_qdisc(const char* if_name, uint32_t major, uint32_t minor)
+{
+	struct rtnl_link *link;
+	struct nl_sock *sk;
+	struct rtnl_qdisc *qdisc;
+	int err;
+
+	sk = nl_socket_alloc();
+	if ((err = nl_connect(sk, NETLINK_ROUTE)) < 0) {
+		nl_perror(err, "Unable to connect socket");
+		nl_close(sk);
+		nl_socket_free(sk);
+		return err;
+	}
+
+	struct nl_cache *cache;
+	if ((err = rtnl_link_alloc_cache(sk, AF_UNSPEC, &cache)) < 0){
+		nl_perror(err, "Unable to allocate cache");
+		nl_close(sk);
+		nl_socket_free(sk);
+		return err;
+	}
+
+	link = rtnl_link_get_by_name(cache, if_name);
+	if (!link){
+		err = NLE_OBJ_NOTFOUND;
+		nl_perror(err, "Unable to modify interface");
+		nl_close(sk);
+		nl_socket_free(sk);
+		return err;
+	}
+
+	qdisc = rtnl_qdisc_alloc();
+	if (!qdisc) {
+		err = NLE_NOMEM;
+		nl_perror(err, "Cannot allocate rtnl_qdisc");
+		nl_close(sk);
+		nl_socket_free(sk);
+		return err;
+	}
+
+	rtnl_tc_set_link(TC_CAST(qdisc), link);
+	rtnl_tc_set_parent(TC_CAST(qdisc), TC_H_ROOT);
+	rtnl_tc_set_handle(TC_CAST(qdisc), TC_HANDLE(major, minor));
+	err = rtnl_tc_set_kind(TC_CAST(qdisc), "htb");
+	if (err < 0) {
+		nl_perror(err, "Can not allocate egress");
+		return err;
+	}
+	err = rtnl_qdisc_add(sk, qdisc, NLM_F_CREATE);
+	if (err < 0) {
+		nl_perror(err, "Unable to add qdisc");
+		nl_cache_free(cache);
+		rtnl_qdisc_put(qdisc);
+		rtnl_link_put(link);
+		nl_close(sk);
+		nl_socket_free(sk);
+		return err;
+	}
+	nl_cache_free(cache);
+	rtnl_qdisc_put(qdisc);
+	rtnl_link_put(link);
+	nl_close(sk);
+	nl_socket_free(sk);
+
+	return NLE_SUCCESS;
+}
+
 // Create filter hash table
 int u32_add_ht(struct nl_sock *sock, struct rtnl_link *rtnlLink,
 		uint32_t prio, uint32_t htid, uint32_t divisor){
@@ -418,13 +486,15 @@ int get_u32_handle(__u32 *handle, const char *str)
 }
 
 /*
- * Same as: 'tc filter add dev <rtnlLink> parent ffff: protocol all prio <prio> \
+ * Same as: 'tc filter add dev <rtnlLink> parent major:minor protocol all prio <prio> \
  *           u32 match u32 <keyval> <keymask> at <keyoff> <act>'
  *    (e.g. act = action mirred egress redirect dev qwer)
  */
 // TODO: find out what 'keyoffmask' is good for?
 int u32_add_filter_with_hashmask(struct nl_sock *sock, struct rtnl_link *rtnlLink, uint32_t prio, 
-		uint32_t keyval, uint32_t keymask, int keyoff, int keyoffmask, struct rtnl_act *act){
+		uint32_t keyval, uint32_t keymask, int keyoff, int keyoffmask, struct rtnl_act *act,
+		uint32_t major, uint32_t minor)
+{
 
 	struct rtnl_cls *cls;
 	int err;
@@ -445,7 +515,7 @@ int u32_add_filter_with_hashmask(struct nl_sock *sock, struct rtnl_link *rtnlLin
 
 	rtnl_cls_set_prio(cls, prio);
 	rtnl_cls_set_protocol(cls, ETH_P_ALL);
-	rtnl_tc_set_parent(TC_CAST(cls), TC_HANDLE(0xffff, 0));
+	rtnl_tc_set_parent(TC_CAST(cls), TC_HANDLE(major, minor));
 
 	rtnl_u32_add_key_uint32(cls, keyval, keymask, keyoff, keyoffmask);
 
