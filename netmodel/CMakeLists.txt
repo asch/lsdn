@@ -7,6 +7,7 @@ add_library(lsdn
    internal.h
    nettypes.c
    tc.c
+   list.c
    errors.h
    lsdn.h
 )

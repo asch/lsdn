@@ -13,33 +13,27 @@ struct lsdn_network *lsdn_network_new(const char* netname)
 	if (!net)
 		return NULL;
 
+	lsdn_list_init(&net->nodes);
 	net->name = strdup(netname);
 	if (!net->name)
 		return NULL;
+
 
 	return net;
 }
 
 void lsdn_commit_to_network(struct lsdn_node *node)
 {
-	assert(!node->previous && !node->next);
 	struct lsdn_network* net = node->network;
-	if (!net->head) {
-		net->head = node;
-		net->tail = node;
-	} else {
-		node->previous = net->tail;
-		net->tail->next = node;
-		net->tail = node;
-	}
+	lsdn_list_add(&net->nodes, &node->network_list);
 }
 
 void lsdn_network_create(struct lsdn_network *network){
-	for (struct lsdn_node* n = network->head; n; n = n->next) {
+	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
 		n->ops->update_ports(n);
 	}
 
-	for (struct lsdn_node* n = network->head; n; n = n->next) {
+	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
 		n->ops->update_tc_rules(n);
 	}
 }

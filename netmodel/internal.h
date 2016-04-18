@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include "errors.h"
+#include "list.h"
 
 struct lsdn_node;
 struct lsdn_port;
@@ -10,8 +11,7 @@ struct lsdn_network;
 
 struct lsdn_network {
 	char* name;
-	struct lsdn_node* head;
-	struct lsdn_node* tail;
+	struct lsdn_list_entry nodes;
 };
 
 struct lsdn_node_ops {
@@ -25,10 +25,8 @@ struct lsdn_node_ops {
 struct lsdn_node {
 	struct lsdn_node_ops *ops;
 	struct lsdn_network *network;
-	/* Linked list of nodes in the whole network */
-	struct lsdn_node *next;
-	struct lsdn_node *previous;
 	size_t port_count;
+	struct lsdn_list_entry network_list;
 };
 
 struct lsdn_port {
