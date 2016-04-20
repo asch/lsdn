@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stddef.h>
 
 /* Also used for the list head */
 struct lsdn_list_entry {

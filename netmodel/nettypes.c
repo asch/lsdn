@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "nettypes.h"
 
 static lsdn_err_t parse_octet(const char** ascii, uint8_t* dst)
@@ -30,4 +31,10 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t* mac, const char* ascii)
 			ascii++;
 	}
 	return LSDNE_OK;
+}
+
+void lsdn_mac_to_string(const lsdn_mac_t* mac, char* buf)
+{
+	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", mac->bytes[0], mac->bytes[1], mac->bytes[2],
+			mac->bytes[3], mac->bytes[4], mac->bytes[5]);
 }

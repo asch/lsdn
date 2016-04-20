@@ -6,8 +6,10 @@ add_library(lsdn
    netdev.c
    internal.h
    nettypes.c
+   rule.c
    tc.c
    list.c
    errors.h
    lsdn.h
+   util.h
 )
