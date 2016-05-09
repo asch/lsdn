@@ -19,11 +19,14 @@ struct lsdn_network *lsdn_network_new(const char* netname)
 		return NULL;
 
 	lsdn_list_init(&net->nodes);
-	net->name = strdup(netname);
-	net->unique_id = 0;
-	if (!net->name)
-		return NULL;
 
+	net->unique_id = 0; /* todo */
+
+	net->name = strdup(netname);
+	if (!net->name) {
+		free(net);
+		return NULL;
+	}
 
 	return net;
 }
