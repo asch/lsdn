@@ -28,7 +28,7 @@ struct rtnl_link *rtnl_link_dummy_alloc(void){
 	return link;
 }
 
-int nl_link_create_dummy(const char* if_name){
+int nl_link_create_dummy(const char *if_name){
 	struct rtnl_link *link;
 	struct nl_sock *sk;
 	int err;
@@ -60,7 +60,7 @@ error:
 	return err;
 }
 
-int nl_link_del(const char* if_name){
+int nl_link_del(const char *if_name){
 	struct rtnl_link *link;
 	struct nl_sock *sk;
 	int err;
@@ -98,7 +98,7 @@ int nl_link_del(const char* if_name){
 	return NLE_SUCCESS;
 }
 
-int nl_link_set_up(const char* if_name){
+int nl_link_set_up(const char *if_name){
 	struct rtnl_link *link;
 	struct nl_sock *sk;
 	int err;
@@ -147,7 +147,7 @@ int nl_link_set_up(const char* if_name){
 	return NLE_SUCCESS;
 }
 
-int nl_link_read_addr(const char* if_name, const char* mac)
+int nl_link_read_addr(const char *if_name, const char *mac)
 {
 	struct rtnl_link *link;
 	struct nl_sock *sk;
@@ -187,7 +187,7 @@ int nl_link_read_addr(const char* if_name, const char* mac)
 	return NLE_SUCCESS;
 }
 
-int nl_link_assign_addr(const char* if_name, const char* mac)
+int nl_link_assign_addr(const char *if_name, const char *mac)
 {
 	struct rtnl_link *link;
 	struct nl_sock *sk;
@@ -259,7 +259,7 @@ int nl_link_assign_addr(const char* if_name, const char* mac)
 	return NLE_SUCCESS;
 }
 
-int nl_link_ingress_add_qdisc(const char* if_name)
+int nl_link_ingress_add_qdisc(const char *if_name)
 {
 	struct rtnl_link *link;
 	struct nl_sock *sk;
@@ -328,7 +328,7 @@ int nl_link_ingress_add_qdisc(const char* if_name)
 	return NLE_SUCCESS;
 }
 
-int nl_link_egress_add_qdisc(const char* if_name, uint32_t major, uint32_t minor)
+int nl_link_egress_add_qdisc(const char *if_name, uint32_t major, uint32_t minor)
 {
 	struct rtnl_link *link;
 	struct nl_sock *sk;

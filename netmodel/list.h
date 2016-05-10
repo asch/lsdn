@@ -14,7 +14,7 @@ struct lsdn_list_entry {
 	( (type *)((uint8_t *)(ptr) - offsetof(type, member)) )
 
 #define lsdn_foreach_list(list, member, type, name) \
-	for(type* name = lsdn_container_of(list.next, type, member); \
+	for(type *name = lsdn_container_of(list.next, type, member); \
 	    &name->member != &list; \
 	    name = lsdn_container_of(name->member.next, type, member)) \
 

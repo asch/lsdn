@@ -3,7 +3,7 @@
 
 #include "rule.h"
 
-const char* actions_for(struct lsdn_action* action);
-void runcmd(const char* format, ...);
+const char *actions_for(struct lsdn_action *action);
+void runcmd(const char *format, ...);
 
 #endif

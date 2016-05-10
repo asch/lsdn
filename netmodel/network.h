@@ -16,8 +16,12 @@ struct lsdn_network;
  *      Network names will be used as a prefix for network interfaces and other
  *      named kernel objects created by LSDN. It should be unique.
  */
-struct lsdn_network *lsdn_network_new(const char* netname);
-lsdn_err_t lsdn_network_create(struct lsdn_network* network);
+struct lsdn_network *lsdn_network_new(const char *netname);
+
+
+lsdn_err_t lsdn_network_create(struct lsdn_network *network);
+
+
 void lsdn_network_free(struct lsdn_network *network);
 
 #endif

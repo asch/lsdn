@@ -5,7 +5,7 @@
 #include <linux/tc_act/tc_mirred.h>
 #include <netlink/route/act/mirred.h>
 
-int main(int argc, char** argv){
+int main(int argc, char ** argv){
     if (argc < 3){
         printf("Usage: %s <SOURCE DEVICE> <TARGET DEVICE>\n", argv[0]);
         return 1;
@@ -43,7 +43,7 @@ int main(int argc, char** argv){
 		return err;
 	}
 
-	struct rtnl_act* act2 = rtnl_act_alloc();
+	struct rtnl_act *act2 = rtnl_act_alloc();
 	if (!act2) {
 		printf("rtnl_act_alloc() returns %p\n", act2);
 		return -1;

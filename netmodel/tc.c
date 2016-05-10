@@ -11,23 +11,23 @@ static int is_action_valid(struct lsdn_action *a)
 		!(a->id == LSDN_ACTION_PORT && a->port->peer == NULL);
 }
 
-const char* actions_for(struct lsdn_action *action)
+const char *actions_for(struct lsdn_action *action)
 {
 	static char buf[1024];
 	buf[0] = 0;
 
 	/* The last action sending the packet somewhere */
-	struct lsdn_action* last_action = NULL;
-	for(struct lsdn_action* a = action; a; a = a->next) {
+	struct lsdn_action *last_action = NULL;
+	for(struct lsdn_action *a = action; a; a = a->next) {
 		if(is_action_valid(a))
 			last_action = a;
 	}
 
-	for(struct lsdn_action* a = action; a; a = a->next) {
+	for(struct lsdn_action *a = action; a; a = a->next) {
 		if(a->id == LSDN_ACTION_NONE)
 			continue;
 
-		const char* ifname = NULL;
+		const char *ifname = NULL;
 		switch(a->id){
 		case LSDN_ACTION_PORT:
 			if(a->port->peer)
@@ -55,7 +55,7 @@ const char* actions_for(struct lsdn_action *action)
 	return buf;
 }
 
-void runcmd(const char* format, ...)
+void runcmd(const char *format, ...)
 {
 	char cmdbuf[1024];
 	va_list args;

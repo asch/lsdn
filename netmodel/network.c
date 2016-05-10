@@ -12,9 +12,9 @@
 struct lsdn_node;
 
 
-struct lsdn_network *lsdn_network_new(const char* netname)
+struct lsdn_network *lsdn_network_new(const char *netname)
 {
-	struct lsdn_network* net = malloc(sizeof(*net));
+	struct lsdn_network *net = malloc(sizeof(*net));
 	if (!net)
 		return NULL;
 
@@ -33,11 +33,11 @@ struct lsdn_network *lsdn_network_new(const char* netname)
 
 void lsdn_commit_to_network(struct lsdn_node *node)
 {
-	struct lsdn_network* net = node->network;
+	struct lsdn_network *net = node->network;
 	lsdn_list_add(&net->nodes, &node->network_list);
 }
 
-static lsdn_err_t create_if_for_ruleset(struct lsdn_network* network, struct lsdn_ruleset* ruleset)
+static lsdn_err_t create_if_for_ruleset(struct lsdn_network *network, struct lsdn_ruleset *ruleset)
 {
 	// TODO: handle updating
 	if(ruleset->interface)
@@ -45,10 +45,10 @@ static lsdn_err_t create_if_for_ruleset(struct lsdn_network* network, struct lsd
 
 	ruleset->if_rules_created = 0;
 	size_t maxname = 20 + strlen(network->name);
-	ruleset->interface = (struct lsdn_if*) malloc(sizeof(struct lsdn_if));
+	ruleset->interface = (struct lsdn_if *) malloc(sizeof(struct lsdn_if));
 	if(!ruleset->interface)
 		return LSDNE_NOMEM;
-	char* ifname = ruleset->interface->ifname = (char*) malloc(maxname);
+	char *ifname = ruleset->interface->ifname = (char *) malloc(maxname);
 	if(!ruleset->interface->ifname) {
 		free(ruleset->interface);
 		ruleset->interface = NULL;
@@ -63,14 +63,14 @@ static lsdn_err_t create_if_for_ruleset(struct lsdn_network* network, struct lsd
 	return LSDNE_OK;
 }
 static lsdn_err_t create_if_rules_for_ruleset(
-		struct lsdn_network* network,
-		struct lsdn_ruleset* ruleset)
+		struct lsdn_network *network,
+		struct lsdn_ruleset *ruleset)
 {
 	if(ruleset->if_rules_created)
 		return LSDNE_OK;
 	ruleset->if_rules_created = 1;
 
-	const char* ifname = ruleset->interface->ifname;
+	const char *ifname = ruleset->interface->ifname;
 	// TODO: move it to rules.c when we have folding and know what should be done
 	// TODO: support flower -- in my tc, I have no support for it, even though
 	//       I have the kernel module

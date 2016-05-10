@@ -20,11 +20,11 @@ enum lsdn_rule_target{
 };
 
 enum lsdn_action_id{
-	/* Contiue processing the packet on a given LSDN logical port peer's*/
+	/* Contiue processing the packet on a given LSDN logical port peer's */
 	LSDN_ACTION_PORT,
-	/* Redirect the packet to a linux interface (s) egress*/
+	/* Redirect the packet to a linux interface (s) egress */
 	LSDN_ACTION_IF,
-	/* Drop the packet*/
+	/* Drop the packet */
 	LSDN_ACTION_NONE,
 	/* Continue classification with another ruleset */
 	LSDN_ACTION_RULE
@@ -79,13 +79,13 @@ struct lsdn_ruleset{
  * and 'anything' rule target. This function must be called before adding
  * the rule into ruleset
  */
-void lsdn_rule_init(struct lsdn_rule* rule);
+void lsdn_rule_init(struct lsdn_rule *rule);
 /* Set-up a drop action with no next action */
-void lsdn_action_init(struct lsdn_action* action);
+void lsdn_action_init(struct lsdn_action *action);
 void lsdn_ruleset_init(struct lsdn_ruleset *ruleset);
 void lsdn_ruleset_free(struct lsdn_ruleset *ruleset);
 /* Lower numerical priority = rule matched first */
-void lsdn_add_rule(struct lsdn_ruleset *ruleset, struct lsdn_rule* rule, int prio);
-void lsdn_remove_rule(struct lsdn_rule* rule);
+void lsdn_add_rule(struct lsdn_ruleset *ruleset, struct lsdn_rule *rule, int prio);
+void lsdn_remove_rule(struct lsdn_rule *rule);
 
 #endif

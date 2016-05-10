@@ -11,18 +11,18 @@ struct lsdn_netdev {
 	struct lsdn_port port;
 	struct lsdn_ruleset rules;
 	struct lsdn_rule default_rule;
-	char* linux_if;
+	char *linux_if;
 };
 
-struct lsdn_netdev* lsdn_netdev_new(
-		struct lsdn_network* net,
-		const char* linux_if)
+struct lsdn_netdev *lsdn_netdev_new(
+		struct lsdn_network *net,
+		const char *linux_if)
 {
-	char* ifname_copy = strdup(linux_if);
+	char *ifname_copy = strdup(linux_if);
 	if(!ifname_copy)
 		return NULL;
 
-	struct lsdn_netdev* netdev = lsdn_as_netdev(
+	struct lsdn_netdev *netdev = lsdn_as_netdev(
 			lsdn_node_new(net, &lsdn_netdev_ops, sizeof(*netdev)));
 	if(!netdev) {
 		free(ifname_copy);
@@ -41,13 +41,13 @@ struct lsdn_netdev* lsdn_netdev_new(
 	return netdev;
 }
 
-static struct lsdn_port *get_netdev_port(struct lsdn_node* node, size_t index)
+static struct lsdn_port *get_netdev_port(struct lsdn_node *node, size_t index)
 {
 	UNUSED(index);
 	return &lsdn_as_netdev(node)->port;
 }
 
-static void free_netdev(struct lsdn_node* node)
+static void free_netdev(struct lsdn_node *node)
 {
 	free(lsdn_as_netdev(node)->linux_if);
 }
@@ -56,7 +56,7 @@ static lsdn_err_t update_if_rules(struct lsdn_node *node)
 {
 	// TODO: delete the old rules /  do not duplicate the rules
 
-	struct lsdn_netdev* netdev = lsdn_as_netdev(node);
+	struct lsdn_netdev *netdev = lsdn_as_netdev(node);
 	runcmd("tc qdisc add dev %s handle ffff: ingress", netdev->linux_if);
 	runcmd("tc filter add dev %s parent ffff: protocol all u32 match "
 	       "u32 0 0 action mirred egress redirect dev %s",

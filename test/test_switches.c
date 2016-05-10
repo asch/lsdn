@@ -30,7 +30,7 @@ int main(){
 /* TODO: Include some better solution in the library (so we don't have to typecast
  * like crazy or use these macros)
  */
-#define PORTOF(node, port) lsdn_get_port((struct lsdn_node*)(node), port)
+#define PORTOF(node, port) lsdn_get_port((struct lsdn_node *)(node), port)
 #define VMPORT(i) PORTOF(vm[i],0)
 
 	lsdn_connect(VMPORT(0), PORTOF(sswitch[0], PVM1));

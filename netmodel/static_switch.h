@@ -13,7 +13,7 @@ struct lsdn_static_switch *lsdn_static_switch_new(
 
 lsdn_err_t lsdn_static_switch_add_rule(
 		struct lsdn_static_switch *sswitch,
-		const lsdn_mac_t* dst_mac,
+		const lsdn_mac_t *dst_mac,
 		size_t port);
 
 #endif
