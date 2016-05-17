@@ -10,6 +10,13 @@
 #include <linux/if_link.h>
 #include <linux/rtnetlink.h>
 
+/**
+ * Taken from libmnl examples
+ *
+ * Using iproute:
+ * # ip link set dev <ifname> up
+ */
+
 int main(int argc, char *argv[])
 {
 	struct mnl_socket *nl;
