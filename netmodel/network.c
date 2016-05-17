@@ -8,6 +8,7 @@
 #include "tc.h"
 #include "rule.h"
 #include "nettypes.h"
+#include "nl.h"
 
 struct lsdn_node;
 
@@ -55,10 +56,19 @@ static lsdn_err_t create_if_for_ruleset(struct lsdn_network *network, struct lsd
 		return LSDNE_NOMEM;
 	}
 
+	lsdn_err_t err;
+	struct mnl_socket *sock = NULL;
+	err = lsdn_socket_init(&sock);
+	if (err != LSDNE_OK) {
+		return err;
+	}
+
 	snprintf(ifname, maxname, "%s-%d", network->name, ++network->unique_id);
-	runcmd("ip link add name %s type dummy", ifname);
+	lsdn_link_dummy_create(sock, ifname);
 	runcmd("tc qdisc add dev %s root handle 1: htb", ifname);
 	runcmd("ip link set %s up", ifname);
+
+	mnl_socket_close(sock);
 
 	return LSDNE_OK;
 }

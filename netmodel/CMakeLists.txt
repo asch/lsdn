@@ -1,3 +1,7 @@
+set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules;${CMAKE_MODULE_PATH}")
+
+find_package (MNL REQUIRED)
+
 add_library(lsdn 
    network.c 
    port.c
@@ -12,4 +16,13 @@ add_library(lsdn
    errors.h
    lsdn.h
    util.h
+   nl.h
+   nl.c
+)
+
+include_directories (${MNL_INCLUDE_DIRS})
+
+target_link_libraries(
+	lsdn
+	${MNL_LIBRARIES}
 )
