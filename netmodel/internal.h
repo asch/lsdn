@@ -49,6 +49,7 @@ struct lsdn_port {
  */
 struct lsdn_if{
 	char *ifname;
+	unsigned int ifindex;
 };
 
 struct lsdn_node *lsdn_node_new(struct lsdn_network *net,

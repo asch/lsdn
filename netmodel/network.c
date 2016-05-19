@@ -56,17 +56,34 @@ static lsdn_err_t create_if_for_ruleset(struct lsdn_network *network, struct lsd
 		return LSDNE_NOMEM;
 	}
 
-	lsdn_err_t err;
-	struct mnl_socket *sock = NULL;
-	err = lsdn_socket_init(&sock);
-	if (err != LSDNE_OK) {
-		return err;
+	snprintf(ifname, maxname, "%s-%d", network->name, ++network->unique_id);
+
+	struct mnl_socket *sock = lsdn_socket_init();
+	if (sock == NULL) {
+		return LSDNE_BAD_SOCK;
 	}
 
-	snprintf(ifname, maxname, "%s-%d", network->name, ++network->unique_id);
-	lsdn_link_dummy_create(sock, ifname);
-	runcmd("tc qdisc add dev %s root handle 1: htb", ifname);
-	runcmd("ip link set %s up", ifname);
+	int err = lsdn_link_dummy_create(sock, ifname);
+	printf("Creating interface '%s': %s\n", ifname, strerror(-err));
+	if (err != 0){
+		return LSDNE_FAIL;
+	}
+
+	unsigned int ifindex = if_nametoindex(ifname);
+	ruleset->interface->ifindex = ifindex;
+
+	err = lsdn_qdisc_htb_create(sock, ifindex,
+			TC_H_ROOT, 0x00010000U, 10, 0);
+	printf("Creating HTB qdisc for interface '%s': %s\n", ifname, strerror(-err));
+	if (err != 0){
+		return LSDNE_FAIL;
+	}
+
+	err = lsdn_link_set(sock, ifname, true);
+	printf("Setting interface '%s' up: %s\n", ifname, strerror(-err));
+	if (err != 0){
+		return LSDNE_FAIL;
+	}
 
 	mnl_socket_close(sock);
 

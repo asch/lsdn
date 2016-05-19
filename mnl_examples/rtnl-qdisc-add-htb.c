@@ -8,23 +8,21 @@
 #include <libmnl/libmnl.h>
 #include <linux/rtnetlink.h>
 #include <linux/pkt_sched.h>
+#include <net/if.h>
 
 /**
  * Using iproute:
- * # ip link add dev <if_name> type dummy
- *
- * note: for simplicity this program uses if_index insted of if_name
- * TODO: use if_name instead of if_index
+ * # tc qdisc add dev <if_name> root handle 1:0 htb
  */
 
 int main(int argc, char *argv[])
 {
 	if (argc != 2) {
-		printf("Usage: %s <if_index>\n", argv[0]);
+		printf("Usage: %s <if_name>\n", argv[0]);
 		return -1;
 	}
 
-	size_t if_index = atoi(argv[1]);
+	unsigned int if_index = if_nametoindex(argv[1]);
 	const char *tc_kind = "htb";
 
 	char buf[MNL_SOCKET_BUFFER_SIZE];
@@ -51,7 +49,7 @@ int main(int argc, char *argv[])
 
 	struct tc_htb_glob opts = {
 		.version = TC_HTB_PROTOVER,
-		.rate2quantum = 10,
+		.rate2quantum = 11,
 	};
 	mnl_attr_put(nlh, TCA_HTB_INIT, sizeof(opts), &opts);
 	mnl_attr_nest_end(nlh, nested_attr);
