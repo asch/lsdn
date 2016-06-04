@@ -159,3 +159,156 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int if_index,
 		return -1;
 	}
 }
+
+int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned if_index)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	int ret;
+	unsigned int seq = 0;
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type	= RTM_NEWQDISC;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(nlh, sizeof(*tcm));
+	tcm->tcm_family = AF_UNSPEC;
+	tcm->tcm_ifindex = if_index;
+	tcm->tcm_handle = 0xFFFF0000U;
+	tcm->tcm_parent = TC_H_INGRESS;
+
+	mnl_attr_put_str(nlh, TCA_KIND, "ingress");
+
+	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
+	}
+
+	ret = mnl_socket_recvfrom(sock, buf, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+
+
+	nlh = (struct nlmsghdr *)buf;
+	if (nlh->nlmsg_type == NLMSG_ERROR) {
+		int *err_code = mnl_nlmsg_get_payload(nlh);
+		return *err_code;
+	} else {
+		return -1;
+	}
+}
+
+// filters -->
+
+struct lsdn_filter *lsdn_filter_init(const char *kind, uint32_t if_index,
+		uint32_t handle, uint32_t parent, uint16_t priority, uint16_t protocol)
+{
+	struct lsdn_filter *f = malloc(sizeof(*f));
+	char *buf = malloc(MNL_SOCKET_BUFFER_SIZE);
+	if (f == NULL || buf == NULL){
+		return NULL;
+	}
+
+	f->nlh = mnl_nlmsg_put_header(buf);
+
+	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(f->nlh, sizeof(*tcm));
+	tcm->tcm_family = AF_UNSPEC;
+	tcm->tcm_ifindex = if_index;
+	tcm->tcm_handle = handle;
+	tcm->tcm_parent = parent;
+	tcm->tcm_info = TC_H_MAKE(priority << 16, protocol);
+
+	mnl_attr_put_str(f->nlh, TCA_KIND, kind);
+	f->nested_opts = mnl_attr_nest_start(f->nlh, TCA_OPTIONS);
+	f->nested_acts = NULL;
+
+	return f;
+}
+
+void lsdn_filter_free(struct lsdn_filter *f)
+{
+	free(f->nlh);
+	free(f);
+}
+
+void lsdn_filter_actions_start(struct lsdn_filter *f, uint16_t type)
+{
+	f->nested_acts = mnl_attr_nest_start(f->nlh, type);
+}
+
+void lsdn_filter_actions_end(struct lsdn_filter *f)
+{
+	mnl_attr_nest_end(f->nlh, f->nested_acts);
+}
+
+void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
+		int action, int eaction, uint32_t ifindex)
+{
+	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
+	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "mirred");
+
+	struct nlattr* nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
+
+	struct tc_mirred mirred_act = {
+		.action = action,
+		.eaction = eaction,
+		.ifindex = ifindex
+	};
+	mnl_attr_put(f->nlh, TCA_MIRRED_PARMS, sizeof(mirred_act), &mirred_act);
+
+	mnl_attr_nest_end(f->nlh, nested_attr2);
+	mnl_attr_nest_end(f->nlh, nested_attr);
+}
+
+void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,
+		const char *addr_mask)
+{
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ETH_SRC, 6, addr);
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ETH_SRC_MASK, 6, addr_mask);
+}
+
+void lsdn_flower_set_dst_mac(struct lsdn_filter *f, const char *addr,
+		const char *addr_mask)
+{
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ETH_DST, 6, addr);
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ETH_DST_MASK, 6, addr_mask);
+}
+
+void lsdn_flower_set_eth_type(struct lsdn_filter *f, uint16_t eth_type)
+{
+	mnl_attr_put_u16(f->nlh, TCA_FLOWER_KEY_ETH_TYPE, eth_type);
+}
+
+int lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f)
+{
+	unsigned seq = 0;
+	f->nlh->nlmsg_type	= RTM_NEWTFILTER;
+	f->nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK;
+	f->nlh->nlmsg_seq = seq;
+
+	mnl_attr_nest_end(f->nlh, f->nested_opts);
+
+	int ret = mnl_socket_sendto(sock, f->nlh, f->nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
+	}
+
+	ret = mnl_socket_recvfrom(sock, f->nlh, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+
+	if (f->nlh->nlmsg_type == NLMSG_ERROR) {
+		int *err_code = mnl_nlmsg_get_payload(f->nlh);
+		return *err_code;
+	} else {
+		return -1;
+	}
+}
+
+// <--
