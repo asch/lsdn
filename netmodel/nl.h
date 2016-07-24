@@ -16,6 +16,7 @@
 #include <linux/pkt_sched.h>
 #include <linux/pkt_cls.h>
 #include <linux/tc_act/tc_mirred.h>
+#include <linux/tc_act/tc_gact.h>
 
 
 struct mnl_socket *lsdn_socket_init();
@@ -50,6 +51,8 @@ void lsdn_filter_actions_end(struct lsdn_filter *f);
 
 void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
 		int action, int eaction, uint32_t ifindex);
+
+void lsdn_action_drop(struct lsdn_filter *f, uint16_t order, int action);
 
 void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask);

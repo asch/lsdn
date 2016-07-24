@@ -11,11 +11,8 @@ static int is_action_valid(struct lsdn_action *a)
 		!(a->id == LSDN_ACTION_PORT && a->port->peer == NULL);
 }
 
-const char *actions_for(struct lsdn_action *action)
+void actions_for(struct lsdn_action *action, struct lsdn_filter *filter)
 {
-	static char buf[1024];
-	buf[0] = 0;
-
 	/* The last action sending the packet somewhere */
 	struct lsdn_action *last_action = NULL;
 	for(struct lsdn_action *a = action; a; a = a->next) {
@@ -41,27 +38,29 @@ const char *actions_for(struct lsdn_action *action)
 			break;
 		default:
 			/* make static analysis happy */
-			return NULL;
+			break;
 		}
 		if(ifname) {
-			snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-				 " action mirred egress %s dev %s",
-				 (a == last_action) ? "redirect" : "mirror", ifname);
+			uint32_t if_index = if_nametoindex(ifname);
+
+			if (a == last_action)
+				lsdn_action_mirred_add(filter, 1, TC_ACT_STOLEN, TCA_EGRESS_REDIR, if_index);
+			else
+				lsdn_action_mirred_add(filter, 1, TC_ACT_PIPE, TCA_EGRESS_MIRROR, if_index);
 		}
 	}
 	if(!last_action) {
-		snprintf(buf, sizeof(buf), " action drop");
+		lsdn_action_drop(filter, 1, TC_ACT_SHOT);
 	}
-	return buf;
 }
 
-void runcmd(const char *format, ...)
-{
-	char cmdbuf[1024];
-	va_list args;
-	va_start(args, format);
-	vsnprintf(cmdbuf, sizeof(cmdbuf), format, args);
-	va_end(args);
-	printf("Running: %s\n", cmdbuf);
-	system(cmdbuf);
-}
+//void runcmd(const char *format, ...)
+//{
+//	char cmdbuf[1024];
+//	va_list args;
+//	va_start(args, format);
+//	vsnprintf(cmdbuf, sizeof(cmdbuf), format, args);
+//	va_end(args);
+//	printf("Running: %s\n", cmdbuf);
+//	system(cmdbuf);
+//}

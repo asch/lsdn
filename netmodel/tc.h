@@ -2,8 +2,9 @@
 #define _LSDN_TC_H
 
 #include "rule.h"
+#include "nl.h"
 
-const char *actions_for(struct lsdn_action *action);
-void runcmd(const char *format, ...);
+void actions_for(struct lsdn_action *action, struct lsdn_filter *filter);
+//void runcmd(const char *format, ...);
 
 #endif

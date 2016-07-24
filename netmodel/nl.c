@@ -268,6 +268,21 @@ void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
 	mnl_attr_nest_end(f->nlh, nested_attr);
 }
 
+void lsdn_action_drop(struct lsdn_filter *f, uint16_t order, int action)
+{
+	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
+	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "gact");
+
+	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
+	struct tc_gact gact_act = {
+		.action = action
+	};
+	mnl_attr_put(f->nlh, TCA_GACT_PARMS, sizeof(gact_act), &gact_act);
+
+	mnl_attr_nest_end(f->nlh, nested_attr2);
+	mnl_attr_nest_end(f->nlh, nested_attr);
+}
+
 void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask)
 {

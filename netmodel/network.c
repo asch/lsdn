@@ -102,37 +102,42 @@ static lsdn_err_t create_if_rules_for_ruleset(
 	// TODO: support flower -- in my tc, I have no support for it, even though
 	//       I have the kernel module
 	lsdn_foreach_list(ruleset->rules, ruleset_list, struct lsdn_rule, r) {
-		char addrbuf[LSDN_MAC_STRING_LEN + 1];
-		switch(r->target) {
+		unsigned int if_index = if_nametoindex(ifname);
+
+		struct lsdn_filter *filter = lsdn_filter_init("flower", if_index,
+				1, 0xffff0000, 10, ETH_P_ALL<<8 /* magic trick 1 */);
+
+		lsdn_filter_actions_start(filter, TCA_FLOWER_ACT);
+
+		switch (r->target) {
 		case LSDN_MATCH_ANYTHING:
-			runcmd("tc filter add dev %s parent 1: protocol all "
-			       "u32 match u32 0 0 %s",
-			       ifname, actions_for(&r->action));
 			break;
 		case LSDN_MATCH_ETHERTYPE:
-			runcmd("tc filter add dev %s parent 1: protocol all "
-			       "u16 0x%x 0x%x at -2 %s",
-			       ifname, r->contents.ethertype, r->mask.ethertype);
+			lsdn_flower_set_eth_type(filter, r->contents.ethertype); // TODO add r->mask.ethertype
 			break;
 		case LSDN_MATCH_SRC_MAC:
-			lsdn_mac_to_string(&r->contents.mac, addrbuf);
-			runcmd("tc filter add dev %s parent 1: protocol all "
-			       "u32 match u32 0x%x 0x%x at -6 match u16 0x%x 0x%x at -8 %s",
-			       ifname,
-			       lsdn_mac_low32(&r->contents.mac), lsdn_mac_low32(&r->mask.mac),
-			       lsdn_mac_high16(&r->contents.mac), lsdn_mac_high16(&r->mask.mac),
-			       actions_for(&r->action));
+			lsdn_flower_set_src_mac(
+					filter, (char *) r->contents.mac.bytes,
+					(char *) r->mask.mac.bytes);
 			break;
 		case LSDN_MATCH_DST_MAC:
-			lsdn_mac_to_string(&r->contents.mac, addrbuf);
-			runcmd("tc filter add dev %s parent 1: protocol all "
-			       "u32 match u32 0x%x 0x%x at -12 match u16 0x%x 0x%x at -14 %s",
-			       ifname,
-			       lsdn_mac_low32(&r->contents.mac), lsdn_mac_low32(&r->mask.mac),
-			       lsdn_mac_high16(&r->contents.mac), lsdn_mac_high16(&r->mask.mac),
-			       actions_for(&r->action));
+			lsdn_flower_set_dst_mac(
+					filter, (char *) r->contents.mac.bytes,
+					(char *) r->mask.mac.bytes);
 			break;
 		}
+
+		actions_for(&r->action, filter);
+
+		lsdn_filter_actions_end(filter);
+
+		struct mnl_socket *sock = lsdn_socket_init();
+
+		int err = lsdn_filter_create(sock, filter);
+
+		// TODO: check err and return some errorcode
+
+		lsdn_socket_free(sock);
 	}
 
 	return LSDNE_OK;
