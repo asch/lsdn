@@ -18,6 +18,11 @@ struct mnl_socket *lsdn_socket_init()
 	return sock;
 }
 
+void lsdn_socket_free(struct mnl_socket *s)
+{
+    mnl_socket_close(s);
+}
+
 // ip link add name <if_name> type dummy
 int lsdn_link_dummy_create(struct mnl_socket *sock, const char *if_name)
 {

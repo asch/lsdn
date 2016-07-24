@@ -20,6 +20,8 @@
 
 struct mnl_socket *lsdn_socket_init();
 
+void lsdn_socket_free(struct mnl_socket *s);
+
 int lsdn_link_dummy_create(struct mnl_socket *sock, const char *if_name);
 
 int lsdn_link_set(struct mnl_socket *sock, const char *if_name, bool up);

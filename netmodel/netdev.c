@@ -5,6 +5,7 @@
 #include "tc.h"
 #include "rule.h"
 #include "util.h"
+#include "nl.h"
 
 struct lsdn_netdev {
 	struct lsdn_node node;
@@ -56,11 +57,35 @@ static lsdn_err_t update_if_rules(struct lsdn_node *node)
 {
 	// TODO: delete the old rules /  do not duplicate the rules
 
+    //runcmd("tc qdisc add dev %s handle ffff: ingress", netdev->linux_if);
+
 	struct lsdn_netdev *netdev = lsdn_as_netdev(node);
-	runcmd("tc qdisc add dev %s handle ffff: ingress", netdev->linux_if);
-	runcmd("tc filter add dev %s parent ffff: protocol all u32 match "
-	       "u32 0 0 action mirred egress redirect dev %s",
-	       netdev->linux_if, netdev->port.peer->ruleset->interface->ifname);
+    unsigned int if_index = if_nametoindex(netdev->linux_if);
+    struct mnl_socket *sock = lsdn_socket_init();
+    lsdn_qdisc_ingress_create(sock, if_index);
+
+	//runcmd("tc filter add dev %s parent ffff: protocol all u32 match "
+	       //"u32 0 0 action mirred egress redirect dev %s",
+	       //netdev->linux_if, netdev->port.peer->ruleset->interface->ifname);
+
+	struct lsdn_filter *filter = lsdn_filter_init("flower", if_index,
+			1, 0xffff0000, 10, ETH_P_ALL<<8 /* magic trick 1 */);
+
+	lsdn_filter_actions_start(filter, TCA_FLOWER_ACT);
+
+    unsigned int ifindex_dst =
+        if_nametoindex(netdev->port.peer->ruleset->interface->ifname);
+
+	lsdn_action_mirred_add(filter, 1, TC_ACT_STOLEN, TCA_EGRESS_REDIR,
+			ifindex_dst);
+
+	lsdn_filter_actions_end(filter);
+
+	int err = lsdn_filter_create(sock, filter);
+
+    // TODO: check err and return some errorcode
+
+    lsdn_socket_free(sock);
 	return LSDNE_OK;
 }
 
