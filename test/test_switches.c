@@ -10,16 +10,25 @@ static void c(lsdn_err_t err)
 
 enum {PVM1, PVM2, PTRUNK1, PTRUNK2};
 
-int main(){
+int main(int argc, const char* argv[]){
 	struct lsdn_network *net;
 	struct lsdn_static_switch *sswitch[3];
 	struct lsdn_netdev *vm[6];
+
+	int broadcast = 1;
+	if(argc >= 2)
+		broadcast = atoi(argv[1]);
+	printf("Broadcast %s\n", broadcast ? "enabled" : "disabled");
 
 	net = lsdn_network_new("sp-ex1");
 
 	sswitch[0] = lsdn_static_switch_new(net, 4);
 	sswitch[1] = lsdn_static_switch_new(net, 3);
 	sswitch[2] = lsdn_static_switch_new(net, 3);
+
+	for(size_t i = 0; i<3; i++){
+		lsdn_static_switch_enable_broadcast(sswitch[0], broadcast);
+	}
 
 	for(size_t i = 0; i<6; i++){
 		char ifname[20];

@@ -14,6 +14,8 @@ typedef union lsdn_mac {
 	uint8_t bytes[6];
 } lsdn_mac_t;
 
+extern const lsdn_mac_t lsdn_broadcast_mac;
+
 lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii);
 
 #define LSDN_MAC_STRING_LEN (5 + 6 *2)

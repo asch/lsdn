@@ -16,6 +16,7 @@ void lsdn_action_init(struct lsdn_action *action){
 
 void lsdn_ruleset_init(struct lsdn_ruleset *ruleset){
 	lsdn_list_init(&ruleset->rules);
+	lsdn_list_init(&ruleset->node_rules);
 }
 
 void lsdn_ruleset_free(struct lsdn_ruleset *ruleset){

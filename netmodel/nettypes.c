@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include "nettypes.h"
 
+const lsdn_mac_t lsdn_broadcast_mac = {
+	{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+};
+
 static lsdn_err_t parse_octet(const char ** ascii, uint8_t *dst)
 {
 	if ((*ascii)[0] == 0 || (*ascii)[1] == 0)

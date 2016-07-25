@@ -4,44 +4,62 @@
 #include "internal.h"
 #include "rule.h"
 #include "tc.h"
+#include "list.h"
+
+enum {RULE_BROADCAST, RULE_OTHER};
+
+struct switch_port{
+	struct lsdn_port port;
+	/* Only used if broadcast packet handling is enabled,
+	 * otherwise the port's ruleset is directly the switch_ruleset */
+	struct lsdn_ruleset broadcast_ruleset;
+	struct lsdn_rule broadcast_rules[2];
+	/* List of port-1 actions mirroring to all port but the incoming one. */
+	struct lsdn_action* broadcast_actions;
+};
 
 struct lsdn_static_switch {
 	struct lsdn_node node;
-	struct lsdn_port *ports;
-	struct lsdn_ruleset rules;
-	struct rule *rule_list;
+	struct switch_port *ports;
+
+	/* The main ruleset that handles or non-broadcast packets
+	 * (and broadcast packets too if broadcast handling is disabled */
+	struct lsdn_ruleset forward_ruleset;
+
+	int broadcast_enabled;
 };
 
-struct rule{
-	struct lsdn_rule lsdn;
-	struct rule *next;
-};
-
-
-struct lsdn_static_switch *lsdn_static_switch_new(
+struct lsdn_static_switch *lsdn_static_switch_new (
 		struct lsdn_network *net,
 		size_t port_count)
 {
 	struct lsdn_static_switch *sswitch = (struct lsdn_static_switch *)
 			lsdn_node_new(net, &lsdn_static_switch_ops, sizeof(*sswitch));
+	sswitch->broadcast_enabled = 1;
 	sswitch->node.port_count = port_count;
-	sswitch->ports = (struct lsdn_port *) calloc(port_count, sizeof(struct lsdn_port));
+	sswitch->ports = calloc(port_count, sizeof(struct switch_port));
 	if (!sswitch->ports) {
 		lsdn_node_free(&sswitch->node);
 		return NULL;
 	}
-     
-	// create the ports and initialize them all with the same ruleset
-	lsdn_ruleset_init(&sswitch->rules);
-	for (size_t i = 0; i<port_count; i++) {
-		lsdn_port_init(&sswitch->ports[i], &sswitch->node, i, &sswitch->rules);
-		sswitch->ports[i].ruleset = &sswitch->rules;
+
+	for (size_t i = 0;  i <port_count; i++) {
+		lsdn_port_init(&sswitch->ports[i].port, &sswitch->node, i, NULL);
 	}
+
+	lsdn_ruleset_init(&sswitch->forward_ruleset);
 	lsdn_commit_to_network(&sswitch->node);
 	return sswitch;
 }
 
-lsdn_err_t lsdn_static_switch_add_rule(
+void lsdn_static_switch_enable_broadcast(
+		struct lsdn_static_switch* sswitch,
+		int enabled)
+{
+	sswitch->broadcast_enabled = enabled;
+}
+
+lsdn_err_t lsdn_static_switch_add_rule (
 		struct lsdn_static_switch *sswitch,
 		const lsdn_mac_t *dst_mac,
 		size_t port)
@@ -49,44 +67,112 @@ lsdn_err_t lsdn_static_switch_add_rule(
 	// TODO: check if rule already exists
 
 	// create the rule
-	struct rule *rule = malloc(sizeof(*rule));
+	struct lsdn_rule *rule = malloc(sizeof(*rule));
 	if (!rule)
 		return LSDNE_NOMEM;
-	lsdn_rule_init(&rule->lsdn);
-	rule->lsdn.action.id = LSDN_ACTION_PORT;
-	rule->lsdn.action.port = lsdn_get_port(&sswitch->node, port);
-	rule->lsdn.target = LSDN_MATCH_DST_MAC;
-	rule->lsdn.contents.mac = *dst_mac;
 
-	// add the rule to the ruleset and also our internal list of rules (for deallocation)
-	lsdn_add_rule(&sswitch->rules, &rule->lsdn, 0);
-	rule->next = sswitch->rule_list;
-	sswitch->rule_list = rule;
+	lsdn_rule_init(rule);
+	rule->action.id = LSDN_ACTION_PORT;
+	rule->action.port = lsdn_get_port(&sswitch->node, port);
+	rule->target = LSDN_MATCH_DST_MAC;
+	rule->contents.mac = *dst_mac;
+
+	// add the rule to the ruleset
+	lsdn_add_rule(&sswitch->forward_ruleset, rule, 0);
 	return LSDNE_OK;
 }
 
-static struct lsdn_port *get_sswitch_port(struct lsdn_node *node, size_t port)
+static struct lsdn_port *get_sswitch_port (struct lsdn_node *node, size_t port)
 {
-	return &lsdn_as_static_switch(node)->ports[port];
+	return &lsdn_as_static_switch(node)->ports[port].port;
 }
 
-static void free_sswitch(struct lsdn_node *node)
+static lsdn_err_t create_broadcast_actions (
+		struct lsdn_static_switch* sswitch,
+		struct switch_port* p)
+{
+	struct lsdn_rule *r = &p->broadcast_rules[RULE_BROADCAST];
+	/* port_count - 2 because one action is embedded in the rule and we need
+	 * actions for all ports except the incoming one */
+	p->broadcast_actions = calloc(sizeof(struct lsdn_action), sswitch->node.port_count - 2);
+
+	struct lsdn_action *last = NULL;
+	struct lsdn_action *a = &r->action;
+	for(size_t i = 0; i < sswitch->node.port_count; i++){
+		if(i == p->port.index)
+			continue;
+
+		if(last)
+			last->next = a;
+
+		a->id = LSDN_ACTION_PORT;
+		a->port = &sswitch->ports[i].port;
+
+		last = a;
+		if(a == &r->action)
+			a = &p->broadcast_actions[0];
+		else
+			a++;
+	}
+	return LSDNE_OK;
+}
+
+static lsdn_err_t sswitch_update_rules (struct lsdn_node *node)
 {
 	struct lsdn_static_switch *sswitch = lsdn_as_static_switch(node);
-	free(sswitch->ports);
-	struct rule *rule = sswitch->rule_list;
-	while (rule) {
-		struct rule *next = rule->next;
-		free(rule);
-		rule = next;
+	for(size_t i = 0; i < sswitch->node.port_count; i++) {
+		struct switch_port* p = &sswitch->ports[i];
+		if(sswitch->broadcast_enabled) {
+			lsdn_ruleset_init(&p->broadcast_ruleset);
+
+			struct lsdn_rule *broadcast = &p->broadcast_rules[RULE_BROADCAST];
+			struct lsdn_rule *other = &p->broadcast_rules[RULE_OTHER];
+
+			lsdn_rule_init(broadcast);
+			broadcast->target = LSDN_MATCH_DST_MAC;
+			broadcast->contents.mac = lsdn_broadcast_mac;
+			if(!p->broadcast_actions){
+				int ret = create_broadcast_actions(sswitch, p);
+				if(ret != LSDNE_OK)
+					return ret;
+			}
+
+			lsdn_add_rule(&p->broadcast_ruleset, broadcast, 0);
+
+			lsdn_rule_init(other);
+			other->target = LSDN_MATCH_ANYTHING;
+			other->action.id = LSDN_ACTION_RULE;
+			other->action.rule = &sswitch->forward_ruleset;
+			lsdn_add_rule(&p->broadcast_ruleset, other, 0);
+
+			p->port.ruleset = &p->broadcast_ruleset;
+		} else {
+			p->port.ruleset = &sswitch->forward_ruleset;
+		}
 	}
+	return LSDNE_OK;
+}
+
+static void free_sswitch (struct lsdn_node *node)
+{
+	struct lsdn_static_switch *sswitch = lsdn_as_static_switch(node);
+
+	for(size_t i = 0; i < sswitch->node.port_count; i++){
+		free(sswitch->ports[i].broadcast_actions);
+	}
+
+	lsdn_foreach_list(sswitch->forward_ruleset.rules, ruleset_list, struct lsdn_rule, r) {
+		free(r);
+	}
+
+	free(sswitch->ports);
 }
 
 struct lsdn_node_ops lsdn_static_switch_ops = {
 	.free_private_data = free_sswitch,
 	.get_port = get_sswitch_port,
 	/* Sswitch updates its ruleset as the rules are added */
-	.update_rules = lsdn_noop,
+	.update_rules = sswitch_update_rules,
 	/* Sswitch does not manage any linux interfaces */
 	.update_ifs = lsdn_noop,
 	.update_if_rules = lsdn_noop

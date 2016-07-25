@@ -18,6 +18,7 @@ struct lsdn_node *lsdn_node_new(
 	node->network = net;
 	node->ops = ops;
 	lsdn_list_init(&node->network_list);
+	lsdn_list_init(&node->ruleset_list);
 	return node;
 }
 

@@ -38,7 +38,10 @@ void lsdn_commit_to_network(struct lsdn_node *node)
 	lsdn_list_add(&net->nodes, &node->network_list);
 }
 
-static lsdn_err_t create_if_for_ruleset(struct lsdn_network *network, struct lsdn_ruleset *ruleset)
+static lsdn_err_t create_if_for_ruleset(
+		struct lsdn_network *network,
+		struct lsdn_node* owner,
+		struct lsdn_ruleset *ruleset)
 {
 	// TODO: handle updating
 	if(ruleset->interface)
@@ -87,6 +90,18 @@ static lsdn_err_t create_if_for_ruleset(struct lsdn_network *network, struct lsd
 
 	mnl_socket_close(sock);
 
+	lsdn_list_add(&owner->ruleset_list, &ruleset->node_rules);
+
+	lsdn_foreach_list(ruleset->rules, ruleset_list, struct lsdn_rule, r) {
+		for(struct lsdn_action* a = &r->action; a; a = a->next) {
+			if(a->id == LSDN_ACTION_RULE) {
+				lsdn_err_t rv = create_if_for_ruleset(network, owner, a->rule);
+				if(rv != LSDNE_OK)
+					return rv;
+			}
+		}
+	}
+
 	return LSDNE_OK;
 }
 
@@ -104,7 +119,7 @@ static lsdn_err_t create_if_rules_for_ruleset(
 	// TODO: move it to rules.c when we have folding and know what should be done
 	// TODO: support flower -- in my tc, I have no support for it, even though
 	//       I have the kernel module
-	int handle = 1;
+	int order = 1;
 	lsdn_foreach_list(ruleset->rules, ruleset_list, struct lsdn_rule, r) {
 		unsigned int if_index = if_nametoindex(ifname);
 		printf("Creating rules for %s (%d)\n", ifname, if_index);
@@ -112,23 +127,28 @@ static lsdn_err_t create_if_rules_for_ruleset(
 		struct lsdn_filter *filter = lsdn_filter_init(
 					"flower",
 					if_index,
-					handle++,
+					order,
 					LSDN_DEFAULT_EGRESS_HANDLE,
-					LSDN_DEFAULT_PRIORITY,
+					order,
 					ETH_P_ALL << 8/* magic trick 1 */);
+
+		order++;
 
 		switch (r->target) {
 		case LSDN_MATCH_ANYTHING:
 			break;
 		case LSDN_MATCH_ETHERTYPE:
+			printf("When ethertype matches\n");
 			lsdn_flower_set_eth_type(filter, r->contents.ethertype); // TODO add r->mask.ethertype
 			break;
 		case LSDN_MATCH_SRC_MAC:
+			printf("When src mac matches\n");
 			lsdn_flower_set_src_mac(
 					filter, (char *) r->contents.mac.bytes,
 					(char *) r->mask.mac.bytes);
 			break;
 		case LSDN_MATCH_DST_MAC:
+			printf("When dst mac matches\n");
 			lsdn_flower_set_dst_mac(
 					filter, (char *) r->contents.mac.bytes,
 					(char *) r->mask.mac.bytes);
@@ -165,8 +185,10 @@ lsdn_err_t lsdn_network_create(struct lsdn_network *network)
 	}
 
 	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
+		/* This step collects all rulesets reachable from node ports and creates
+		 * their backing interfaces */
 		for(size_t i = 0; i < n->port_count; i++) {
-			rv = create_if_for_ruleset(network, lsdn_get_port(n, i)->ruleset);
+			rv = create_if_for_ruleset(network, n, lsdn_get_port(n, i)->ruleset);
 			if(rv != LSDNE_OK)
 				return rv;
 		}
@@ -176,8 +198,10 @@ lsdn_err_t lsdn_network_create(struct lsdn_network *network)
 	}
 
 	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
-		for(size_t i = 0; i < n->port_count; i++) {
-			rv = create_if_rules_for_ruleset(network, lsdn_get_port(n, i)->ruleset);
+		/* Go through all previously collected rulesets and populate
+		 * their interfaces with rules */
+		lsdn_foreach_list(n->ruleset_list, node_rules, struct lsdn_ruleset, r) {
+			rv = create_if_rules_for_ruleset(network, r);
 			if(rv != LSDNE_OK)
 				return rv;
 		}

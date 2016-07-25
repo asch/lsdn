@@ -11,6 +11,10 @@ struct lsdn_static_switch *lsdn_static_switch_new(
 		struct lsdn_network *net,
 		size_t port_count);
 
+void lsdn_static_switch_enable_broadcast(
+		struct lsdn_static_switch* sswitch,
+		int enabled);
+
 lsdn_err_t lsdn_static_switch_add_rule(
 		struct lsdn_static_switch *sswitch,
 		const lsdn_mac_t *dst_mac,

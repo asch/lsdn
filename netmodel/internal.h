@@ -35,6 +35,7 @@ struct lsdn_node {
 	struct lsdn_network *network;
 	size_t port_count;
 	struct lsdn_list_entry network_list;
+	struct lsdn_list_entry ruleset_list;
 };
 
 struct lsdn_port {
@@ -60,6 +61,5 @@ void lsdn_port_init(struct lsdn_port *port,
 		    struct lsdn_node *owner,
 		    size_t index,
 		    struct lsdn_ruleset *ruleset);
-
 
 #endif

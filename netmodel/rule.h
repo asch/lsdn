@@ -69,6 +69,7 @@ struct lsdn_rule{
  * It is job of the folding phase to produce more efficient data structure.
  */
 struct lsdn_ruleset{	
+	struct lsdn_list_entry node_rules;
 	struct lsdn_list_entry rules;
 	/* Linux interface that implements this ruleset. Managed by network.c. */
 	struct lsdn_if *interface;
