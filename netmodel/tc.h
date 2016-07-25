@@ -5,6 +5,5 @@
 #include "nl.h"
 
 void actions_for(struct lsdn_action *action, struct lsdn_filter *filter);
-//void runcmd(const char *format, ...);
 
 #endif

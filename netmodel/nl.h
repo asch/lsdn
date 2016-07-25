@@ -18,6 +18,16 @@
 #include <linux/tc_act/tc_mirred.h>
 #include <linux/tc_act/tc_gact.h>
 
+/* Pseudo-handle for the linux ingress qdiscs */
+#define LSDN_INGRESS_HANDLE 0xffff0000
+
+/* Default priority for our fixed-function filters
+ * (like those who catch ingress trafic and redirect to appropriate internal if)
+ */
+#define LSDN_DEFAULT_PRIORITY 10
+
+/* Our egress handle (major 1, minor 0)*/
+#define LSDN_DEFAULT_EGRESS_HANDLE 0x00010000U
 
 struct mnl_socket *lsdn_socket_init();
 

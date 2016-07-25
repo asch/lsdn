@@ -208,6 +208,16 @@ int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned if_index)
 
 // filters -->
 
+/**
+ * @brief lsdn_filter_init
+ * @param kind Type of filter (e.g. "flower" or "u32")
+ * @param if_index Interface index.
+ * @param handle Identification of the filter. (?)
+ * @param parent Handle of the qdisc.
+ * @param priority Defines ordering of the filter chain.
+ * @param protocol Ethertype of the filter.
+ * @return Pre-prepared nl message headers and options that can be further modified.
+ */
 struct lsdn_filter *lsdn_filter_init(const char *kind, uint32_t if_index,
 		uint32_t handle, uint32_t parent, uint16_t priority, uint16_t protocol)
 {
