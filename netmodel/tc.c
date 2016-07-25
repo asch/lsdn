@@ -43,24 +43,18 @@ void actions_for(struct lsdn_action *action, struct lsdn_filter *filter)
 		if(ifname) {
 			uint32_t if_index = if_nametoindex(ifname);
 
-			if (a == last_action)
+			if (a == last_action){
+				printf("Redirecting %s (%d)\n", ifname, if_index);
 				lsdn_action_mirred_add(filter, 1, TC_ACT_STOLEN, TCA_EGRESS_REDIR, if_index);
-			else
+			} else {
+				printf("Mirrorring %s (%d)\n", ifname, if_index);
 				lsdn_action_mirred_add(filter, 1, TC_ACT_PIPE, TCA_EGRESS_MIRROR, if_index);
+			}
 		}
 	}
 	if(!last_action) {
+		printf("Dropping\n");
 		lsdn_action_drop(filter, 1, TC_ACT_SHOT);
 	}
 }
 
-//void runcmd(const char *format, ...)
-//{
-//	char cmdbuf[1024];
-//	va_list args;
-//	va_start(args, format);
-//	vsnprintf(cmdbuf, sizeof(cmdbuf), format, args);
-//	va_end(args);
-//	printf("Running: %s\n", cmdbuf);
-//	system(cmdbuf);
-//}

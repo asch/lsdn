@@ -73,7 +73,7 @@ static lsdn_err_t create_if_for_ruleset(struct lsdn_network *network, struct lsd
 	ruleset->interface->ifindex = ifindex;
 
 	err = lsdn_qdisc_htb_create(sock, ifindex,
-			TC_H_ROOT, 0x00010000U, 10, 0);
+			TC_H_ROOT, LSDN_DEFAULT_EGRESS_HANDLE, 10, 0);
 	printf("Creating HTB qdisc for interface '%s': %s\n", ifname, strerror(-err));
 	if (err != 0){
 		return LSDNE_FAIL;
@@ -89,6 +89,9 @@ static lsdn_err_t create_if_for_ruleset(struct lsdn_network *network, struct lsd
 
 	return LSDNE_OK;
 }
+
+
+
 static lsdn_err_t create_if_rules_for_ruleset(
 		struct lsdn_network *network,
 		struct lsdn_ruleset *ruleset)
@@ -101,13 +104,18 @@ static lsdn_err_t create_if_rules_for_ruleset(
 	// TODO: move it to rules.c when we have folding and know what should be done
 	// TODO: support flower -- in my tc, I have no support for it, even though
 	//       I have the kernel module
+	int handle = 1;
 	lsdn_foreach_list(ruleset->rules, ruleset_list, struct lsdn_rule, r) {
 		unsigned int if_index = if_nametoindex(ifname);
+		printf("Creating rules for %s (%d)\n", ifname, if_index);
 
-		struct lsdn_filter *filter = lsdn_filter_init("flower", if_index,
-				1, 0xffff0000, 10, ETH_P_ALL<<8 /* magic trick 1 */);
-
-		lsdn_filter_actions_start(filter, TCA_FLOWER_ACT);
+		struct lsdn_filter *filter = lsdn_filter_init(
+					"flower",
+					if_index,
+					handle++,
+					LSDN_DEFAULT_EGRESS_HANDLE,
+					LSDN_DEFAULT_PRIORITY,
+					ETH_P_ALL << 8/* magic trick 1 */);
 
 		switch (r->target) {
 		case LSDN_MATCH_ANYTHING:
@@ -127,6 +135,8 @@ static lsdn_err_t create_if_rules_for_ruleset(
 			break;
 		}
 
+		lsdn_filter_actions_start(filter, TCA_FLOWER_ACT);
+
 		actions_for(&r->action, filter);
 
 		lsdn_filter_actions_end(filter);
@@ -134,6 +144,8 @@ static lsdn_err_t create_if_rules_for_ruleset(
 		struct mnl_socket *sock = lsdn_socket_init();
 
 		int err = lsdn_filter_create(sock, filter);
+
+		printf("network.c err = %d\n", err);
 
 		// TODO: check err and return some errorcode
 
