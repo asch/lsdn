@@ -140,6 +140,8 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int if_index,
 		.version = TC_HTB_PROTOVER,
 		.rate2quantum = r2q,
 		.defcls = defcls,
+		.debug = 0,
+		.direct_pkts = 0
 	};
 	mnl_attr_put(nlh, TCA_HTB_INIT, sizeof(opts), &opts);
 	mnl_attr_nest_end(nlh, nested_attr);
@@ -267,11 +269,12 @@ void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
 
 	struct nlattr* nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
 
-	struct tc_mirred mirred_act = {
-		.action = action,
-		.eaction = eaction,
-		.ifindex = ifindex
-	};
+	struct tc_mirred mirred_act;
+	bzero(&mirred_act, sizeof(mirred_act));
+	mirred_act.action = action;
+	mirred_act.eaction = eaction;
+	mirred_act.ifindex = ifindex;
+
 	mnl_attr_put(f->nlh, TCA_MIRRED_PARMS, sizeof(mirred_act), &mirred_act);
 
 	mnl_attr_nest_end(f->nlh, nested_attr2);
@@ -284,9 +287,10 @@ void lsdn_action_drop(struct lsdn_filter *f, uint16_t order, int action)
 	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "gact");
 
 	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
-	struct tc_gact gact_act = {
-		.action = action
-	};
+	struct tc_gact gact_act;
+	bzero(&gact_act, sizeof(gact_act));
+	gact_act.action = action;
+
 	mnl_attr_put(f->nlh, TCA_GACT_PARMS, sizeof(gact_act), &gact_act);
 
 	mnl_attr_nest_end(f->nlh, nested_attr2);

@@ -15,6 +15,8 @@ void lsdn_action_init(struct lsdn_action *action){
 }
 
 void lsdn_ruleset_init(struct lsdn_ruleset *ruleset){
+	ruleset->if_rules_created = 0;
+	ruleset->interface = NULL;
 	lsdn_list_init(&ruleset->rules);
 	lsdn_list_init(&ruleset->node_rules);
 }
