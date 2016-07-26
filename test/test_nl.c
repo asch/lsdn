@@ -1,4 +1,4 @@
-#include "../netmodel/nl.h"
+#include "../netmodel/private/nl.h"
 
 #include <stdio.h>
 

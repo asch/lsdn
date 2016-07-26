@@ -1,8 +1,8 @@
-#ifndef _LSDN_RULE_H
-#define _LSDN_RULE_H
+#ifndef _LSDN_RULE_H_PRIVATE_
+#define _LSDN_RULE_H_PRIVATE_
 
+#include "../include/nettypes.h"
 #include "list.h"
-#include "nettypes.h"
 
 /*
  * relevant: include/net/flow_dissector.c
@@ -62,6 +62,14 @@ struct lsdn_rule{
 
 	int prio;
 	struct lsdn_list_entry ruleset_list;
+};
+
+/* Linux interface managed by the network, used for deciding the packet
+ * fates at a particular point. They back some of the rulesets (currently all)
+ */
+struct lsdn_if{
+	char *ifname;
+	unsigned int ifindex;
 };
 
 /*

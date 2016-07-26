@@ -1,4 +1,4 @@
-#include "nl.h"
+#include "private/nl.h"
 
 struct mnl_socket *lsdn_socket_init()
 {

@@ -2,13 +2,14 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include "network.h"
-#include "internal.h"
-#include "node.h"
-#include "tc.h"
-#include "rule.h"
-#include "nettypes.h"
-#include "nl.h"
+
+#include "private/network.h"
+#include "private/list.h"
+#include "private/node.h"
+#include "private/port.h"
+#include "private/rule.h"
+#include "private/nl.h"
+#include "private/tc.h"
 
 struct lsdn_node;
 

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "nettypes.h"
+#include "include/nettypes.h"
 
 const lsdn_mac_t lsdn_broadcast_mac = {
 	{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}

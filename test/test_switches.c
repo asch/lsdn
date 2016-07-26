@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../netmodel/lsdn.h"
+#include "../netmodel/include/lsdn.h"
 
 static void c(lsdn_err_t err)
 {

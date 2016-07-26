@@ -1,6 +1,5 @@
 #include <assert.h>
-#include "port.h"
-#include "internal.h"
+#include "private/port.h"
 
 void lsdn_port_init(struct lsdn_port *port,
 		struct lsdn_node *owner,

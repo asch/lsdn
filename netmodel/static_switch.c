@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
-#include "static_switch.h"
-#include "internal.h"
-#include "rule.h"
-#include "tc.h"
-#include "list.h"
+#include "include/static_switch.h"
+#include "private/rule.h"
+#include "private/tc.h"
+#include "private/port.h"
+#include "private/node.h"
+#include "private/list.h"
 
 enum {RULE_BROADCAST, RULE_OTHER};
 

@@ -1,7 +1,7 @@
-#ifndef _LSDN_NL_H
-#define _LSDN_NL_H
+#ifndef _LSDN_NL_H_PRIVATE_
+#define _LSDN_NL_H_PRIVATE_
 
-#include "errors.h"
+#include "../include/errors.h"
 
 #include <time.h>
 #include <string.h>

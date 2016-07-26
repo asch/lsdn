@@ -1,4 +1,4 @@
-#include "list.h"
+#include "private/list.h"
 
 void lsdn_list_init(struct lsdn_list_entry *head)
 {

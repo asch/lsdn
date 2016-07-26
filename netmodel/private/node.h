@@ -1,21 +1,12 @@
-#ifndef _LSDN_INTERNAL_H
-#define _LSDN_INTERNAL_H
+#ifndef _LSDN_NODE_H_PRIVATE_
+#define _LSDN_NODE_H_PRIVATE_
 
 #include <stddef.h>
-#include "errors.h"
+#include "../include/node.h"
+#include "../include/errors.h"
 #include "list.h"
 
 struct lsdn_node;
-struct lsdn_port;
-struct lsdn_network;
-struct lsdn_ruleset;
-
-struct lsdn_network {
-	char *name;
-	/* Last used unique id for interface names etc */
-	int unique_id;
-	struct lsdn_list_entry nodes;
-};
 
 struct lsdn_node_ops {
 	void (*free_private_data)(struct lsdn_node *node);
@@ -38,28 +29,9 @@ struct lsdn_node {
 	struct lsdn_list_entry ruleset_list;
 };
 
-struct lsdn_port {
-	struct lsdn_port *peer;
-	struct lsdn_node *owner;
-	size_t index;
-	struct lsdn_ruleset *ruleset;
-};
-
-/* Linux interface managed by the network, used for deciding the packet
- * fates at a particular point. They back some of the rulesets (currently all)
- */
-struct lsdn_if{
-	char *ifname;
-	unsigned int ifindex;
-};
-
 struct lsdn_node *lsdn_node_new(struct lsdn_network *net,
 				struct lsdn_node_ops *ops,
 				size_t size);
 void lsdn_commit_to_network(struct lsdn_node *node);
-void lsdn_port_init(struct lsdn_port *port,
-		    struct lsdn_node *owner,
-		    size_t index,
-		    struct lsdn_ruleset *ruleset);
 
 #endif

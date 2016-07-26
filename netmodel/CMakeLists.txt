@@ -1,10 +1,8 @@
-find_package(PkgConfig)
-pkg_check_modules(MNL libmnl)
-include_directories(${MNL_INCLUDE_DIRS})
-
 file(GLOB lsdn_SRC "*.c")
 file(GLOB lsdn_PUBLIC "include/*.h")
 file(GLOB lsdn_PRIVATE "private/*.h")
+
+include_directories(${MNL_INCLUDE_DIRS})
 
 add_library(lsdn 
    ${lsdn_SRC}

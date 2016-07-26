@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "tc.h"
-#include "internal.h"
+#include "private/tc.h"
+#include "private/port.h"
 
 static int is_action_valid(struct lsdn_action *a)
 {

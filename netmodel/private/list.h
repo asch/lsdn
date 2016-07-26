@@ -1,5 +1,5 @@
-#ifndef _LSDN_LIST_H
-#define _LSDN_LIST_H
+#ifndef _LSDN_LIST_H_PRIVATE_
+#define _LSDN_LIST_H_PRIVATE_
 
 #include <assert.h>
 #include <stdint.h>

@@ -1,5 +1,5 @@
-#include "rule.h"
-#include "memory.h"
+#include "private/rule.h"
+#include <memory.h>
 
 void lsdn_rule_init(struct lsdn_rule *rule)
 {

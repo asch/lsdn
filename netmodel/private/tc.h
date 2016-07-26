@@ -1,5 +1,5 @@
-#ifndef _LSDN_TC_H
-#define _LSDN_TC_H
+#ifndef _LSDN_TC_H_PRIVATE_
+#define _LSDN_TC_H_PRIVATE_
 
 #include "rule.h"
 #include "nl.h"

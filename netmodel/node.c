@@ -2,9 +2,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include "node.h"
-#include "internal.h"
-#include "tc.h"
+#include "private/node.h"
+#include "private/tc.h"
 
 struct lsdn_node *lsdn_node_new(
 		struct lsdn_network *net,

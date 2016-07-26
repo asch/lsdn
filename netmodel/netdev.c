@@ -1,11 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
-#include "netdev.h"
-#include "internal.h"
-#include "tc.h"
-#include "rule.h"
-#include "util.h"
-#include "nl.h"
+#include "include/netdev.h"
+#include "include/nettypes.h"
+#include "private/tc.h"
+#include "private/rule.h"
+#include "include/util.h"
+#include "private/nl.h"
+#include "private/node.h"
+#include "private/port.h"
 
 struct lsdn_netdev {
 	struct lsdn_node node;
