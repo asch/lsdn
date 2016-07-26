@@ -8,6 +8,7 @@
 
 struct lsdn_node;
 
+/* See lsdn_network_create for usage */
 struct lsdn_node_ops {
 	void (*free_private_data)(struct lsdn_node *node);
 	struct lsdn_port *(*get_port)(struct lsdn_node *node, size_t index);

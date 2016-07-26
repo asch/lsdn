@@ -4,6 +4,6 @@
 #include "rule.h"
 #include "nl.h"
 
-void actions_for(struct lsdn_action *action, struct lsdn_filter *filter);
+lsdn_err_t actions_for(struct lsdn_action *action, struct lsdn_filter *filter);
 
 #endif

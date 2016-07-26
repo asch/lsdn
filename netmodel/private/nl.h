@@ -29,18 +29,42 @@
 /* Our egress handle (major 1, minor 0)*/
 #define LSDN_DEFAULT_EGRESS_HANDLE 0x00010000U
 
+/* Linux interface managed by the network, used for deciding the packet
+ * fates at a particular point. They back some of the rulesets (currently all)
+ */
+struct lsdn_if{
+	char *ifname;
+	unsigned int ifindex;
+};
+
+static inline int lsdn_if_created(struct lsdn_if *lsdn_if)
+{
+	return !!lsdn_if->ifname;
+}
+void lsdn_init_if(struct lsdn_if *lsdn_if);
+void lsdn_destroy_if(struct lsdn_if *lsdn_if);
+
 struct mnl_socket *lsdn_socket_init();
 
 void lsdn_socket_free(struct mnl_socket *s);
 
-int lsdn_link_dummy_create(struct mnl_socket *sock, const char *if_name);
+int lsdn_link_dummy_create(
+		struct mnl_socket *sock,
+		struct lsdn_if* dst_if,
+		const char *if_name);
 
-int lsdn_link_set(struct mnl_socket *sock, const char *if_name, bool up);
+int lsdn_link_veth_create(
+		struct mnl_socket *sock,
+		struct lsdn_if* if1,
+		struct lsdn_if* if2,
+		const char *if_name);
 
-int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned if_index,
+int lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up);
+
+int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int ifindex,
 		uint32_t parent, uint32_t handle, uint32_t r2q, uint32_t defcls);
 
-int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned if_index);
+int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex);
 
 
 // filters -->

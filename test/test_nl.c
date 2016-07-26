@@ -11,36 +11,34 @@ int main(){
 	int err;
 	const char *ifname = "test_dummy";
 	const char *ifname_dst = "test_dummy_dst";
+	struct lsdn_if lsdn_if;
+	struct lsdn_if lsdn_if_dst;
 
 	// Create interface 'test_dummy'
 	// (# ip link add dev test_dummy type dummy)
 	printf("Creating interface '%s': ", ifname);
-	err = lsdn_link_dummy_create(sock, ifname);
+
+	err = lsdn_link_dummy_create(sock, &lsdn_if, ifname);
 	printf("%d (%s)\n", err, strerror(-err));
 	if (err != 0) {
 		mnl_socket_close(sock);
 		return -1;
 	}
-
-	unsigned int ifindex = if_nametoindex(ifname);
 
 	// Create interface 'test_dummy_dst'
 	// (# ip link add dev test_dummy_dst type dummy)
 	printf("Creating interface '%s': ", ifname_dst);
-	err = lsdn_link_dummy_create(sock, ifname_dst);
+	err = lsdn_link_dummy_create(sock, &lsdn_if_dst, ifname_dst);
 	printf("%d (%s)\n", err, strerror(-err));
 	if (err != 0) {
 		mnl_socket_close(sock);
 		return -1;
 	}
 
-	unsigned int ifindex_dst = if_nametoindex(ifname_dst);
-	ifindex_dst = ifindex_dst;
-
 	// Add HTB qdisc
 	// (# tc qdisc add dev test_dummy root handle 1: htb default 0 r2q 10)
 	printf("Adding HTB qdisc: ");
-	err = lsdn_qdisc_htb_create(sock, ifindex,
+	err = lsdn_qdisc_htb_create(sock, lsdn_if.ifindex,
 			TC_H_ROOT, 0x00010000U, 10, 0);
 	printf("%d (%s)\n", err, strerror(-err));
 	if (err != 0) {
@@ -51,7 +49,7 @@ int main(){
 	// Set interface up
 	// (# ip link set test_dummy up)
 	printf("Setting interface up: ");
-	err = lsdn_link_set(sock, ifname, true);
+	err = lsdn_link_set(sock, lsdn_if.ifindex, true);
 	printf("%d (%s)\n", err, strerror(-err));
 	if (err != 0) {
 		mnl_socket_close(sock);
@@ -61,7 +59,7 @@ int main(){
 	// Add ingress qdisc
 	// (# tc qdisc add dev test_dummy ingress)
 	printf("Adding ingress qdisc: ");
-	err = lsdn_qdisc_ingress_create(sock, ifindex);
+	err = lsdn_qdisc_ingress_create(sock, lsdn_if.ifindex);
 	printf("%d (%s)\n", err, strerror(-err));
 	if (err != 0) {
 		mnl_socket_close(sock);
@@ -75,12 +73,12 @@ int main(){
 	uint32_t filter_handle = 0x00000001U;
 	uint32_t parent_handle = 0xffff0000U;
 
-	struct lsdn_filter *filter = lsdn_filter_init("flower", ifindex,
+	struct lsdn_filter *filter = lsdn_filter_init("flower", lsdn_if.ifindex,
 			filter_handle, parent_handle, 10, ETH_P_ALL<<8 /* magic trick 1 */);
 
 	lsdn_filter_actions_start(filter, TCA_FLOWER_ACT);
 	lsdn_action_mirred_add(filter, 1, TC_ACT_STOLEN, TCA_EGRESS_REDIR,
-			ifindex_dst);
+			lsdn_if_dst.ifindex);
 	lsdn_filter_actions_end(filter);
 
 	const char addr_mask[] = {255, 255, 255, 255, 255, 255};
