@@ -2,22 +2,14 @@ find_package(PkgConfig)
 pkg_check_modules(MNL libmnl)
 include_directories(${MNL_INCLUDE_DIRS})
 
+file(GLOB lsdn_SRC "*.c")
+file(GLOB lsdn_PUBLIC "include/*.h")
+file(GLOB lsdn_PRIVATE "private/*.h")
+
 add_library(lsdn 
-   network.c 
-   port.c
-   node.c
-   static_switch.c
-   netdev.c
-   internal.h
-   nettypes.c
-   rule.c
-   tc.c
-   list.c
-   errors.h
-   lsdn.h
-   util.h
-   nl.h
-   nl.c
+   ${lsdn_SRC}
+   ${lsdn_PUBLIC}
+   ${lsdn_PRIVATE}
 )
 
 target_link_libraries(
