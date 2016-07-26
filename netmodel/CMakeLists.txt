@@ -14,3 +14,8 @@ target_link_libraries(
 	lsdn
 	${MNL_LIBRARIES}
 )
+
+set_source_files_properties(tags PROPERTIES GENERATED true)
+add_custom_target(tags
+    COMMAND ctags ${lsdn_SRC} ${lsdn_PUBLIC} ${lsdn_PRIVATE}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

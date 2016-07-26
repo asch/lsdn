@@ -3,3 +3,4 @@
 *.swo
 CMakeLists.txt.user
 /build
+tags
