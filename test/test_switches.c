@@ -20,7 +20,7 @@ int main(int argc, const char* argv[]){
 		broadcast = atoi(argv[1]);
 	printf("Broadcast %s\n", broadcast ? "enabled" : "disabled");
 
-	net = lsdn_network_new("sp-ex1");
+	net = lsdn_network_new("lsdn-test");
 
 	sswitch[0] = lsdn_static_switch_new(net, 4);
 	sswitch[1] = lsdn_static_switch_new(net, 3);
@@ -32,7 +32,7 @@ int main(int argc, const char* argv[]){
 
 	for(size_t i = 0; i<6; i++){
 		char ifname[20];
-		sprintf(ifname, "sp-ex1-%c", (int)('a'+i));
+		sprintf(ifname, "ltif%ld", i+1);
 		vm[i] = lsdn_netdev_new(net, ifname);
 	}
 
