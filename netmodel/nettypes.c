@@ -5,6 +5,9 @@
 const lsdn_mac_t lsdn_broadcast_mac = {
 	{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
 };
+const lsdn_mac_t lsdn_multicast_mac_mask = {
+	{0x01, 0x00, 0x00, 0x00, 0x00, 0x00}
+};
 
 static lsdn_err_t parse_octet(const char ** ascii, uint8_t *dst)
 {
