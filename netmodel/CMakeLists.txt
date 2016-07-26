@@ -1,3 +1,6 @@
+find_package(PkgConfig)
+pkg_check_modules(MNL libmnl)
+include_directories(${MNL_INCLUDE_DIRS})
 
 add_library(lsdn 
    network.c 
