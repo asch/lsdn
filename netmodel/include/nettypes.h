@@ -15,6 +15,7 @@ typedef union lsdn_mac {
 } lsdn_mac_t;
 
 extern const lsdn_mac_t lsdn_broadcast_mac;
+extern const lsdn_mac_t lsdn_multicast_mac_mask;
 
 lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii);
 

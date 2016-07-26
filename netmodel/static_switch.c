@@ -97,6 +97,7 @@ static lsdn_err_t create_broadcast_actions (
 	 * actions for all ports except the incoming one */
 	p->broadcast_actions = calloc(sizeof(struct lsdn_action), sswitch->node.port_count - 2);
 
+
 	struct lsdn_action *last = NULL;
 	struct lsdn_action *a = &r->action;
 	for(size_t i = 0; i < sswitch->node.port_count; i++){
@@ -131,6 +132,7 @@ static lsdn_err_t sswitch_update_rules (struct lsdn_node *node)
 
 			lsdn_rule_init(broadcast);
 			broadcast->target = LSDN_MATCH_DST_MAC;
+			broadcast->mask.mac = lsdn_multicast_mac_mask;
 			broadcast->contents.mac = lsdn_broadcast_mac;
 			if(!p->broadcast_actions){
 				int ret = create_broadcast_actions(sswitch, p);
