@@ -11,7 +11,7 @@ target_link_libraries(test_veth lsdn ${MNL_LIBRARIES})
 
 file(GLOB TEST_SUPPORT test_*.sh harness.sh common.sh)
 add_custom_target(install_test_harness ALL true
-	COMMAND ln -s ${TEST_SUPPORT} .
+	COMMAND ln -sf ${TEST_SUPPORT} .
 )
 
 function(test_in_ns testname)
