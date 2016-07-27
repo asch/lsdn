@@ -16,7 +16,7 @@ function(test_in_ns testname)
         target_link_libraries(test_${testname} lsdn)
 	add_test(
 		NAME ${testname}
-		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/harness.sh run-test ${testname}
+		COMMAND ./harness.sh run-test ${testname}
 	)
 endfunction(test_in_ns)
 
