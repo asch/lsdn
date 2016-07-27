@@ -36,7 +36,8 @@ function create_endpoint() {
 	# set MAC
 	$SUB_NS ip link set veth0 address "${MAC_PREFIX}$1"
 	# set IP level config
-	$SUB_NS ifconfig veth0 up "${IPV4_PREFIX}$1"
+    $SUB_NS ip addr add "${IPV4_PREFIX}$1/24" dev veth0
+    $SUB_NS ip link set veth0 up
 }
 
 function delete_endpoint() {
