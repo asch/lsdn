@@ -5,6 +5,10 @@ add_executable(test_nl test_nl.c)
 target_include_directories(test_nl PRIVATE ${MNL_INCLUDE_DIRS})
 target_link_libraries(test_nl lsdn ${MNL_LIBRARIES})
 
+add_executable(test_veth test_veth.c)
+target_include_directories(test_veth PRIVATE ${MNL_INCLUDE_DIRS})
+target_link_libraries(test_veth lsdn ${MNL_LIBRARIES})
+
 function(test_in_ns testname)
 	add_test(
 		NAME ${testname}
