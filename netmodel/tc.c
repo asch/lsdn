@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <linux/tc_act/tc_mirred.h>
+#include <linux/tc_act/tc_gact.h>
 #include "private/tc.h"
 #include "private/port.h"
 #include "include/errors.h"

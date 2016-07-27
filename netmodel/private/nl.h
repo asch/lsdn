@@ -13,10 +13,7 @@
 #include <linux/if_link.h>
 #include <linux/if_ether.h>
 #include <linux/rtnetlink.h>
-#include <linux/pkt_sched.h>
-#include <linux/pkt_cls.h>
-#include <linux/tc_act/tc_mirred.h>
-#include <linux/tc_act/tc_gact.h>
+
 
 /* Pseudo-handle for the linux ingress qdiscs */
 #define LSDN_INGRESS_HANDLE 0xffff0000
@@ -41,6 +38,7 @@ static inline int lsdn_if_created(struct lsdn_if *lsdn_if)
 {
 	return !!lsdn_if->ifname;
 }
+
 void lsdn_init_if(struct lsdn_if *lsdn_if);
 void lsdn_destroy_if(struct lsdn_if *lsdn_if);
 
@@ -53,11 +51,9 @@ int lsdn_link_dummy_create(
 		struct lsdn_if* dst_if,
 		const char *if_name);
 
-int lsdn_link_veth_create(
-		struct mnl_socket *sock,
-		struct lsdn_if* if1,
-		struct lsdn_if* if2,
-		const char *if_name);
+int lsdn_link_veth_create(struct mnl_socket *sock,
+		struct lsdn_if* if1, const char *if_name1,
+		struct lsdn_if* if2, const char *if_name2);
 
 int lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up);
 

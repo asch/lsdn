@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <linux/tc_act/tc_mirred.h>
+#include <linux/tc_act/tc_gact.h>
 #include "include/netdev.h"
 #include "include/nettypes.h"
 #include "private/tc.h"
@@ -8,6 +10,7 @@
 #include "private/nl.h"
 #include "private/node.h"
 #include "private/port.h"
+
 
 struct lsdn_netdev {
 	struct lsdn_node node;

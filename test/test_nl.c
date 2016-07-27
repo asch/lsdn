@@ -1,4 +1,6 @@
 #include "../netmodel/private/nl.h"
+#include <linux/tc_act/tc_mirred.h>
+#include <linux/tc_act/tc_gact.h>
 
 #include <stdio.h>
 
