@@ -1,7 +1,6 @@
 #!/bin/bash
 
-myexec=$(realpath $0)
-cd $(dirname $myexec)
+cd $(dirname $0)
 source common.sh
 
 function setUp() {
@@ -48,6 +47,12 @@ function delete_endpoint() {
 	ip netns delete "$NSNAME"
 }
 
+function run_single_test() {
+	name=$1
+	shift
+	ip netns exec $NETNS ./test_$name.sh "$@"
+}
+
 case "$1" in
 	"setup")
 		setUp
@@ -65,14 +70,18 @@ case "$1" in
 		ls -1 /var/run/netns/${NETNS}-sub-*
 		;;
 	"run-test")
+		shift
 		setUp
-		shift
-		name=$1
-		shift
-		ip netns exec $NETNS test_$name.sh "$@"
+		run_single_test "$@"
+		ret=$?
 		tearDown
+		exit $ret
+		;;
+	"test-only")
+		shift
+		run_single_test "$@"
 		;;
 	*)
-		echo "Usage: $0 setup | teardown | add <name> | delete <name> | list"
+		echo "Usage: $0 setup | teardown | add <name> | delete <name> | list | run-test <test> | test-only <test>"
 		;;
 esac

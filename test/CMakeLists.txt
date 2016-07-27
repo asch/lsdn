@@ -17,7 +17,7 @@ add_custom_target(install_test_harness ALL true
 function(test_in_ns testname)
 	add_test(
 		NAME ${testname}
-		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/harness.sh run-test ${testname}
+		COMMAND ./harness.sh run-test ${testname}
 	)
 endfunction(test_in_ns)
 
