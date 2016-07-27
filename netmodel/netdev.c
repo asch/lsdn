@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <linux/tc_act/tc_mirred.h>
+#include <linux/tc_act/tc_gact.h>
 #include "include/netdev.h"
 #include "include/nettypes.h"
 #include "private/tc.h"
@@ -8,6 +10,7 @@
 #include "private/nl.h"
 #include "private/node.h"
 #include "private/port.h"
+
 
 struct lsdn_netdev {
 	struct lsdn_node node;
@@ -79,8 +82,9 @@ static lsdn_err_t update_if_rules(struct lsdn_node *node)
 
 	lsdn_filter_actions_start(filter, TCA_FLOWER_ACT);
 
-	unsigned int ifindex_dst =
-			if_nametoindex(netdev->port.peer->ruleset->interface->ifname);
+	struct lsdn_if* dst_if = &netdev->port.peer->ruleset->interface;
+	assert(lsdn_if_created(dst_if));
+	unsigned int ifindex_dst = dst_if->ifindex;
 
 	lsdn_action_mirred_add(filter, 1, TC_ACT_STOLEN, TCA_EGRESS_REDIR,
 			       ifindex_dst);

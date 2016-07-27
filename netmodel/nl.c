@@ -1,4 +1,22 @@
 #include "private/nl.h"
+#include "include/util.h"
+#include <linux/pkt_sched.h>
+#include <linux/pkt_cls.h>
+#include <linux/tc_act/tc_mirred.h>
+#include <linux/tc_act/tc_gact.h>
+#include <linux/veth.h>
+#include <assert.h>
+
+void lsdn_init_if(struct lsdn_if *lsdn_if)
+{
+	lsdn_if->ifindex = 0;
+	lsdn_if->ifname = NULL;
+}
+
+void lsdn_destroy_if(struct lsdn_if *lsdn_if)
+{
+	UNUSED(lsdn_if);
+}
 
 struct mnl_socket *lsdn_socket_init()
 {
@@ -23,15 +41,14 @@ void lsdn_socket_free(struct mnl_socket *s)
     mnl_socket_close(s);
 }
 
-// ip link add name <if_name> type dummy
-int lsdn_link_dummy_create(struct mnl_socket *sock, const char *if_name)
+static void link_create_header(
+		struct nlmsghdr* nlh, struct nlattr** linkinfo,
+		const char *if_name, const char *if_type)
 {
-	const char *if_type = "dummy";
-	char buf[MNL_SOCKET_BUFFER_SIZE];
-	int ret;
+	assert(if_name != NULL);
 	unsigned int seq = time(NULL);
 
-	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+
 	nlh->nlmsg_type	= RTM_NEWLINK;
 	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
 	nlh->nlmsg_seq = seq;
@@ -42,9 +59,85 @@ int lsdn_link_dummy_create(struct mnl_socket *sock, const char *if_name)
 	ifm->ifi_flags = 0;
 
 	mnl_attr_put_str(nlh, IFLA_IFNAME, if_name);
-	struct nlattr* nested_start = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
+
+	*linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
 	mnl_attr_put_str(nlh, IFLA_INFO_KIND, if_type);
-	mnl_attr_nest_end(nlh, nested_start);
+
+}
+
+static int link_create_send(
+		struct mnl_socket *sock, char* buf, struct nlmsghdr *nlh,
+		struct nlattr* linkinfo,
+		const char *if_name, struct lsdn_if* dst_if)
+{
+	mnl_attr_nest_end(nlh, linkinfo);
+	int ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
+	}
+
+	ret = mnl_socket_recvfrom(sock, buf, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+
+	nlh = (struct nlmsghdr *)buf;
+	if (nlh->nlmsg_type != NLMSG_ERROR) {
+		return -1;
+	}
+
+	int *err_code = mnl_nlmsg_get_payload(nlh);
+	if(*err_code != 0)
+		return *err_code;
+
+	dst_if->ifindex = if_nametoindex(if_name);
+	assert(dst_if->ifindex != 0);
+	dst_if->ifname = strdup(if_name);
+	return 0;
+}
+
+// ip link add name <if_name> type dummy
+int lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	struct nlattr *linkinfo;
+
+	link_create_header(nlh, &linkinfo, if_name, "dummy");
+	return link_create_send(sock, buf, nlh, linkinfo, if_name, dst_if);
+}
+
+int lsdn_link_bridge_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	struct nlattr *linkinfo;
+
+	link_create_header(nlh, &linkinfo, if_name, "bridge");
+	return link_create_send(sock, buf, nlh, linkinfo, if_name, dst_if);
+}
+
+int lsdn_link_set_master(struct mnl_socket *sock,
+		unsigned int master, unsigned int slave)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	int ret;
+	unsigned int seq = time(NULL), change = 0;
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type	= RTM_NEWLINK;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifi_family = AF_UNSPEC;
+	ifm->ifi_change = change;
+	ifm->ifi_flags = 0;
+	ifm->ifi_index = slave;
+
+	mnl_attr_put_u32(nlh, IFLA_MASTER, master);
 
 	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
 	if (ret == -1) {
@@ -67,7 +160,49 @@ int lsdn_link_dummy_create(struct mnl_socket *sock, const char *if_name)
 	}
 }
 
-int lsdn_link_set(struct mnl_socket *sock, const char *if_name, bool up)
+int lsdn_link_veth_create(
+		struct mnl_socket *sock,
+		struct lsdn_if* if1, const char *if_name1,
+		struct lsdn_if* if2, const char *if_name2)
+{
+	assert(if_name2 != NULL);
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	struct nlattr *linkinfo;
+
+	link_create_header(nlh, &linkinfo, if_name1, "veth");
+
+	/* peer data */
+	struct nlattr* info_data = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
+	struct nlattr* peer = mnl_attr_nest_start(nlh, VETH_INFO_PEER);
+
+	struct ifinfomsg *ifm = (struct ifinfomsg*) ((char*)nlh + nlh->nlmsg_len);
+	nlh->nlmsg_len += sizeof(*ifm);
+	bzero(ifm, sizeof(*ifm));
+
+	ifm->ifi_family = AF_UNSPEC;
+	ifm->ifi_change = 0;
+	ifm->ifi_flags = 0;
+
+	mnl_attr_put_str(nlh, IFLA_IFNAME, if_name2);
+
+	struct nlattr* peer_linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
+	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "veth");
+	mnl_attr_nest_end(nlh, peer_linkinfo);
+
+	mnl_attr_nest_end(nlh, peer);
+	mnl_attr_nest_end(nlh, info_data);
+
+	int ret = link_create_send(sock, buf, nlh, linkinfo, if_name1, if1);
+	if(ret == 0) {
+		if2->ifindex = if_nametoindex(if_name2);
+		assert(if2->ifindex != 0);
+		if2->ifname = strdup(if_name2);
+	}
+	return ret;
+}
+
+int lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	int ret;
@@ -90,8 +225,7 @@ int lsdn_link_set(struct mnl_socket *sock, const char *if_name, bool up)
 	ifm->ifi_family = AF_UNSPEC;
 	ifm->ifi_change = change;
 	ifm->ifi_flags = flags;
-
-	mnl_attr_put_str(nlh, IFLA_IFNAME, if_name);
+	ifm->ifi_index = ifindex;
 
 	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
 	if (ret == -1) {
@@ -115,7 +249,7 @@ int lsdn_link_set(struct mnl_socket *sock, const char *if_name, bool up)
 }
 
 
-int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int if_index,
+int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int ifindex,
 		uint32_t parent, uint32_t handle, uint32_t r2q, uint32_t defcls)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
@@ -129,7 +263,7 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int if_index,
 
 	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(nlh, sizeof(*tcm));
 	tcm->tcm_family = AF_UNSPEC;
-	tcm->tcm_ifindex = if_index;
+	tcm->tcm_ifindex = ifindex;
 	tcm->tcm_handle = handle;
 	tcm->tcm_parent = parent;
 
@@ -167,7 +301,7 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int if_index,
 	}
 }
 
-int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned if_index)
+int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	int ret;
@@ -180,7 +314,7 @@ int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned if_index)
 
 	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(nlh, sizeof(*tcm));
 	tcm->tcm_family = AF_UNSPEC;
-	tcm->tcm_ifindex = if_index;
+	tcm->tcm_ifindex = ifindex;
 	tcm->tcm_handle = 0xFFFF0000U;
 	tcm->tcm_parent = TC_H_INGRESS;
 

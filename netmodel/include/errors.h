@@ -6,7 +6,9 @@ enum lsdn_err {
 	LSDNE_PARSE,
 	LSDNE_NOMEM,
 	LSDNE_BAD_SOCK,
-	LSDNE_FAIL
+	LSDNE_FAIL,
+	/* Interface does not exist */
+	LSDNE_NOIF
 };
 
 typedef enum lsdn_err lsdn_err_t;

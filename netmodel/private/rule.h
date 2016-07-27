@@ -2,6 +2,7 @@
 #define _LSDN_RULE_H_PRIVATE_
 
 #include "../include/nettypes.h"
+#include "../private/nl.h"
 #include "list.h"
 
 /*
@@ -64,14 +65,6 @@ struct lsdn_rule{
 	struct lsdn_list_entry ruleset_list;
 };
 
-/* Linux interface managed by the network, used for deciding the packet
- * fates at a particular point. They back some of the rulesets (currently all)
- */
-struct lsdn_if{
-	char *ifname;
-	unsigned int ifindex;
-};
-
 /*
  * The rules in a ruleset do not have to match against the same patterns.
  * It is job of the folding phase to produce more efficient data structure.
@@ -80,7 +73,7 @@ struct lsdn_ruleset{
 	struct lsdn_list_entry node_rules;
 	struct lsdn_list_entry rules;
 	/* Linux interface that implements this ruleset. Managed by network.c. */
-	struct lsdn_if *interface;
+	struct lsdn_if interface;
 	int if_rules_created;
 };
 
@@ -89,6 +82,7 @@ struct lsdn_ruleset{
  * the rule into ruleset
  */
 void lsdn_rule_init(struct lsdn_rule *rule);
+void lsdn_rule_free(struct lsdn_rule *rule);
 /* Set-up a drop action with no next action */
 void lsdn_action_init(struct lsdn_action *action);
 void lsdn_ruleset_init(struct lsdn_ruleset *ruleset);

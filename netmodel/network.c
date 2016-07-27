@@ -2,7 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-
+#include <linux/tc_act/tc_gact.h>
 #include "private/network.h"
 #include "private/list.h"
 #include "private/node.h"
@@ -45,46 +45,35 @@ static lsdn_err_t create_if_for_ruleset(
 		struct lsdn_ruleset *ruleset)
 {
 	// TODO: handle updating
-	if(ruleset->interface)
+	if(lsdn_if_created(&ruleset->interface))
 		return LSDNE_OK;
 
 	ruleset->if_rules_created = 0;
-	size_t maxname = 20 + strlen(network->name);
-	ruleset->interface = (struct lsdn_if *) malloc(sizeof(struct lsdn_if));
-	if(!ruleset->interface)
-		return LSDNE_NOMEM;
-	char *ifname = ruleset->interface->ifname = (char *) malloc(maxname);
-	if(!ruleset->interface->ifname) {
-		free(ruleset->interface);
-		ruleset->interface = NULL;
-		return LSDNE_NOMEM;
-	}
 
-	snprintf(ifname, maxname, "%s-%d", network->name, ++network->unique_id);
+	char namebuf[IF_NAMESIZE];
+	snprintf(namebuf, IF_NAMESIZE, "%s-%d", network->name, ++network->unique_id);
 
 	struct mnl_socket *sock = lsdn_socket_init();
 	if (sock == NULL) {
 		return LSDNE_BAD_SOCK;
 	}
 
-	int err = lsdn_link_dummy_create(sock, ifname);
-	printf("Creating interface '%s': %s\n", ifname, strerror(-err));
+	int err = lsdn_link_dummy_create(sock, &ruleset->interface, namebuf);
+	printf("Creating interface '%s': %s\n", namebuf, strerror(-err));
+
 	if (err != 0){
 		return LSDNE_FAIL;
 	}
 
-	unsigned int ifindex = if_nametoindex(ifname);
-	ruleset->interface->ifindex = ifindex;
-
-	err = lsdn_qdisc_htb_create(sock, ifindex,
+	err = lsdn_qdisc_htb_create(sock, ruleset->interface.ifindex,
 			TC_H_ROOT, LSDN_DEFAULT_EGRESS_HANDLE, 10, 0);
-	printf("Creating HTB qdisc for interface '%s': %s\n", ifname, strerror(-err));
+	printf("Creating HTB qdisc for interface '%s': %s\n", ruleset->interface.ifname, strerror(-err));
 	if (err != 0){
 		return LSDNE_FAIL;
 	}
 
-	err = lsdn_link_set(sock, ifname, true);
-	printf("Setting interface '%s' up: %s\n", ifname, strerror(-err));
+	err = lsdn_link_set(sock, ruleset->interface.ifindex, true);
+	printf("Setting interface '%s' up: %s\n", ruleset->interface.ifname, strerror(-err));
 	if (err != 0){
 		return LSDNE_FAIL;
 	}
@@ -116,18 +105,18 @@ static lsdn_err_t create_if_rules_for_ruleset(
 		return LSDNE_OK;
 	ruleset->if_rules_created = 1;
 
-	const char *ifname = ruleset->interface->ifname;
 	// TODO: move it to rules.c when we have folding and know what should be done
 	// TODO: support flower -- in my tc, I have no support for it, even though
 	//       I have the kernel module
 	int order = 1;
 	lsdn_foreach_list(ruleset->rules, ruleset_list, struct lsdn_rule, r) {
-		unsigned int if_index = if_nametoindex(ifname);
-		printf("Creating rules for %s (%d)\n", ifname, if_index);
+		printf("Creating rules for %s (%d)\n",
+		       ruleset->interface.ifname,
+		       ruleset->interface.ifindex);
 
 		struct lsdn_filter *filter = lsdn_filter_init(
 					"flower",
-					if_index,
+					ruleset->interface.ifindex,
 					order,
 					LSDN_DEFAULT_EGRESS_HANDLE,
 					order,
@@ -179,28 +168,34 @@ static lsdn_err_t create_if_rules_for_ruleset(
 lsdn_err_t lsdn_network_create(struct lsdn_network *network)
 {
 	lsdn_err_t rv;
+
+	/* 1) Update all interfaces managed by nodes */
+	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
+		rv = n->ops->update_ifs(n);
+		if(rv != LSDNE_OK)
+			return rv;
+	}
+
+	/* 2) Let the nodes update the rule definitions */
 	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
 		rv = n->ops->update_rules(n);
 		if(rv != LSDNE_OK)
 			return rv;
 	}
 
+
+	/* 3) Collect all reachable rule definitions and create their backing interfaces*/
 	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
-		/* This step collects all rulesets reachable from node ports and creates
-		 * their backing interfaces */
 		for(size_t i = 0; i < n->port_count; i++) {
 			rv = create_if_for_ruleset(network, n, lsdn_get_port(n, i)->ruleset);
 			if(rv != LSDNE_OK)
 				return rv;
 		}
-		rv = n->ops->update_ifs(n);
-		if(rv != LSDNE_OK)
-			return rv;
 	}
-
+	/* 4) Set filters on all interfaces owned by rulesets */
+	/* 5) Set filters and other settings on all interfaces owned by nodes */
 	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
-		/* Go through all previously collected rulesets and populate
-		 * their interfaces with rules */
+
 		lsdn_foreach_list(n->ruleset_list, node_rules, struct lsdn_ruleset, r) {
 			rv = create_if_rules_for_ruleset(network, r);
 			if(rv != LSDNE_OK)

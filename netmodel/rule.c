@@ -1,5 +1,6 @@
 #include "private/rule.h"
 #include <memory.h>
+#include "include/util.h"
 
 void lsdn_rule_init(struct lsdn_rule *rule)
 {
@@ -9,21 +10,30 @@ void lsdn_rule_init(struct lsdn_rule *rule)
 	memset(&rule->mask, 0xFF, LSDN_MAX_MATCH_LEN);
 	memset(&rule->contents, 0, LSDN_MAX_MATCH_LEN);
 }
-void lsdn_action_init(struct lsdn_action *action){
+void lsdn_action_init(struct lsdn_action *action)
+{
 	action->id = LSDN_ACTION_NONE;
 	action->next = NULL;
 }
 
-void lsdn_ruleset_init(struct lsdn_ruleset *ruleset){
+void lsdn_ruleset_init(struct lsdn_ruleset *ruleset)
+{
 	ruleset->if_rules_created = 0;
-	ruleset->interface = NULL;
+	lsdn_init_if(&ruleset->interface);
 	lsdn_list_init(&ruleset->rules);
 	lsdn_list_init(&ruleset->node_rules);
 }
 
-void lsdn_ruleset_free(struct lsdn_ruleset *ruleset){
+void lsdn_ruleset_free(struct lsdn_ruleset *ruleset)
+{
 	assert(lsdn_is_list_empty(&ruleset->rules));
 }
+void lsdn_rule_free(struct lsdn_rule *rule)
+{
+	if(!lsdn_is_list_empty(&rule->ruleset_list))
+		lsdn_list_remove(&rule->ruleset_list);
+}
+
 void lsdn_add_rule(struct lsdn_ruleset *ruleset, struct lsdn_rule *rule, int prio){
 	/* find the nearest lowest priority */
 	struct lsdn_list_entry *nearest = ruleset->rules.next;

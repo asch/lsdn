@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../netmodel/include/lsdn.h"
+#include <net/if.h>
 
 static void c(lsdn_err_t err)
 {
@@ -20,7 +21,7 @@ int main(int argc, const char* argv[]){
 		broadcast = atoi(argv[1]);
 	printf("Broadcast %s\n", broadcast ? "enabled" : "disabled");
 
-	net = lsdn_network_new("sp-ex1");
+	net = lsdn_network_new("lsdn-test");
 
 	sswitch[0] = lsdn_static_switch_new(net, 4);
 	sswitch[1] = lsdn_static_switch_new(net, 3);
@@ -31,8 +32,8 @@ int main(int argc, const char* argv[]){
 	}
 
 	for(size_t i = 0; i<6; i++){
-		char ifname[20];
-		sprintf(ifname, "sp-ex1-%c", (int)('a'+i));
+		char ifname[IF_NAMESIZE];
+		sprintf(ifname, "ltif%ld", i+1);
 		vm[i] = lsdn_netdev_new(net, ifname);
 	}
 
@@ -87,7 +88,7 @@ int main(int argc, const char* argv[]){
 	c(lsdn_static_switch_add_rule(sswitch[1], &mac, PTRUNK1));
 	c(lsdn_static_switch_add_rule(sswitch[2], &mac, PVM2));
 
-	lsdn_network_create(net);
+	c(lsdn_network_create(net));
 	lsdn_network_free(net);
 
 	return 0;
