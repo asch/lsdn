@@ -1,4 +1,5 @@
 #include "private/nl.h"
+#include "include/util.h"
 #include <linux/pkt_sched.h>
 #include <linux/pkt_cls.h>
 #include <linux/tc_act/tc_mirred.h>
@@ -10,6 +11,11 @@ void lsdn_init_if(struct lsdn_if *lsdn_if)
 {
 	lsdn_if->ifindex = 0;
 	lsdn_if->ifname = NULL;
+}
+
+void lsdn_destroy_if(struct lsdn_if *lsdn_if)
+{
+	UNUSED(lsdn_if);
 }
 
 struct mnl_socket *lsdn_socket_init()
@@ -101,6 +107,57 @@ int lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_if, cons
 
 	link_create_header(nlh, &linkinfo, if_name, "dummy");
 	return link_create_send(sock, buf, nlh, linkinfo, if_name, dst_if);
+}
+
+int lsdn_link_bridge_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	struct nlattr *linkinfo;
+
+	link_create_header(nlh, &linkinfo, if_name, "bridge");
+	return link_create_send(sock, buf, nlh, linkinfo, if_name, dst_if);
+}
+
+int lsdn_link_set_master(struct mnl_socket *sock,
+		unsigned int master, unsigned int slave)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	int ret;
+	unsigned int seq = time(NULL), change = 0;
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type	= RTM_NEWLINK;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifi_family = AF_UNSPEC;
+	ifm->ifi_change = change;
+	ifm->ifi_flags = 0;
+	ifm->ifi_index = slave;
+
+	mnl_attr_put_u32(nlh, IFLA_MASTER, master);
+
+	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
+	}
+
+	ret = mnl_socket_recvfrom(sock, buf, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+
+	nlh = (struct nlmsghdr *)buf;
+	if (nlh->nlmsg_type == NLMSG_ERROR) {
+		int *err_code = mnl_nlmsg_get_payload(nlh);
+		return *err_code;
+	} else {
+		return -1;
+	}
 }
 
 int lsdn_link_veth_create(

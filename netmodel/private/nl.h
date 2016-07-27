@@ -40,6 +40,7 @@ static inline int lsdn_if_created(struct lsdn_if *lsdn_if)
 }
 
 void lsdn_init_if(struct lsdn_if *lsdn_if);
+
 void lsdn_destroy_if(struct lsdn_if *lsdn_if);
 
 struct mnl_socket *lsdn_socket_init();
@@ -48,12 +49,20 @@ void lsdn_socket_free(struct mnl_socket *s);
 
 int lsdn_link_dummy_create(
 		struct mnl_socket *sock,
-		struct lsdn_if* dst_if,
+		struct lsdn_if *dst_if,
 		const char *if_name);
 
 int lsdn_link_veth_create(struct mnl_socket *sock,
-		struct lsdn_if* if1, const char *if_name1,
-		struct lsdn_if* if2, const char *if_name2);
+		struct lsdn_if *if1, const char *if_name1,
+		struct lsdn_if *if2, const char *if_name2);
+
+int lsdn_link_bridge_create(
+		struct mnl_socket *sock,
+		struct lsdn_if *dst_id,
+		const char *if_name);
+
+int lsdn_link_set_master(struct mnl_socket *sock,
+		unsigned int master, unsigned int slave);
 
 int lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up);
 

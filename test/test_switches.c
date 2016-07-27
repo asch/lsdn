@@ -88,7 +88,7 @@ int main(int argc, const char* argv[]){
 	c(lsdn_static_switch_add_rule(sswitch[1], &mac, PTRUNK1));
 	c(lsdn_static_switch_add_rule(sswitch[2], &mac, PVM2));
 
-	lsdn_network_create(net);
+	c(lsdn_network_create(net));
 	lsdn_network_free(net);
 
 	return 0;
