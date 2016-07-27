@@ -50,23 +50,16 @@ static lsdn_err_t create_if_for_ruleset(
 
 	ruleset->if_rules_created = 0;
 
-	size_t maxname = LSDN_MAX_IF_SUFFIX + strlen(network->name);
-	char *namebuf = (char *) malloc(maxname);
-	if(!namebuf) {
-		return LSDNE_NOMEM;
-	}
-	snprintf(namebuf, maxname, "%s-%d", network->name, ++network->unique_id);
+	char namebuf[IF_NAMESIZE];
+	snprintf(namebuf, IF_NAMESIZE, "%s-%d", network->name, ++network->unique_id);
 
 	struct mnl_socket *sock = lsdn_socket_init();
 	if (sock == NULL) {
-		free(namebuf);
 		return LSDNE_BAD_SOCK;
 	}
 
 	int err = lsdn_link_dummy_create(sock, &ruleset->interface, namebuf);
 	printf("Creating interface '%s': %s\n", namebuf, strerror(-err));
-
-	free(namebuf);
 
 	if (err != 0){
 		return LSDNE_FAIL;
@@ -175,20 +168,24 @@ static lsdn_err_t create_if_rules_for_ruleset(
 lsdn_err_t lsdn_network_create(struct lsdn_network *network)
 {
 	lsdn_err_t rv;
-	/* 1) Let the nodes update the rule definitions */
+
+	/* 1) Update all interfaces managed by nodes */
+	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
+		rv = n->ops->update_ifs(n);
+		if(rv != LSDNE_OK)
+			return rv;
+	}
+
+	/* 2) Let the nodes update the rule definitions */
 	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
 		rv = n->ops->update_rules(n);
 		if(rv != LSDNE_OK)
 			return rv;
 	}
 
-	/* 2) Update all interfaces managed by nodes */
+
 	/* 3) Collect all reachable rule definitions and create their backing interfaces*/
 	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
-		rv = n->ops->update_ifs(n);
-		if(rv != LSDNE_OK)
-			return rv;
-
 		for(size_t i = 0; i < n->port_count; i++) {
 			rv = create_if_for_ruleset(network, n, lsdn_get_port(n, i)->ruleset);
 			if(rv != LSDNE_OK)

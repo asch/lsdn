@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../netmodel/include/lsdn.h"
+#include <net/if.h>
 
 static void c(lsdn_err_t err)
 {
@@ -31,7 +32,7 @@ int main(int argc, const char* argv[]){
 	}
 
 	for(size_t i = 0; i<6; i++){
-		char ifname[20];
+		char ifname[IF_NAMESIZE];
 		sprintf(ifname, "ltif%ld", i+1);
 		vm[i] = lsdn_netdev_new(net, ifname);
 	}

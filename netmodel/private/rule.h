@@ -82,6 +82,7 @@ struct lsdn_ruleset{
  * the rule into ruleset
  */
 void lsdn_rule_init(struct lsdn_rule *rule);
+void lsdn_rule_free(struct lsdn_rule *rule);
 /* Set-up a drop action with no next action */
 void lsdn_action_init(struct lsdn_action *action);
 void lsdn_ruleset_init(struct lsdn_ruleset *ruleset);

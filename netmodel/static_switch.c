@@ -28,6 +28,7 @@ struct lsdn_static_switch {
 	struct lsdn_ruleset forward_ruleset;
 
 	int broadcast_enabled;
+	int broadcast_rules_created;
 };
 
 struct lsdn_static_switch *lsdn_static_switch_new (
@@ -37,6 +38,7 @@ struct lsdn_static_switch *lsdn_static_switch_new (
 	struct lsdn_static_switch *sswitch = (struct lsdn_static_switch *)
 			lsdn_node_new(net, &lsdn_static_switch_ops, sizeof(*sswitch));
 	sswitch->broadcast_enabled = 1;
+	sswitch->broadcast_rules_created = 0;
 	sswitch->node.port_count = port_count;
 	sswitch->ports = calloc(port_count, sizeof(struct switch_port));
 	if (!sswitch->ports) {
@@ -120,8 +122,12 @@ static lsdn_err_t create_broadcast_actions (
 }
 
 static lsdn_err_t sswitch_update_rules (struct lsdn_node *node)
-{
+{	
 	struct lsdn_static_switch *sswitch = lsdn_as_static_switch(node);
+	if(sswitch->broadcast_rules_created)
+		return LSDNE_OK;
+
+	sswitch->broadcast_rules_created = 1;
 	for(size_t i = 0; i < sswitch->node.port_count; i++) {
 		struct switch_port* p = &sswitch->ports[i];
 		if(sswitch->broadcast_enabled) {
@@ -161,12 +167,21 @@ static void free_sswitch (struct lsdn_node *node)
 	struct lsdn_static_switch *sswitch = lsdn_as_static_switch(node);
 
 	for(size_t i = 0; i < sswitch->node.port_count; i++){
-		free(sswitch->ports[i].broadcast_actions);
+		struct switch_port *port = &sswitch->ports[i];
+		if(sswitch->broadcast_rules_created) {
+			lsdn_rule_free(&port->broadcast_rules[0]);
+			lsdn_rule_free(&port->broadcast_rules[1]);
+			lsdn_ruleset_free(&port->broadcast_ruleset);
+			free(port->broadcast_actions);
+		}
 	}
 
 	lsdn_foreach_list(sswitch->forward_ruleset.rules, ruleset_list, struct lsdn_rule, r) {
+		lsdn_rule_free(r);
 		free(r);
 	}
+
+	lsdn_ruleset_free(&sswitch->forward_ruleset);
 
 	free(sswitch->ports);
 }
