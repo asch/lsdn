@@ -7,4 +7,5 @@ pkg_check_modules(MNL libmnl)
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 add_subdirectory(netmodel)
+add_subdirectory(lsdnctl)
 add_subdirectory(test)

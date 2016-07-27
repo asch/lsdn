@@ -1,0 +1,8 @@
+simple_network:
+    switch1:
+        ports: 12
+	mac: ...
+
+    switch2:
+	ports: [ in out test1 test2 ]
+	mac: ...
