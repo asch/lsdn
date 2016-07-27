@@ -1,10 +1,11 @@
 #!/bin/bash
 
 myexec=$(realpath $0)
-source $(dirname $myexec)/common.sh
+cd $(dirname $myexec)
+source common.sh
 
 function setUp() {
-#	ip netns add $NETNS
+	ip netns add $NETNS
 	for endpoint in $ENDPOINTS; do
 		create_endpoint $endpoint
 	done
@@ -14,7 +15,7 @@ function tearDown() {
 	for endpoint in $ENDPOINTS; do
 		delete_endpoint $endpoint
 	done
-#	ip netns delete $NETNS
+	ip netns delete $NETNS
 }
 
 function create_endpoint() {
@@ -36,8 +37,8 @@ function create_endpoint() {
 	# set MAC
 	$SUB_NS ip link set veth0 address "${MAC_PREFIX}$1"
 	# set IP level config
-    $SUB_NS ip addr add "${IPV4_PREFIX}$1/24" dev veth0
-    $SUB_NS ip link set veth0 up
+	$SUB_NS ip addr add "${IPV4_PREFIX}$1/24" dev veth0
+	$SUB_NS ip link set veth0 up
 }
 
 function delete_endpoint() {
@@ -49,12 +50,10 @@ function delete_endpoint() {
 
 case "$1" in
 	"setup")
-		ip netns add $NETNS
 		setUp
 		;;
 	"teardown")
 		tearDown
-		ip netns delete $NETNS
 		;;
 	"add")
 		create_endpoint "$2"
@@ -64,6 +63,14 @@ case "$1" in
 		;;
 	"list")
 		ls -1 /var/run/netns/${NETNS}-sub-*
+		;;
+	"run-test")
+		setUp
+		shift
+		name=$1
+		shift
+		ip netns exec $NETNS test_$name.sh "$@"
+		tearDown
 		;;
 	*)
 		echo "Usage: $0 setup | teardown | add <name> | delete <name> | list"

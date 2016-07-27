@@ -1,27 +1,16 @@
 Testy lze přidávat tak, že se sem vyrobí soubor `test_cokoliv.sh`
 a pak se do `CMakeLists.txt` přidá řádek:
 ```
-    test_in_ns(test_cokoliv)
+    test_in_ns(cokoliv)
 ```
 
 Testy musí vracet 0 pokud projdou, něco jiného pokud ne.
 
-Zatím je to spouštění dost na pikaču:
-```
-$ su
-# make test-setup
-# make test
-# make test-teardown
-```
+Všechny testy spustíme jednoduše `make test`
 
-Tohle bude zabalené v nějakém skriptu.
+Runner pro ně je `./test/harness.sh <jménotestu> argumenty`,
+který před testem udělá setup, spustí test v namespace a
+pak provede teardown.
 
-Navíc tenhle náš jediný dosavadní `test_switches` neprojde při opakovaném
-spuštění `make test`, protože v sobě testuje, jestli ten ping funguje
-před zavedením routovacích pravidel... a protože po testu jsou zavedená,
-tak funguje, a tak test selže.
-
-Dost možná bude potřeba pro každý jednotlivý test spouštět setup a teardown?
-
-Jo a ještě navíc je známý problém cmake, že dependencí "make test" není "make all",
+Je známý problém cmake, že dependencí "make test" není "make all",
 takže to nejde jen tak mýrnyks týrnyks spustit, musí být aktuální vybuilděný systém.
