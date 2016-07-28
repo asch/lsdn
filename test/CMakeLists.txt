@@ -6,9 +6,19 @@ add_executable(test_veth test_veth.c)
 target_include_directories(test_veth PRIVATE ${MNL_INCLUDE_DIRS})
 target_link_libraries(test_veth lsdn ${MNL_LIBRARIES})
 
-file(GLOB TEST_SUPPORT test_*.sh harness.sh common.sh)
-add_custom_target(install_test_harness ALL true
-	COMMAND ln -sf ${TEST_SUPPORT} .
+file(GLOB TEST_SUPPORT test_*.sh run run-qemu)
+file(GLOB_RECURSE TEST_SUPPORT_LIB lib/common.sh)
+file(GLOB_RECURSE TEST_SUPPORT_QEMU
+   qemu/lsdn-guest-init
+   qemu/prepare-guest-env
+   qemu/serial-shell)
+
+add_custom_target(install_test_harness ALL
+        mkdir -p qemu lib
+        COMMAND ln -f ${TEST_SUPPORT} .
+        COMMAND ln -f ${TEST_SUPPORT_LIB} lib
+        COMMAND ln -f ${TEST_SUPPORT_QEMU} qemu
+        SOURCES ${TEST_SUPPORT} ${TEST_SUPPORT_LIB} ${TEST_SUPPORT_QEMU}
 )
 
 function(test_in_ns testname)
@@ -16,13 +26,9 @@ function(test_in_ns testname)
         target_link_libraries(test_${testname} lsdn)
 	add_test(
 		NAME ${testname}
-		COMMAND ./harness.sh run-test ${testname}
+                COMMAND ./run test ${testname}
 	)
 endfunction(test_in_ns)
 
-add_custom_target(test-setup COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/harness.sh setup)
-add_custom_target(test-teardown COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/harness.sh teardown)
-
-add_test(NAME oktest COMMAND true)
 test_in_ns(switches)
 test_in_ns(linux_switch)

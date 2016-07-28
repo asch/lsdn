@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd $(dirname $0)
-source common.sh
+source lib/common.sh
 
 function setUp() {
 	ip netns add $NETNS
@@ -47,10 +47,19 @@ function delete_endpoint() {
 	ip netns delete "$NSNAME"
 }
 
-function run_single_test() {
-	name=$1
-	shift
-	ip netns exec $NETNS ./test_$name.sh "$@"
+function run_part {
+	test=$1
+	part=$2
+
+	case $part in
+		run)
+			$MAIN_NS ./test_$test
+		;;
+		*)
+			source test_$test.sh
+			$part
+		;;
+	esac
 }
 
 case "$1" in
@@ -69,17 +78,21 @@ case "$1" in
 	"list")
 		ls -1 /var/run/netns/${NETNS}-sub-*
 		;;
-	"run-test")
-		shift
+	"test")
 		setUp
-		run_single_test "$@"
-		ret=$?
+
+		cleanup_handler=tearDown
+
+		for part in verify_env run verify; do
+			echo Running part $part
+			run_part $2 $part
+		done
+
 		tearDown
-		exit $ret
 		;;
-	"test-only")
-		shift
-		run_single_test "$@"
+	"part")
+		cleanup_handler=true
+		run_part $2 $3
 		;;
 	*)
 		echo "Usage: $0 setup | teardown | add <name> | delete <name> | list | run-test <test> | test-only <test>"

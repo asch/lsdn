@@ -5,8 +5,10 @@
 
 static void c(lsdn_err_t err)
 {
-	if(err != LSDNE_OK)
+	if(err != LSDNE_OK){
+		printf("LSDN Error %d\n", err);
 		abort();
+	}
 }
 
 enum {PVM1, PVM2, PTRUNK1, PTRUNK2};
