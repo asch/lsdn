@@ -19,7 +19,7 @@ function IN_NS() {
 function ping_from() {
 	src=$1
 	dst=$2
-	IN_NS $src ping -c 1 -w 1 $IPV4_PREFIX$dst
+	IN_NS $src ping -c 1 -w 5 $IPV4_PREFIX$dst
 }
 
 function test_error() {

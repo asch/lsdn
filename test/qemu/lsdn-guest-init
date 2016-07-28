@@ -1,0 +1,13 @@
+#/bin/bash
+
+echo "Mounting build directory ..."
+
+mkdir -p /lsdn/build/
+mount -t 9p -o trans=virtio build /lsdn/build -oversion=9p2000.L
+
+echo OK
+
+cd /lsdn/build/test
+"$@"
+
+echo OK

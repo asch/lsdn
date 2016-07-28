@@ -8,13 +8,16 @@ target_link_libraries(test_veth lsdn ${MNL_LIBRARIES})
 
 file(GLOB TEST_SUPPORT test_*.sh run run-qemu)
 file(GLOB_RECURSE TEST_SUPPORT_LIB lib/common.sh)
-file(GLOB_RECURSE TEST_SUPPORT_QEMU qemu/guest-test-runner qemu/guest-test-init)
+file(GLOB_RECURSE TEST_SUPPORT_QEMU
+   qemu/lsdn-guest-init
+   qemu/prepare-guest-env
+   qemu/serial-shell)
 
 add_custom_target(install_test_harness ALL
         mkdir -p qemu lib
-        COMMAND ln -sf ${TEST_SUPPORT} .
-        COMMAND ln -sf ${TEST_SUPPORT_LIB} lib
-        COMMAND ln -sf ${TEST_SUPPORT_QEMU} qemu
+        COMMAND ln -f ${TEST_SUPPORT} .
+        COMMAND ln -f ${TEST_SUPPORT_LIB} lib
+        COMMAND ln -f ${TEST_SUPPORT_QEMU} qemu
         SOURCES ${TEST_SUPPORT} ${TEST_SUPPORT_LIB} ${TEST_SUPPORT_QEMU}
 )
 

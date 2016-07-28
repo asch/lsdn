@@ -1,0 +1,115 @@
+#!/bin/bash
+set -u
+
+function syntax
+{
+   echo "usage: run-qemu [--help] [--kvm] kernel module-dir rootfs guest-command"
+   echo 
+   echo "Available guest commands: shell, raw-shell, all."
+   echo "Unrecognized commands are passed to ./run test harness."
+}
+
+function help
+{
+   syntax
+
+   cat <<EOT
+To use this script, you will need to prepare following components:
+
+1) kernel
+   Compile a kernel and provide a path to the resulting bzImage 
+   (usually in arch/x86_64/boot/bzImage).
+
+   The kernel needs to have the following configuration options built-in:
+    CONFIG_EXT4_FS (or other, depending on your rootfs)
+    CONFIG_NET_9P
+    CONFIG_NET_9P_VIRTIO
+    CONFIG_9P_FS
+    CONFIG_VIRTIO_BLK
+
+   An example .config is placed in lsdn/test/qemu/example.config.
+
+2) module-dir
+   This is a directory containing the installed kernel modules.
+   It must contain a folder /lib/modules for your kernel with all
+   the networking modules needed for the sucesfull test run.
+
+   To generate this directory, run: 
+    make INSTALL_MOD_PATH=module-dir modules_install
+
+3) rootfs
+   Qemu disk image with root file system on the first partition.
+   The rootfs must contain bash, glibc, iproute and cmake. Currently 
+   tested with ArchLinux root file sytem.
+
+   The file qemu/lsdn-guest-init must be placed in the root directory
+   of this filesystem for automatic bootstrap.
+EOT
+	exit 0
+}
+
+QUIET="quiet"
+KVM=""
+
+while [[ ${1:-} == --* ]]; do
+	case $1 in
+		--help)
+			help
+			;;
+		--kvm)
+			KVM="--enable-kvm"
+			;;
+		*)
+			echo "Unknown argument $1"
+			echo
+			syntax 
+			exit 1
+	esac
+	shift
+done
+
+if [ $# -lt 4 ]; then
+	echo "Missing required arguments"
+	echo 
+	syntax
+	exit 1
+fi
+
+KERNEL=$1; shift
+MODROOT=$1; shift
+ROOTFS=$1; shift
+QEMU=qemu-system-x86_64
+INIT="$SHELL /lsdn-guest-init qemu/prepare-guest-env"
+SHELL="/bin/bash"
+CMDLINE=""
+
+case $1 in
+	raw-shell)
+		INIT="$SHELL"
+		;;
+	shell)
+		CMDLINE="qemu/serial-shell"
+		;;
+	all)
+		CMDLINE='ctest'
+		;;
+	*)
+		CMDLINE="./run $*"
+		;;
+esac
+
+if ! [ -d "$MODROOT/lib/modules" ]; then
+	echo "Can not find modules directory $MODROOT/lib/modules"
+	exit 1
+fi
+
+echo "$CMDLINE" > qemu/work
+
+"$QEMU" -kernel "$KERNEL" \
+	-drive if=virtio,file="$ROOTFS" \
+	-virtfs local,mount_tag=build,path=..,security_model=none \
+	-virtfs local,mount_tag=mods,path="$MODROOT/lib/modules",security_model=none \
+	-serial mon:stdio  -nographic \
+	$KVM \
+	-append "root=/dev/vda1 rw $QUIET console=ttyS0 init=$INIT"
+

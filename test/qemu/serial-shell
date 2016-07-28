@@ -1,0 +1,2 @@
+#!/bin/bash
+agetty --autologin  root ttyS0
