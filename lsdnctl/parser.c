@@ -1,116 +1,72 @@
-#define	DEBUG	1
-
 #include "common.h"
 #include "parser.h"
 #include "strbuf.h"
 
+#include <assert.h>
 #include <ctype.h>
-#include <stdarg.h>
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdio.h>
-#include <strings.h>
+#include <stdlib.h>
 #include <yaml.h>
 
 
-#define	TOKEN_TYPE_CASE(type_name)\
-	case type_name:\
-		return #type_name;
+struct lsdn_parser {
+	yaml_parser_t yaml_parser;
+	char *error_str;
+	bool error;
+};
 
+enum config_option_type {
+	CONFIG_OPTION_INT,
+	CONFIG_OPTION_STRING,
+	CONFIG_OPTION_BOOL,
+	CONFIG_OPTION_MAC
+};
 
-/**
- * @brief Set parser error state and error message.
- */
-static void set_error(struct lsdn_parser *parser, char *msg, ...)
+struct config_option {
+	char *name;
+	enum config_option_type type;
+	void *ptr;
+};
+
+static void error(struct lsdn_parser *parser, char *error_str)
 {
-	va_list args;
-
-	va_start(args, msg);
-	strbuf_vprintf_at(&parser->str_error_buf, 0, msg, args);
-	va_end(args);
-
-	strbuf_append(&parser->str_error_buf, " at line %d column %d",
-		parser->token.start_mark.line + 1, parser->token.start_mark.column);
-
-	parser->parse_error = true;
+	parser->error = true;
+	parser->error_str = error_str;
 }
 
-
-/**
- * @brief Convert internal token type designation to a string representation.
- *	For debugging purposes.
- */
-static const char *token_type_str(yaml_token_type_t type)
+static char *node_type_str(yaml_node_type_t node_type)
 {
-	switch (type) {
-	TOKEN_TYPE_CASE(YAML_NO_TOKEN);
-	TOKEN_TYPE_CASE(YAML_STREAM_START_TOKEN);
-	TOKEN_TYPE_CASE(YAML_STREAM_END_TOKEN);
-	TOKEN_TYPE_CASE(YAML_VERSION_DIRECTIVE_TOKEN);
-	TOKEN_TYPE_CASE(YAML_TAG_DIRECTIVE_TOKEN);
-	TOKEN_TYPE_CASE(YAML_DOCUMENT_START_TOKEN);
-	TOKEN_TYPE_CASE(YAML_BLOCK_SEQUENCE_START_TOKEN);
-	TOKEN_TYPE_CASE(YAML_BLOCK_MAPPING_START_TOKEN);
-	TOKEN_TYPE_CASE(YAML_DOCUMENT_END_TOKEN);
-	TOKEN_TYPE_CASE(YAML_BLOCK_END_TOKEN);
-	TOKEN_TYPE_CASE(YAML_FLOW_SEQUENCE_START_TOKEN);
-	TOKEN_TYPE_CASE(YAML_FLOW_SEQUENCE_END_TOKEN);
-	TOKEN_TYPE_CASE(YAML_FLOW_MAPPING_START_TOKEN);
-	TOKEN_TYPE_CASE(YAML_FLOW_MAPPING_END_TOKEN);
-	TOKEN_TYPE_CASE(YAML_KEY_TOKEN);
-	TOKEN_TYPE_CASE(YAML_VALUE_TOKEN);
-	TOKEN_TYPE_CASE(YAML_ALIAS_TOKEN);
-	TOKEN_TYPE_CASE(YAML_ANCHOR_TOKEN);
-	TOKEN_TYPE_CASE(YAML_TAG_TOKEN);
-	TOKEN_TYPE_CASE(YAML_SCALAR_TOKEN);
+	switch (node_type) {
+	case YAML_NO_NODE:
+		return "YAML_NO_NODE";
+
+	case YAML_SEQUENCE_NODE:
+		return "YAML_SEQUENCE_NODE";
+
+	case YAML_SCALAR_NODE:
+		return "YAML_SCALAR_NODE";
+
+	case YAML_MAPPING_NODE:
+		return "YAML_MAPPING_NODE";
 
 	default:
-		return "(invalid token type)";
+		return "(invalid node type)";
 	}
 }
 
-/**
- * @brief Convert token to a string representation. For debugging purposes.
- */ 
-static void token_str(struct lsdn_parser *parser)
+static void dump_node(yaml_node_t *node)
 {
-	fprintf(stderr, "token %s", token_type_str(parser->token.type));
-	if (parser->token.type == YAML_SCALAR_TOKEN)
-		fprintf(stderr, ", value: %s", parser->token.data.scalar.value);
+	assert(node);
 
-	fprintf(stderr, "\n");
+	printf("node %s\n", node_type_str(node->type));
 }
 
-/**
- * @brief Parse next token (and free previous token if needed.) The token is
- *	saved into &parser->token.
- */
-static void next_token(struct lsdn_parser *parser)
-{
-	assert(parser->source_file_set);
-
-	if (parser->delete_token) {
-		yaml_token_delete(&parser->token);
-	}
-
-	yaml_parser_scan(&parser->yaml_parser, &parser->token);
-	token_str(parser);
-
-	parser->delete_token = true;
-}
-
-/**
- * @brief Is string a valid lsdn name?
- */
 static bool is_valid_name(char *str)
 {
 	char c;
 	unsigned i = 0;
 
-	/*
-	 * Expand allowed symbols as needed. The set should be as restrictive as
-	 * possible to be forward-compatible with future releases.
-	 */
 	while ((c = str[i++]) != '\0') {
 		if (!isalnum(c) && c != '_')
 			return (false);
@@ -119,132 +75,154 @@ static bool is_valid_name(char *str)
 	return (true);
 }
 
-void lsdn_parser_init(struct lsdn_parser *parser)
+struct lsdn_parser *lsdn_parser_new(FILE *src_file)
 {
+	struct lsdn_parser *parser = malloc(sizeof (struct lsdn_parser));
+	if (!parser)
+		return (NULL);
+
 	yaml_parser_initialize(&parser->yaml_parser);
-	strbuf_init(&parser->str_error_buf);
-	parser->parse_error = false;
-	parser->delete_token = false;
+	yaml_parser_set_input_file(&parser->yaml_parser, src_file);
+
+	parser->error = false;
+	parser->error_str = NULL;
+
+	return (parser);
 }
 
-void lsdn_parser_set_file(struct lsdn_parser *parser, FILE *f)
+static int parse_options_block(struct lsdn_parser *parser, yaml_document_t *doc,
+	struct config_option *options, yaml_node_t *mapping_node)
 {
-	yaml_parser_set_input_file(&parser->yaml_parser, f);
-	parser->source_file_set = true;
+	struct config_option *option;
+	yaml_node_t *key, *value;
+	yaml_node_pair_t *pair;
+
+	for (pair = mapping_node->data.mapping.pairs.start;
+		pair != mapping_node->data.mapping.pairs.top; pair++) {
+		key = yaml_document_get_node(doc, pair->key);
+		value = yaml_document_get_node(doc, pair->value);
+
+		for (option = options; option->name != NULL; option++) {
+			if (strcmp(option->name, (char *)key->data.scalar.value) != 0)
+				continue;
+
+			switch (option->type) {
+			case CONFIG_OPTION_STRING:
+				*((char *)option->ptr) = (char *)value->data.scalar.value;
+
+			default:
+				fprintf(stderr, "Not implemented yet");
+				exit(EXIT_FAILURE);
+			}
+
+		}
+
+		error(parser, "Unknown option");
+		return (-1);
+	}
+
+	return (0);
 }
 
-char *lsdn_parser_strerror(struct lsdn_parser *parser)
+static int parse_device(struct lsdn_parser *parser, struct lsdn_network *net,
+	yaml_document_t *doc, yaml_node_t *mapping_node)
 {
-	return strbuf_copy(&parser->str_error_buf);
-}
-
-struct lsdn_network *lsdn_parse_network(struct lsdn_parser *parser)
-{
-	struct lsdn_network *net = NULL;
-	char *netname;
+	yaml_node_t *key, *value;
+	yaml_node_pair_t *pair;
+	char *prop_name;
+	bool type_specified = false;
 	
-	/*
-	 * At the moment, we require one network definition per file. Network
-	 * definition therefore has to start with a start-of-stream token
-	 * (aka YAML_STREAM_START_TOKEN).
-	 */
-	next_token(parser);
-	if (parser->token.type != YAML_STREAM_START_TOKEN) {
-		set_error(parser, "expected start of stream");
+	for (pair = mapping_node->data.mapping.pairs.start;
+		pair != mapping_node->data.mapping.pairs.top; pair++) {
+		
+		key = yaml_document_get_node(doc, pair->key);
+		value = yaml_document_get_node(doc, pair->value);
+
+		prop_name = (char *)key->data.scalar.value;
+
+		if (strcmp(prop_name, "type") != 0)
+			continue;
+
+		type_specified = true;
+	}
+
+	if (!type_specified) {
+		error(parser, "Device type not specified");
+		return (-1);
+	}
+
+	return (0);
+}
+
+static int parse_devices(struct lsdn_parser *parser,
+	struct lsdn_network *net, yaml_document_t *doc, yaml_node_t *mapping_node)
+{
+	yaml_node_t *key, *value;
+	yaml_node_pair_t *pair;
+	char *device_name;
+
+	for (pair = mapping_node->data.mapping.pairs.start;
+		pair != mapping_node->data.mapping.pairs.top; pair++) {
+
+		key = yaml_document_get_node(doc, pair->key);
+		device_name = (char *)key->data.scalar.value; 
+
+		DEBUG_PRINTF("Processing device '%s'", device_name);
+
+		value = yaml_document_get_node(doc, pair->value);
+		parse_device(parser, net, doc, value);
+	}
+
+	return (0);
+}
+
+struct lsdn_network *lsdn_parser_parse_network(struct lsdn_parser *parser)
+{
+	yaml_document_t doc;
+	yaml_node_t *node, *key, *value;
+	yaml_node_pair_t *pair;
+	struct lsdn_network *net;
+	char *netname;
+
+	yaml_parser_load(&parser->yaml_parser, &doc);
+	node = yaml_document_get_root_node(&doc);
+
+	if (node->type != YAML_MAPPING_NODE) {
+		error(parser, "network block has to be a mapping node");
 		goto error;
 	}
 
-	next_token(parser);
-	if (parser->token.type != YAML_BLOCK_MAPPING_START_TOKEN) {
-		set_error(parser, "network block expected, "
-			"maybe you forgot a ':' after network name?");
-		goto error;
-	}
+	for (pair = node->data.mapping.pairs.start;
+		pair != node->data.mapping.pairs.top; pair++) {
 
-	next_token(parser);
-	if (parser->token.type != YAML_KEY_TOKEN) {
-		set_error(parser, "network name expected");
-		goto error;
-	}
+		key = yaml_document_get_node(&doc, pair->key);
+		value = yaml_document_get_node(&doc, pair->value);
 
-	//match_token_or_error(parser, YAML_KEY_TOKEN, "network name expected");
+		assert(key->type == YAML_SCALAR_NODE);
 
-	next_token(parser);
-	if (parser->token.type != YAML_SCALAR_TOKEN) {
-		set_error(parser, "network name expected");
-		goto error;
-	}
-
-	netname = (char *)parser->token.data.scalar.value;
-	if (!is_valid_name(netname)) {
-		set_error(parser, "'%s' is not a valid network name "
-			"(@see is_valid_name(char *str)) in %s",
-			netname, __FILE__);
-	}
-
-	net = lsdn_network_new(netname);
-
-	next_token(parser);
-	if (parser->token.type != YAML_VALUE_TOKEN) {
-		set_error(parser, "network block expected");
-		goto error;
-	}
-
-	next_token(parser);
-	if (parser->token.type != YAML_BLOCK_MAPPING_START_TOKEN) {
-		set_error(parser, "network block expected");
-		goto error;
-	}
-
-	while (1) {
-		next_token(parser);
-
-		if (parser->token.type == YAML_BLOCK_END_TOKEN)
-			break;
-
-		/*
-		 * At the moment, only key: value pairs are supported in the
-		 * network definition block. Valueless directives may be
-		 * supported later if we need them.
-		 */
-		if (parser->token.type != YAML_KEY_TOKEN) {
-			set_error(parser, "missing key, did you miss a ':'?");
+		netname = (char *)key->data.scalar.value;
+		if (!is_valid_name(netname)) {
+			error(parser, "network name is not valid");
 			goto error;
 		}
 
-		switch (parser->token.type) {
-		case YAML_VALUE_TOKEN:
-			break;
+		DEBUG_PRINTF("Processing network '%s'", netname);
 
-		case YAML_KEY_TOKEN:
-			break;
-
-		default:
-			set_error(parser, "%s was unexpected",
-				token_type_str(parser->token.type));
-			goto error;
-		}
+		net = lsdn_network_new(netname);
+		parse_devices(parser, net, &doc, value);
 	}
 
-	next_token(parser);
-	if (parser->token.type != YAML_STREAM_END_TOKEN) {
-		set_error(parser, "end-of-stream was expected");
-		goto error;
-	}
+	yaml_document_delete(&doc);
 
 	return (net);
 
 error:
-	free(net);
+	yaml_document_delete(&doc);
 	return (NULL);
 }
 
-void lsdn_parser_end(struct lsdn_parser *parser)
+void lsdn_parser_free(struct lsdn_parser *parser)
 {
 	yaml_parser_delete(&parser->yaml_parser);
-	if (parser->delete_token) {
-		yaml_token_delete(&parser->token);
-		parser->delete_token = false;
-	}
-	strbuf_free(&parser->str_error_buf);
+	free(parser);
 }

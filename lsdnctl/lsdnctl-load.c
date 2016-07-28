@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	const char *filename;
 	int opt, option_index;
 	FILE *config_file;
-	struct lsdn_parser parser;
+	struct lsdn_parser *parser;
 
 	program_name = argv[0];
 
@@ -74,18 +74,15 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	lsdn_parser_init(&parser);
-	lsdn_parser_set_file(&parser, config_file);
-
-	lsdn_parse_network(&parser);
-
-	if (parser.parse_error) {
-		fprintf(stderr, "%s: parse error: %s\n",
-			program_name, lsdn_parser_strerror(&parser));
+	parser = lsdn_parser_new(config_file);
+	if (parser == NULL) {
+		fprintf(stderr, "Not enough memory, son. Sorry.");
 		exit(EXIT_FAILURE);
 	}
 
-	lsdn_parser_end(&parser);
+	lsdn_parser_parse_network(parser);
+
+	lsdn_parser_free(parser);
 	
 	return (EXIT_SUCCESS);
 out:
