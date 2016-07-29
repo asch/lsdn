@@ -95,6 +95,6 @@ case "$1" in
 		run_part $2 $3
 		;;
 	*)
-		echo "Usage: $0 setup | teardown | add <name> | delete <name> | list | run-test <test> | test-only <test>"
+		echo "Usage: $0 setup | teardown | add <name> | delete <name> | list | test <test> | part <test> <part>"
 		;;
 esac
