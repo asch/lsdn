@@ -1,10 +1,3 @@
-add_executable(test_nl test_nl.c)
-target_include_directories(test_nl PRIVATE ${MNL_INCLUDE_DIRS})
-target_link_libraries(test_nl lsdn ${MNL_LIBRARIES})
-
-add_executable(test_veth test_veth.c)
-target_include_directories(test_veth PRIVATE ${MNL_INCLUDE_DIRS})
-target_link_libraries(test_veth lsdn ${MNL_LIBRARIES})
 
 file(GLOB TEST_SUPPORT test_*.sh run run-qemu)
 file(GLOB_RECURSE TEST_SUPPORT_LIB lib/common.sh)
@@ -29,6 +22,16 @@ function(test_in_ns testname)
                 COMMAND ./run test ${testname}
 	)
 endfunction(test_in_ns)
+
+function(simple_test test)
+   add_executable(test_${test} test_${test}.c)
+   target_include_directories(test_${test} PRIVATE ${MNL_INCLUDE_DIRS})
+   target_link_libraries(test_${test} lsdn ${MNL_LIBRARIES})
+endfunction(simple_test)
+
+simple_test(veth)
+simple_test(nl)
+simple_test(mirred_ingress)
 
 test_in_ns(switches)
 test_in_ns(linux_switch)
