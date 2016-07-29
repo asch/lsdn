@@ -93,9 +93,10 @@ static lsdn_err_t update_if_rules(struct lsdn_node *node)
 
 	int err = lsdn_filter_create(sock, filter);
 
+	// TODO: check err and return some errorcode
 	printf("netdev.c err = %d\n", err);
 
-	// TODO: check err and return some errorcode
+	lsdn_filter_free(filter);
 
 	lsdn_socket_free(sock);
 	return LSDNE_OK;

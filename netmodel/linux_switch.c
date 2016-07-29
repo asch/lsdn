@@ -64,6 +64,19 @@ static void free_lswitch(struct lsdn_node *node)
 	struct lsdn_linux_switch* lswitch = lsdn_as_linux_switch(node);
 	for (size_t i = 0;  i < lswitch->node.port_count; i++) {
 		struct switch_port *port = &lswitch->ports[i];
+		struct lsdn_rule *prev = lsdn_container_of(
+				port->ruleset.rules.next,
+				struct lsdn_rule,
+				ruleset_list);
+		struct lsdn_rule *cur = prev;
+		while (!lsdn_is_list_empty(&port->ruleset.rules)) {
+			cur = lsdn_container_of(
+					cur->ruleset_list.next,
+					struct lsdn_rule,
+					ruleset_list);
+			lsdn_rule_free(prev);
+			prev = cur;
+		}
 		lsdn_ruleset_free(&port->ruleset);
 		lsdn_destroy_if(&port->veth_if);
 		lsdn_destroy_if(&port->bridged_if);
@@ -190,6 +203,8 @@ static lsdn_err_t lswitch_update_if_rules(struct lsdn_node *node)
 			ret = LSDNE_FAIL;
 			break;
 		}
+
+		lsdn_filter_free(filter);
 	}
 
 	lsdn_socket_free(sock);
@@ -201,7 +216,6 @@ struct lsdn_node_ops lsdn_linux_switch_ops = {
 	.get_port = get_lswitch_port,
 	/* Lswitch rules are set-up at port creation time. */
 	.update_rules = lswitch_update_rules,
-	/* Sswitch does not manage any linux interfaces */
 	.update_ifs = lswitch_update_ifs,
 	.update_if_rules = lswitch_update_if_rules
 };

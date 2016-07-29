@@ -102,6 +102,7 @@ static int link_create_send(
 int lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
 
@@ -112,6 +113,7 @@ int lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_if, cons
 int lsdn_link_bridge_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
 
@@ -123,6 +125,7 @@ int lsdn_link_set_master(struct mnl_socket *sock,
 		unsigned int master, unsigned int slave)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
 	int ret;
 	unsigned int seq = time(NULL), change = 0;
 
@@ -167,6 +170,7 @@ int lsdn_link_veth_create(
 {
 	assert(if_name2 != NULL);
 	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
 
@@ -205,6 +209,7 @@ int lsdn_link_veth_create(
 int lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
 	int ret;
 	unsigned int seq = time(NULL), change = 0, flags = 0;
 
@@ -253,6 +258,7 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int ifindex,
 		uint32_t parent, uint32_t handle, uint32_t r2q, uint32_t defcls)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
 	int ret;
 	unsigned int seq = time(NULL);
 
@@ -304,6 +310,7 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int ifindex,
 int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
 	int ret;
 	unsigned int seq = 0;
 
@@ -358,8 +365,11 @@ struct lsdn_filter *lsdn_filter_init(const char *kind, uint32_t if_index,
 		uint32_t handle, uint32_t parent, uint16_t priority, uint16_t protocol)
 {
 	struct lsdn_filter *f = malloc(sizeof(*f));
-	char *buf = malloc(MNL_SOCKET_BUFFER_SIZE);
-	if (f == NULL || buf == NULL){
+	if (!f)
+		return NULL;
+	char *buf = calloc(MNL_SOCKET_BUFFER_SIZE, sizeof(char));
+	if (!buf) {
+		free(f);
 		return NULL;
 	}
 

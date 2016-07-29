@@ -38,8 +38,14 @@ void lsdn_check_cast(struct lsdn_node *node, struct lsdn_node_ops *ops)
 }
 
 void lsdn_node_free(struct lsdn_node *node){
-	// TODO: remove from network, free memory, call free callback
+	node->ops->free_private_data(node);
+
+	// lsdn_list_remove(&node->ruleset_list); TODO
+	lsdn_list_remove(&node->network_list);
+
+	free(node);
 }
+
 lsdn_err_t lsdn_noop(struct lsdn_node *node){
 	return LSDNE_OK;
 }

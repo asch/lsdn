@@ -157,6 +157,8 @@ static lsdn_err_t create_if_rules_for_ruleset(
 
 		printf("network.c err = %d\n", err);
 
+		lsdn_filter_free(filter);
+
 		// TODO: check err and return some errorcode
 
 		lsdn_socket_free(sock);
@@ -212,8 +214,19 @@ void lsdn_network_free(struct lsdn_network *network)
 {
 	if (!network)
 		return;
+	struct lsdn_node *prev = lsdn_container_of(
+			network->nodes.next,
+			struct lsdn_node,
+			network_list);
+	struct lsdn_node *cur = prev;
+	while (!lsdn_is_list_empty(&network->nodes)) {
+		cur = lsdn_container_of(
+				cur->network_list.next, 
+				struct lsdn_node,
+				network_list);
+		lsdn_node_free(prev);
+		prev = cur;
+	}
 	free(network->name);
 	free(network);
-
-	// TODO: release all nodes and interfaces created for rulesets
 }

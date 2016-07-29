@@ -176,9 +176,17 @@ static void free_sswitch (struct lsdn_node *node)
 		}
 	}
 
-	lsdn_foreach_list(sswitch->forward_ruleset.rules, ruleset_list, struct lsdn_rule, r) {
-		lsdn_rule_free(r);
-		free(r);
+	struct lsdn_rule *prev = lsdn_container_of(sswitch->forward_ruleset.rules.next,
+			struct lsdn_rule,
+			ruleset_list);
+	struct lsdn_rule *cur = prev;
+	while (!lsdn_is_list_empty(&sswitch->forward_ruleset.rules)) {
+		cur = lsdn_container_of(cur->ruleset_list.next,
+				struct lsdn_rule,
+				ruleset_list);
+		lsdn_rule_free(prev);
+		free(prev); // TODO free prev in lsdn_rule_free ???
+		prev = cur;
 	}
 
 	lsdn_ruleset_free(&sswitch->forward_ruleset);
