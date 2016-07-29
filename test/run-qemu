@@ -3,7 +3,7 @@ set -u
 
 function syntax
 {
-   echo "usage: run-qemu [--help] [--kvm] kernel module-dir rootfs guest-command"
+   echo "usage: run-qemu [--help] [--kvm] [--gdb] kernel module-dir rootfs guest-command"
    echo 
    echo "Available guest commands: shell, raw-shell, all."
    echo "Unrecognized commands are passed to ./run test harness."
@@ -50,6 +50,7 @@ EOT
 
 QUIET="quiet"
 KVM=""
+GDB="-s"
 
 while [[ ${1:-} == --* ]]; do
 	case $1 in
@@ -58,6 +59,9 @@ while [[ ${1:-} == --* ]]; do
 			;;
 		--kvm)
 			KVM="--enable-kvm"
+			;;
+		--gdb)
+			GDB="-s"
 			;;
 		*)
 			echo "Unknown argument $1"
@@ -110,6 +114,6 @@ echo "$CMDLINE" > qemu/work
 	-virtfs local,mount_tag=build,path=..,security_model=none \
 	-virtfs local,mount_tag=mods,path="$MODROOT/lib/modules",security_model=none \
 	-serial mon:stdio  -nographic \
-	$KVM \
+	$KVM $GDB \
 	-append "root=/dev/vda1 rw $QUIET console=ttyS0 init=$INIT"
 
