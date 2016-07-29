@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
 	int opt, option_index;
 	FILE *config_file;
 	struct lsdn_parser *parser;
+	struct lsdn_network *net;
 
 	program_name = argv[0];
 
@@ -80,7 +81,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	lsdn_parser_parse_network(parser);
+	net = lsdn_parser_parse_network(parser);
+	if (net == NULL) {
+		fprintf(stderr, "Parse error: %s\n", lsdn_parser_get_error(parser));
+		return (EXIT_FAILURE);
+	}
 
 	lsdn_parser_free(parser);
 	
