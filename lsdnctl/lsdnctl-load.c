@@ -1,5 +1,5 @@
 #include "common.h"
-#include "parser.h"
+#include "config.h"
 
 #include <getopt.h>
 #include <stdarg.h>
@@ -31,13 +31,64 @@ static void usage(int status)
 	exit(status);
 }
 
+static bool load_static_switch(struct config_map *map, void *arg)
+{
+	struct network *net = arg;
+	int num_ports;
+	lsdn_mac_t mac;
+
+	(void) net;
+
+	struct config_option options[] = {
+		{ "num_ports",	CONFIG_OPTION_INT,	&num_ports,	true },
+		{ "mac",	CONFIG_OPTION_MAC,	&mac,		true },
+		{ 0,		0,			0,		0 }
+	};
+
+	return config_map_getopt(map, options);
+}
+
+static struct lsdn_network *load_network(struct config_file *config)
+{
+	struct config_map root_map;
+	struct config_pair pair;
+	struct lsdn_network *net = NULL;
+	
+	config_file_get_root_map(config, &root_map);
+
+	struct config_action actions[] = {
+		{ "static_switch",	load_static_switch,	net },
+		{ "switch",		load_static_switch,	net },
+		{ NULL,			NULL,			NULL }
+	};
+
+	if (config_map_num_pairs(&root_map) != 1) {
+		fprintf(stderr, "Only 1 network definition per file allowed");
+		exit (EXIT_FAILURE);
+	}
+
+	while (config_map_next_pair(&root_map, &pair)) {
+		DEBUG_PRINTF("Processing network '%s'", pair.key);
+
+		if (pair.value_type != CONFIG_VALUE_MAP) {
+			fprintf(stderr, "Network definition has to be a map");
+			exit (EXIT_FAILURE);
+		}
+
+		config_map_dispatch(&pair.values, "device_type", actions);
+	}
+
+	return (net);
+}
+
 int main(int argc, char *argv[])
 {
-	const char *filename;
+	char *filename;
 	int opt, option_index;
-	FILE *config_file;
-	struct lsdn_parser *parser;
 	struct lsdn_network *net;
+	struct config_file *config_file;
+
+	(void) net;
 
 	program_name = argv[0];
 
@@ -63,9 +114,10 @@ int main(int argc, char *argv[])
 	filename = argv[optind];
 
 	if (strcasecmp(filename, "-") == 0) {
-		DEBUG_MSG("Reading stdin instead of a regular file");
+		config_file = config_file_open_stdin();
 	}
 	else {
+		/*
 		config_file = fopen(filename, "r");
 
 		if (config_file == NULL) {
@@ -73,24 +125,13 @@ int main(int argc, char *argv[])
 				program_name, filename);
 			exit(EXIT_FAILURE);
 		}
+		*/
+
+		config_file = config_file_open(filename);
 	}
 
-	parser = lsdn_parser_new(config_file);
-	if (parser == NULL) {
-		fprintf(stderr, "Not enough memory, son. Sorry.");
-		exit(EXIT_FAILURE);
-	}
-
-	net = lsdn_parser_parse_network(parser);
-	if (net == NULL) {
-		fprintf(stderr, "Parse error: %s\n", lsdn_parser_get_error(parser));
-		return (EXIT_FAILURE);
-	}
-
-	lsdn_parser_free(parser);
+	net = load_network(config_file);
 	
+	config_file_close(config_file);
 	return (EXIT_SUCCESS);
-out:
-	fclose(config_file);
-	return (EXIT_FAILURE);
 }
