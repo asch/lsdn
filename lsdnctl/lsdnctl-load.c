@@ -116,8 +116,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (argc - optind != 1) {
+	if (argc - optind == 0) {
 		fprintf(stderr, "%s: missing FILE operand.\n", program_name);
+		usage(EXIT_FAILURE);
+	}
+
+	if (argc - optind > 1) {
+		fprintf(stderr, "%s: too many arguments.\n", program_name);
 		usage(EXIT_FAILURE);
 	}
 
