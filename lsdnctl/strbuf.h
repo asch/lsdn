@@ -5,61 +5,54 @@
 #include <stddef.h>
 
 
-
 #define	STRBUF_INIT_SIZE 1024
-#define	STRBUF_GROWTH_RATE 2
 
 
-typedef struct {
+struct strbuf {
 	char *str;
 	size_t size;	/* excl. the '\0' */
-	size_t offset;	/* offset always points to the last written '\0' */
-} strbuf;
+	size_t offset;	/* str[offset] is the last written '\0' at all times */
+};
 
 
-/*
- * Initialize empty string buffer.
+/**
+ * @brief Initialize empty string buffer.
  */
-void strbuf_init(strbuf *buf);
+void strbuf_init(struct strbuf *buf);
 
-
-/*
- * Resize the buffer.
+/**
+ * @brief Resize the buffer.
  */
-void strbuf_resize(strbuf *buf, size_t new_size);
+void strbuf_resize(struct strbuf *buf, size_t new_size);
 
-
-/*
- * Print at specific offset of the buffer.
+/**
+ * @brief Print at specific offset of the buffer.
  */
-void strbuf_printf(strbuf *buf, size_t offset, char *format, ...);
+void strbuf_printf(struct strbuf *buf, size_t offset, char *format, ...);
 
-
-/*
- * Print at specific offset of the buffer (va_list).
+/**
+ * @brief Print at specific offset of the buffer (va_list).
  */
-void strbuf_vprintf_at(strbuf *buf, size_t offset, char *format, va_list args);
+void strbuf_vprintf_at(struct strbuf *buf, size_t offset, char *format, va_list args);
 
-
-/*
- * Append string to the end of the buffer.
+/**
+ * @brief Append string to the end of the buffer.
  */
-void strbuf_append(strbuf *buf, char *format, ...);
+void strbuf_append(struct strbuf *buf, char *format, ...);
 
-
-/*
- * Copy the string and return pointer to the copy.
+/**
+ * @brief Copy the string and return pointer to the copy.
  */
-char *strbuf_copy(strbuf *buf);
+char *strbuf_copy(struct strbuf *buf);
 
-
-/*
- * Free all memory used by the buffer.
+/**
+ * @brief Prepend a string before current value stored in the buffer.
  */
-void strbuf_free(strbuf *buf);
+void strbuf_prepend(struct strbuf *buf, char *format, ...);
 
-
-void strbuf_prepend(strbuf *buf, char *format, ...);
-
+/**
+ * @brief Free all memory used by the buffer.
+ */
+void strbuf_free(struct strbuf *buf);
 
 #endif

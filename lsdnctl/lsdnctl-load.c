@@ -1,5 +1,6 @@
 #include "common.h"
 #include "config.h"
+#include "../netmodel/include/lsdn.h"
 
 #include <getopt.h>
 #include <stdarg.h>
@@ -31,13 +32,13 @@ static void usage(int status)
 	exit(status);
 }
 
-static bool load_static_switch(struct config_map *map, void *arg)
+static bool load_static_switch(struct config_item *item, void *arg)
 {
-	struct network *net = arg;
+	DEBUG_PRINTF("Processing static_switch '%s'", item->key);
+
+	struct lsdn_network *net = arg;
 	int num_ports;
 	lsdn_mac_t mac;
-
-	(void) net;
 
 	struct config_option options[] = {
 		{ "num_ports",	CONFIG_OPTION_INT,	&num_ports,	true },
@@ -45,16 +46,36 @@ static bool load_static_switch(struct config_map *map, void *arg)
 		{ 0,		0,			0,		0 }
 	};
 
-	return config_map_getopt(map, options);
+	if (!config_map_getopt(&item->values, options)) {
+		return false;
+	}
+
+	lsdn_static_switch_new(net, num_ports);
+	return true;
 }
 
 static struct lsdn_network *load_network(struct config_file *config)
 {
 	struct config_map root_map;
-	struct config_pair pair;
+	struct config_item item;
 	struct lsdn_network *net = NULL;
 	
 	config_file_get_root_map(config, &root_map);
+
+	if (config_map_num_items(&root_map) != 1) {
+		fprintf(stderr, "Only 1 network definition per file allowed");
+		exit (EXIT_FAILURE);
+	}
+
+	config_map_next_item(&root_map, &item);
+
+	DEBUG_PRINTF("Processing network '%s'", item.key);
+	if (item.value_type != CONFIG_VALUE_MAP) {
+		fprintf(stderr, "Network definition has to be a map");
+		exit (EXIT_FAILURE);
+	}
+
+	net = lsdn_network_new(item.key);
 
 	struct config_action actions[] = {
 		{ "static_switch",	load_static_switch,	net },
@@ -62,23 +83,12 @@ static struct lsdn_network *load_network(struct config_file *config)
 		{ NULL,			NULL,			NULL }
 	};
 
-	if (config_map_num_pairs(&root_map) != 1) {
-		fprintf(stderr, "Only 1 network definition per file allowed");
-		exit (EXIT_FAILURE);
+	if (!config_map_dispatch(&item.values, "type", actions, true)) {
+		return (NULL);
 	}
 
-	while (config_map_next_pair(&root_map, &pair)) {
-		DEBUG_PRINTF("Processing network '%s'", pair.key);
-
-		if (pair.value_type != CONFIG_VALUE_MAP) {
-			fprintf(stderr, "Network definition has to be a map");
-			exit (EXIT_FAILURE);
-		}
-
-		config_map_dispatch(&pair.values, "device_type", actions);
-	}
-
-	return (net);
+	DEBUG_MSG("Config processed OK");
+	return net;
 }
 
 int main(int argc, char *argv[])
@@ -117,21 +127,17 @@ int main(int argc, char *argv[])
 		config_file = config_file_open_stdin();
 	}
 	else {
-		/*
-		config_file = fopen(filename, "r");
-
-		if (config_file == NULL) {
-			fprintf(stderr, "%s: cannot open file for reading: %s.\n",
-				program_name, filename);
-			exit(EXIT_FAILURE);
-		}
-		*/
-
 		config_file = config_file_open(filename);
 	}
 
 	net = load_network(config_file);
+
+	if (config_file_has_errors(config_file)) {
+		fprintf(stderr, "%s: %s: %s\n", argv[0], filename,
+			config_file_get_error_string(config_file));
+		return EXIT_FAILURE;
+	}
 	
 	config_file_close(config_file);
-	return (EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
