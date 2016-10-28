@@ -135,6 +135,11 @@ int main(int argc, char *argv[])
 		config_file = config_file_open(filename);
 	}
 
+	if (config_file_has_errors(config_file)) {
+		fprintf(stderr, config_file_get_error_string(config_file));
+		return EXIT_FAILURE;
+	}
+
 	net = load_network(config_file);
 
 	if (config_file_has_errors(config_file)) {

@@ -78,18 +78,25 @@ struct config_file *config_file_open(char *filename)
 	yaml_parser_load(&config->parser, &config->doc);
 	config->root_node = yaml_document_get_root_node(&config->doc);
 	
-	if (config->root_node == NULL)
+	if (config->root_node == NULL) {
+		config_file_set_error(config, "Syntax error: %s at %s:%u:%u\n",
+			config->parser.problem,
+			filename,
+			config->parser.problem_mark.line,
+			config->parser.problem_mark.column);
 		goto error2;
+	}
 
 	config->error = false;
 	strbuf_init(&config->error_str_buf);
-
 
 	return config;
 
 error2:
 	yaml_document_delete(&config->doc);
 	yaml_parser_delete(&config->parser);
+
+	return config;
 
 error:
 	fclose(config->file);
