@@ -66,7 +66,15 @@ struct config_action {
 	void *arg;
 };
 
+/**
+ * @brief Call function for each object defined in the map, depending on the object key.
+ *
+ * The functions expect the config_map to be a YAML mapping containing objects (YAML mappings too).
+ * Each object has a type defined by a key \a dispatch_key (usually \c "type"). The key's value
+ * defines which function from the \a actions map will be called.
+ *
+ */
 bool config_map_dispatch(struct config_map *map, char *dispatch_key,
-	struct config_action *action, bool must_dispatch_all);
+	struct config_action actions[], bool must_dispatch_all);
 
 #endif

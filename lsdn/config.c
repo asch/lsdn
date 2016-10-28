@@ -277,7 +277,7 @@ bool config_map_getopt(struct config_map *map, struct config_option *options)
 }
 
 bool config_map_dispatch(struct config_map *map, char *dispatch_key,
-	struct config_action *actions, bool must_dispatch_all)
+	struct config_action actions[], bool must_dispatch_all)
 {
 	struct config_item item, dispatch_item;
 	struct config_action *action;
