@@ -1,0 +1,12 @@
+simple_network:
+    switch1:
+        type: static_switch
+        num_ports: 12
+        mac: ...
+
+    switch2:
+        type: static_switch
+        num_ports: 4
+        mac: ...
+
+---
