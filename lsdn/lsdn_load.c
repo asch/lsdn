@@ -22,7 +22,7 @@ static struct option long_options[] = {
 static void usage(int status)
 {
 	if (status != EXIT_SUCCESS) {
-		fprintf(stderr, "Try '%s --help' for more information.", program_name);
+		fprintf(stderr, "Try '%s --help' for more information.\n", program_name);
 	}
 	else {
 		fprintf(stderr, "Usage: %s FILE\n", program_name);
@@ -63,7 +63,7 @@ static struct lsdn_network *load_network(struct config_file *config)
 	config_file_get_root_map(config, &root_map);
 
 	if (config_map_num_items(&root_map) != 1) {
-		fprintf(stderr, "Only 1 network definition per file allowed");
+		fprintf(stderr, "Only 1 network definition per file allowed\n");
 		exit (EXIT_FAILURE);
 	}
 
@@ -71,7 +71,7 @@ static struct lsdn_network *load_network(struct config_file *config)
 
 	DEBUG_PRINTF("Processing network '%s'", item.key);
 	if (item.value_type != CONFIG_VALUE_MAP) {
-		fprintf(stderr, "Network definition has to be a map");
+		fprintf(stderr, "Network definition has to be a map\n");
 		exit (EXIT_FAILURE);
 	}
 
