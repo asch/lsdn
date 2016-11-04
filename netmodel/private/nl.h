@@ -52,6 +52,11 @@ int lsdn_link_dummy_create(
 		struct lsdn_if *dst_if,
 		const char *if_name);
 
+int lsdn_link_vlan_create(
+		struct mnl_socket *sock,
+		struct lsdn_if *dst_if, const char *if_name,
+		const char *vlan_name, uint16_t vlanid);
+
 int lsdn_link_veth_create(struct mnl_socket *sock,
 		struct lsdn_if *if1, const char *if_name1,
 		struct lsdn_if *if2, const char *if_name2);

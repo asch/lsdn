@@ -110,6 +110,42 @@ int lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_if, cons
 	return link_create_send(sock, buf, nlh, linkinfo, if_name, dst_if);
 }
 
+//ip link add link <if_name> name <vlan_name> type vlan id <vlanid>
+int lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name,
+		          const char *vlan_name, uint16_t vlanid)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	struct nlattr *linkinfo;
+
+	unsigned int seq = time(NULL);
+	unsigned int ifindex = if_nametoindex(if_name);
+
+	nlh->nlmsg_type	= RTM_NEWLINK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifi_family = AF_UNSPEC;
+	ifm->ifi_change = 0;
+	ifm->ifi_flags = 0;
+
+	mnl_attr_put_u32(nlh, IFLA_LINK, ifindex);
+	mnl_attr_put_str(nlh, IFLA_IFNAME, vlan_name);
+
+	linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
+	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "vlan");
+
+	struct nlattr *vlanid_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
+	mnl_attr_put_u16(nlh, IFLA_VLAN_ID, vlanid);
+	mnl_attr_nest_end(nlh, vlanid_linkinfo);
+
+	mnl_attr_nest_end(nlh, linkinfo);
+
+	return link_create_send(sock, buf, nlh, linkinfo, vlan_name, dst_if);
+}
+
 int lsdn_link_bridge_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
