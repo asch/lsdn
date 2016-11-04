@@ -1,0 +1,123 @@
+# An example of definition and connection of ports.
+#
+# Each defined network node has definition of ports, commonly named 'ports'. Some devices
+# may have multiple definitions, such as in_ports, out_ports (depending on their type). 
+# An example of such device is VLAN splitter or mirroring HUB. Even netdevs have 'ports',
+# even though only one port can be defined.
+#
+# The ports are connected either in the 'connect' section (a list of connections to make)
+# or directly when creating the port. The decision is up to the user.
+#
+# # Ports and portgroups
+#
+# The port definition consists of a list of ports or port groups. Port groups simplify connection
+# to devices that have multiple ports which behave the same and where there is no point in 
+# distinguishing between the ports. When a user connects a port group a new port is automatically 
+# created in the port group and that port is connected.
+#
+#
+# The definition itself is a YAML list of the port(group) names. Port group are defined by appending
+# * to the name. 
+#
+# Ex. port definition:
+#  - management_port
+#  - printers.*
+#  - pc.*]
+#
+# The definition can also be a YAML map, in which case the map values define the connections. The 
+# connections is either a list of connections (for port groups) or a single or no connection (for ports). For syntax
+# of the connections, refer to the next section.
+#
+# This way of definition ports is equivalent to defining ports alone and then connecting them separately
+# in the 'connect' section.
+#
+# Ex. port definition with connections:
+#  - management_port: nsa_appliance.input
+#  - printers.*: [printer1, printer2]
+#  - pc.*: 
+#
+#
+# # Connection specification
+# 
+# Connections are specified either when defining the port or portgroup (as shown) or directly in the 
+# 'connect' section. The 'connect' section is a list of pairs of connection endpoints. The connection
+# endpoint can be either a port or a port group (the * is ommited when refering to port group, it is 
+# only part of the definition.
+#
+# The connection endpoint can be specified either as '<device>.<port(group)>' or simply as 
+# '<device>', where the latter is automatically expanded to '<device>.default'.
+#
+# # Pre-defined ports.
+#
+# Some devices define a default set of ports if none is explicitely specified to cut-down boilerplate
+# configuration directives. The will usually just define a port or portgroup named default (applies to 
+# linux_switch, netdev). 
+#
+# Ex. netdev pre-defined ports (both definitions are equivalent):
+#
+# netdev_explicit: 
+#     type: netdev
+#     ifname: x
+#     ports: [default]
+#
+# netdev_implicit: 
+#     type: netdev
+#     ifname: x
+#
+# Static switch does not define a default portgroup yet, because there would be no way to decribe a 
+# forwarding table if the ports were not named.
+#
+# 
+#
+network:
+    pc1:
+        type: netdev
+        ifname: fhr1
+        # a 'default' port is pre-defined
+
+    pc2:
+        type: netdev
+        ifname: fhr2
+
+    pc3:
+        type: netdev
+        ifname: fhr3
+        # Rename the default port, just because we can. Notice we must give the port name explicitely
+        # in the 'connect' section.
+        ports:
+            uplink:
+
+    pc4:
+        type: netdev
+        ifname: fhr4
+ 
+    fhr5:
+        type: netdev
+        # override the 'default' port to specify a connection
+        ports: 
+            default: switch2
+
+    switch1:
+        type: static_switch
+        broadcast: true
+
+        ports: 
+            default :
+            in1 : pc1
+            in2 : pc2
+
+        forward:
+            default: ['00:00:00:00:00:03' , '00:00:00:00:00:04']
+            in1: '00:00:00:00:00:01'
+            in2: '00:00:00:00:00:02'
+
+    switch2:
+        type: linux_switch
+        ports: default.*, printers.*
+
+connect:
+    - [switch1, switch2]
+    - [pc3.uplink, switch2]
+    - [pc4, switch2]
+
+---
