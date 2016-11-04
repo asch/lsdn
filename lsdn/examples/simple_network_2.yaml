@@ -22,7 +22,7 @@
 # Ex. port definition:
 #  - management_port
 #  - printers.*
-#  - pc.*]
+#  - pc.*
 #
 # The definition can also be a YAML map, in which case the map values define the connections. The 
 # connections is either a list of connections (for port groups) or a single or no connection (for ports). For syntax
@@ -32,10 +32,15 @@
 # in the 'connect' section.
 #
 # Ex. port definition with connections:
-#  - management_port: nsa_appliance.input
-#  - printers.*: [printer1, printer2]
-#  - pc.*: 
+#    management_port: nsa_appliance.input
+#    printers.*: [printer1, printer2]
+#    pc.*: 
 #
+# As a last option, the ports can have attached properties, in that case they are written like this:
+#    management_port:
+#        connect: nsa_appliance.input
+#        vlan_id: 1
+#   
 #
 # # Connection specification
 # 
@@ -103,13 +108,13 @@ network:
 
         ports: 
             default :
-            in1 : pc1
-            in2 : pc2
-
-        forward:
-            default: ['00:00:00:00:00:03' , '00:00:00:00:00:04']
-            in1: '00:00:00:00:00:01'
-            in2: '00:00:00:00:00:02'
+               fwd: ['00:00:00:00:00:03' , '00:00:00:00:00:04']
+            in1 : 
+               connect: pc1
+               fwd: '00:00:00:00:00:01'
+            in2 : 
+               connect: pc2
+               fwd: '00:00:00:00:00:02'
 
     switch2:
         type: linux_switch
