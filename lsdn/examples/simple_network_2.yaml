@@ -46,7 +46,7 @@
 # 
 # Connections are specified either when defining the port or portgroup (as shown) or directly in the 
 # 'connect' section. The 'connect' section is a list of pairs of connection endpoints. The connection
-# endpoint can be either a port or a port group (the * is ommited when refering to port group, it is 
+# endpoint can be either a port or a port group (the * is omitted when referring to port group, it is 
 # only part of the definition.
 #
 # The connection endpoint can be specified either as '<device>.<port(group)>' or simply as 
@@ -54,7 +54,7 @@
 #
 # # Pre-defined ports.
 #
-# Some devices define a default set of ports if none is explicitely specified to cut-down boilerplate
+# Some devices define a default set of ports if none is explicitly specified to cut-down boilerplate
 # configuration directives. The will usually just define a port or portgroup named default (applies to 
 # linux_switch, netdev). 
 #
@@ -69,7 +69,7 @@
 #     type: netdev
 #     ifname: x
 #
-# Static switch does not define a default portgroup yet, because there would be no way to decribe a 
+# Static switch does not define a default portgroup yet, because there would be no way to describe a 
 # forwarding table if the ports were not named.
 #
 # 
