@@ -7,10 +7,6 @@ file(GLOB_RECURSE TEST_SUPPORT_QEMU
    qemu/serial-shell)
 
 add_custom_target(install_test_harness ALL
-        mkdir -p qemu lib
-        COMMAND ln -f ${TEST_SUPPORT} .
-        COMMAND ln -f ${TEST_SUPPORT_LIB} lib
-        COMMAND ln -f ${TEST_SUPPORT_QEMU} qemu
         SOURCES ${TEST_SUPPORT} ${TEST_SUPPORT_LIB} ${TEST_SUPPORT_QEMU}
 )
 
@@ -29,6 +25,7 @@ function(simple_test test)
    target_link_libraries(test_${test} lsdn ${MNL_LIBRARIES})
 endfunction(simple_test)
 
+simple_test(vlan)
 simple_test(veth)
 simple_test(nl)
 simple_test(mirred_ingress)
