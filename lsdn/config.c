@@ -82,8 +82,8 @@ struct config_file *config_file_open(char *filename)
 		config_file_set_error(config, "Syntax error: %s at %s:%u:%u\n",
 			config->parser.problem,
 			filename,
-			config->parser.problem_mark.line,
-			config->parser.problem_mark.column);
+			config->parser.problem_mark.line + 1,
+			config->parser.problem_mark.column + 1);
 		goto error2;
 	}
 
