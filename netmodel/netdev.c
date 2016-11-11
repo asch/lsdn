@@ -11,10 +11,11 @@
 #include "private/node.h"
 #include "private/port.h"
 
+static struct lsdn_port_ops port_ops = {};
 
 struct lsdn_netdev {
 	struct lsdn_node node;
-	struct lsdn_port port;
+	struct lsdn_port* port;
 	struct lsdn_ruleset rules;
 	struct lsdn_rule default_rule;
 	char *linux_if;
@@ -35,8 +36,6 @@ struct lsdn_netdev *lsdn_netdev_new(
 		return NULL;
 	}
 	netdev->linux_if = ifname_copy;
-	netdev->node.port_count = 1;
-	lsdn_port_init(&netdev->port, &netdev->node, 0, &netdev->rules);
 	lsdn_ruleset_init(&netdev->rules);
 	lsdn_rule_init(&netdev->default_rule);
 	lsdn_add_rule(&netdev->rules, &netdev->default_rule, 0);
@@ -47,10 +46,16 @@ struct lsdn_netdev *lsdn_netdev_new(
 	return netdev;
 }
 
-static struct lsdn_port *get_netdev_port(struct lsdn_node *node, size_t index)
+static struct lsdn_port *new_port(struct lsdn_node *node, port_type_t t)
 {
-	UNUSED(index);
-	return &lsdn_as_netdev(node)->port;
+	assert(t ==  LSDN_PORTT_DEFAULT);
+
+	struct lsdn_port* port = malloc(sizeof(struct lsdn_port));
+	port->ops = &port_ops;
+	port->ruleset = &lsdn_as_netdev(node)->rules;
+	lsdn_as_netdev(node)->port = port;
+
+	return port;
 }
 
 static void free_netdev(struct lsdn_node *node)
@@ -61,6 +66,8 @@ static void free_netdev(struct lsdn_node *node)
 static lsdn_err_t update_if_rules(struct lsdn_node *node)
 {
 	// TODO: delete the old rules /  do not duplicate the rules
+
+	// TODO: validate we have only one port
 
 	//runcmd("tc qdisc add dev %s handle ffff: ingress", netdev->linux_if);
 
@@ -82,7 +89,7 @@ static lsdn_err_t update_if_rules(struct lsdn_node *node)
 
 	lsdn_filter_actions_start(filter, TCA_FLOWER_ACT);
 
-	struct lsdn_if* dst_if = &netdev->port.peer->ruleset->interface;
+	struct lsdn_if* dst_if = &netdev->port->peer->ruleset->interface;
 	assert(lsdn_if_created(dst_if));
 	unsigned int ifindex_dst = dst_if->ifindex;
 
@@ -104,7 +111,7 @@ static lsdn_err_t update_if_rules(struct lsdn_node *node)
 
 struct lsdn_node_ops lsdn_netdev_ops = {
 	.free_private_data = free_netdev,
-	.get_port = get_netdev_port,
+	.new_port = new_port,
 	.update_rules = lsdn_noop,
 	.update_ifs = lsdn_noop,
 	.update_if_rules = update_if_rules

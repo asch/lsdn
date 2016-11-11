@@ -3,20 +3,30 @@
 
 #include <stddef.h>
 #include "../include/port.h"
+#include "list.h"
 
 struct lsdn_node;
 struct lsdn_ruleset;
 
+struct lsdn_port_ops {
+	void (*free)(struct lsdn_port*);
+};
+
+struct lsdn_port_group{
+	struct lsdn_node *owner;
+	port_type_t type;
+};
+
 struct lsdn_port {
 	struct lsdn_port *peer;
 	struct lsdn_node *owner;
-	size_t index;
 	struct lsdn_ruleset *ruleset;
-};
+	char *name;
+	port_type_t type;
+	struct lsdn_port_ops *ops;
 
-void lsdn_port_init(struct lsdn_port *port,
-		    struct lsdn_node *owner,
-		    size_t index,
-		    struct lsdn_ruleset *ruleset);
+	struct lsdn_list_entry ports;
+	struct lsdn_list_entry class_ports;
+};
 
 #endif

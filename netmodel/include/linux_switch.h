@@ -7,8 +7,6 @@
 
 LSDN_DEFINE_NODE(linux_switch)
 
-struct lsdn_linux_switch *lsdn_linux_switch_new(
-		struct lsdn_network *net,
-		size_t port_count);
+struct lsdn_linux_switch *lsdn_linux_switch_new(struct lsdn_network *net);
 
 #endif

@@ -37,12 +37,8 @@ static bool load_static_switch(struct config_item *item, void *arg)
 	DEBUG_PRINTF("Processing static_switch '%s'", item->key);
 
 	struct lsdn_network *net = arg;
-	int num_ports;
-	lsdn_mac_t mac;
 
 	struct config_option options[] = {
-		{ "num_ports",	CONFIG_OPTION_INT,	&num_ports,	true },
-		{ "mac",	CONFIG_OPTION_MAC,	&mac,		true },
 		{ 0,		0,			0,		0 }
 	};
 
@@ -50,7 +46,7 @@ static bool load_static_switch(struct config_item *item, void *arg)
 		return false;
 	}
 
-	lsdn_static_switch_new(net, num_ports);
+	lsdn_static_switch_new(net);
 	return true;
 }
 

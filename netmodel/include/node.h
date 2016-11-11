@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include "network.h"
+#include "port.h"
 
 struct lsdn_node;
 struct lsdn_node_ops;
@@ -17,9 +18,14 @@ struct lsdn_port;
 		return (struct lsdn_##name *) node; \
 	}
 
+struct lsdn_port *lsdn_create_port(struct lsdn_node *node, port_type_t type);
+struct lsdn_port_group *lsdn_create_port_group(
+		struct lsdn_node *node, const char *name, port_type_t type);
+struct lsdn_port_group *lsdn_port_group_by_name(
+		struct lsdn_node *node, const char *name);
+struct lsdn_port *lsdn_port_by_name(struct lsdn_node *node, const char* name);
+
 void lsdn_check_cast(struct lsdn_node *node, struct lsdn_node_ops *ops);
-struct lsdn_port *lsdn_get_port(struct lsdn_node *node, size_t port);
-size_t lsdn_get_port_count(struct lsdn_node *node);
 void lsdn_node_free(struct lsdn_node *node);
 
 #endif

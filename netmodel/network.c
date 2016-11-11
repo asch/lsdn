@@ -39,6 +39,9 @@ void lsdn_commit_to_network(struct lsdn_node *node)
 	lsdn_list_add(&net->nodes, &node->network_list);
 }
 
+/**
+ * Recursively goes throught rulesets
+ */
 static lsdn_err_t create_if_for_ruleset(
 		struct lsdn_network *network,
 		struct lsdn_node* owner,
@@ -188,8 +191,8 @@ lsdn_err_t lsdn_network_create(struct lsdn_network *network)
 
 	/* 3) Collect all reachable rule definitions and create their backing interfaces*/
 	lsdn_foreach_list(network->nodes, network_list, struct lsdn_node, n) {
-		for(size_t i = 0; i < n->port_count; i++) {
-			rv = create_if_for_ruleset(network, n, lsdn_get_port(n, i)->ruleset);
+		lsdn_foreach_list(n->ports, ports, struct lsdn_port, p){
+			rv = create_if_for_ruleset(network, n, p->ruleset);
 			if(rv != LSDNE_OK)
 				return rv;
 		}
@@ -227,6 +230,7 @@ void lsdn_network_free(struct lsdn_network *network)
 		lsdn_node_free(prev);
 		prev = cur;
 	}
+
 	free(network->name);
 	free(network);
 }

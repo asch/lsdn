@@ -6,8 +6,10 @@
 #include "private/port.h"
 #include "private/network.h"
 #include "private/rule.h"
+#include "include/util.h"
 #include "private/nl.h"
 
+static struct lsdn_port_ops port_ops;
 
 struct switch_port {
 	struct lsdn_port port;
@@ -24,81 +26,76 @@ struct switch_port {
 
 struct lsdn_linux_switch {
 	struct lsdn_node node;
-	struct lsdn_if bridge_if;
-	struct switch_port *ports;
+	struct lsdn_if bridge_if;;
 };
 
 struct lsdn_linux_switch *lsdn_linux_switch_new(
-		struct lsdn_network *net,
-		size_t port_count)
+		struct lsdn_network *net)
 {
 	struct lsdn_linux_switch *lswitch = (struct lsdn_linux_switch *)
 			lsdn_node_new(net, &lsdn_linux_switch_ops, sizeof(*lswitch));
-	lswitch->ports = calloc(port_count, sizeof(struct switch_port));
-	lswitch->node.port_count = port_count;
 	lsdn_init_if(&lswitch->bridge_if);
-	if (!lswitch->ports) {
-		lsdn_node_free(&lswitch->node);
-		return NULL;
-	}
-
-	for (size_t i = 0;  i < port_count; i++) {
-		struct switch_port *port = &lswitch->ports[i];
-
-		lsdn_ruleset_init(&port->ruleset);
-		lsdn_rule_init(&port->rule);
-		port->rule.action.id = LSDN_ACTION_IF;
-		/* the interface will be filled in later */
-		lsdn_add_rule(&port->ruleset, &port->rule, 0);
-		lsdn_port_init(&port->port, &lswitch->node, i, &port->ruleset);
-		lsdn_init_if(&port->bridged_if);
-		lsdn_init_if(&port->veth_if);
-	}
-
 	lsdn_commit_to_network(&lswitch->node);
 	return lswitch;
+}
+
+static struct lsdn_port* new_port(struct lsdn_node *node, port_type_t type)
+{
+	lsdn_as_linux_switch(node);
+	assert(type == LSDN_PORTT_DEFAULT);
+
+	struct switch_port* port = malloc(sizeof(struct switch_port));
+	if(!port)
+		return NULL;
+	port->port.ops = &port_ops;
+	lsdn_ruleset_init(&port->ruleset);
+	lsdn_rule_init(&port->rule);
+	port->rule.action.id = LSDN_ACTION_IF;
+	/* the interface will be filled in later when we actually create it */
+	lsdn_add_rule(&port->ruleset, &port->rule, 0);
+	lsdn_init_if(&port->bridged_if);
+	lsdn_init_if(&port->veth_if);
+	port->port.ruleset = &port->ruleset;
+
+	return &port->port;
+}
+
+static void free_port(struct lsdn_port *port_gen){
+	struct switch_port* port = (struct switch_port*)port_gen;
+	lsdn_ruleset_free(&port->ruleset);
+	lsdn_destroy_if(&port->veth_if);
+	lsdn_destroy_if(&port->bridged_if);
+
+	/* free all rules */
+	struct lsdn_rule *prev = lsdn_container_of(
+		port->ruleset.rules.next,
+		struct lsdn_rule,
+		ruleset_list);
+	struct lsdn_rule *cur = prev;
+	while (!lsdn_is_list_empty(&port->ruleset.rules)) {
+		cur = lsdn_container_of(
+				cur->ruleset_list.next,
+				struct lsdn_rule,
+				ruleset_list);
+		lsdn_rule_free(prev);
+		prev = cur;
+	}
 }
 
 static void free_lswitch(struct lsdn_node *node)
 {
 	struct lsdn_linux_switch* lswitch = lsdn_as_linux_switch(node);
-	for (size_t i = 0;  i < lswitch->node.port_count; i++) {
-		struct switch_port *port = &lswitch->ports[i];
-		struct lsdn_rule *prev = lsdn_container_of(
-				port->ruleset.rules.next,
-				struct lsdn_rule,
-				ruleset_list);
-		struct lsdn_rule *cur = prev;
-		while (!lsdn_is_list_empty(&port->ruleset.rules)) {
-			cur = lsdn_container_of(
-					cur->ruleset_list.next,
-					struct lsdn_rule,
-					ruleset_list);
-			lsdn_rule_free(prev);
-			prev = cur;
-		}
-		lsdn_ruleset_free(&port->ruleset);
-		lsdn_destroy_if(&port->veth_if);
-		lsdn_destroy_if(&port->bridged_if);
-	}
 
 	lsdn_destroy_if(&lswitch->bridge_if);
-	free(lswitch->ports);
-}
-
-static struct lsdn_port *get_lswitch_port(struct lsdn_node *node, size_t index)
-{
-	struct lsdn_linux_switch* lswitch = lsdn_as_linux_switch(node);
-	return &lswitch->ports[index].port;
 }
 
 static lsdn_err_t lswitch_update_rules(struct lsdn_node *node)
 {
-	struct lsdn_linux_switch* lswitch = lsdn_as_linux_switch(node);
-	for (size_t i = 0;  i < lswitch->node.port_count; i++) {
-		struct switch_port *port = &lswitch->ports[i];
-		port->rule.action.ifname = port->veth_if.ifname;
+	lsdn_foreach_list(node->ports, ports, struct lsdn_port, port_gen){
+		struct switch_port* p = (struct switch_port*) port_gen;
+		p->rule.action.ifname = p->veth_if.ifname;
 	}
+
 	return LSDNE_OK;
 }
 
@@ -119,8 +116,8 @@ static lsdn_err_t lswitch_update_ifs(struct lsdn_node *node)
 
 	char ifname1[IF_NAMESIZE];
 	char ifname2[IF_NAMESIZE];
-	for (size_t i = 0;  i < lswitch->node.port_count; i++) {
-		struct switch_port *port = &lswitch->ports[i];
+	lsdn_foreach_list(node->ports, ports, struct lsdn_port, port_gen){
+		struct switch_port *port = (struct switch_port*) port_gen;
 		int id = ++node->network->unique_id;
 		snprintf(ifname1, IF_NAMESIZE, "%s-%da", node->network->name, id);
 		snprintf(ifname2, IF_NAMESIZE, "%s-%db", node->network->name, id);
@@ -162,12 +159,13 @@ static lsdn_err_t lswitch_update_ifs(struct lsdn_node *node)
 
 static lsdn_err_t lswitch_update_if_rules(struct lsdn_node *node)
 {
-	struct lsdn_linux_switch* lswitch = lsdn_as_linux_switch(node);
+	lsdn_as_linux_switch(node);
+
 	struct mnl_socket* sock = lsdn_socket_init();
 	lsdn_err_t ret = LSDNE_OK;
 
-	for (size_t i = 0;  i < lswitch->node.port_count; i++) {
-		struct switch_port *port = &lswitch->ports[i];
+	lsdn_foreach_list(node->ports, ports, struct lsdn_port, port_gen){
+		struct switch_port *port = (struct switch_port*) port_gen;
 		if (!port->port.peer)
 			continue;
 
@@ -211,9 +209,13 @@ static lsdn_err_t lswitch_update_if_rules(struct lsdn_node *node)
 	return ret;
 }
 
+static struct lsdn_port_ops port_ops = {
+	.free = free_port
+};
+
 struct lsdn_node_ops lsdn_linux_switch_ops = {
 	.free_private_data = free_lswitch,
-	.get_port = get_lswitch_port,
+	.new_port =  new_port,
 	/* Lswitch rules are set-up at port creation time. */
 	.update_rules = lswitch_update_rules,
 	.update_ifs = lswitch_update_ifs,

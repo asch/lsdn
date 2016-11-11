@@ -11,11 +11,14 @@ static void c(lsdn_err_t err)
 	}
 }
 
-enum {PVM1, PVM2, PTRUNK1, PTRUNK2};
+struct switch_ports{
+	struct lsdn_port *vm0, *vm1, *t1, *t2;
+};
 
 int main(int argc, const char* argv[]){
 	struct lsdn_network *net;
 	struct lsdn_static_switch *sswitch[3];
+	struct switch_ports sports[3];
 	struct lsdn_netdev *vm[6];
 
 	int broadcast = 1;
@@ -25,9 +28,9 @@ int main(int argc, const char* argv[]){
 
 	net = lsdn_network_new("lsdn-test");
 
-	sswitch[0] = lsdn_static_switch_new(net, 4);
-	sswitch[1] = lsdn_static_switch_new(net, 3);
-	sswitch[2] = lsdn_static_switch_new(net, 3);
+	sswitch[0] = lsdn_static_switch_new(net);
+	sswitch[1] = lsdn_static_switch_new(net);
+	sswitch[2] = lsdn_static_switch_new(net);
 
 	for(size_t i = 0; i<3; i++){
 		lsdn_static_switch_enable_broadcast(sswitch[0], broadcast);
@@ -39,21 +42,19 @@ int main(int argc, const char* argv[]){
 		vm[i] = lsdn_netdev_new(net, ifname);
 	}
 
-/* TODO: Include some better solution in the library (so we don't have to typecast
- * like crazy or use these macros)
- */
-#define PORTOF(node, port) lsdn_get_port((struct lsdn_node *)(node), port)
-#define VMPORT(i) PORTOF(vm[i],0)
+	lsdn_connect((struct lsdn_node*)vm[0], NULL, (struct lsdn_node*)sswitch[0], &sports[0].vm0);
+	lsdn_connect((struct lsdn_node*)vm[1], NULL, (struct lsdn_node*)sswitch[0], &sports[0].vm1);
+	lsdn_connect((struct lsdn_node*)vm[2], NULL, (struct lsdn_node*)sswitch[1], &sports[1].vm0);
+	lsdn_connect((struct lsdn_node*)vm[3], NULL, (struct lsdn_node*)sswitch[1], &sports[1].vm1);
+	lsdn_connect((struct lsdn_node*)vm[4], NULL, (struct lsdn_node*)sswitch[2], &sports[2].vm0);
+	lsdn_connect((struct lsdn_node*)vm[5], NULL, (struct lsdn_node*)sswitch[2], &sports[2].vm1);
 
-	lsdn_connect(VMPORT(0), PORTOF(sswitch[0], PVM1));
-	lsdn_connect(VMPORT(1), PORTOF(sswitch[0], PVM2));
-	lsdn_connect(VMPORT(2), PORTOF(sswitch[1], PVM1));
-	lsdn_connect(VMPORT(3), PORTOF(sswitch[1], PVM2));
-	lsdn_connect(VMPORT(4), PORTOF(sswitch[2], PVM1));
-	lsdn_connect(VMPORT(5), PORTOF(sswitch[2], PVM2));
-
-	lsdn_connect(PORTOF(sswitch[0], PTRUNK1), PORTOF(sswitch[1], PTRUNK1));
-	lsdn_connect(PORTOF(sswitch[0], PTRUNK2), PORTOF(sswitch[2], PTRUNK1));
+	lsdn_connect(
+		(struct lsdn_node*)sswitch[0], &sports[0].t1,
+		(struct lsdn_node*)sswitch[1], &sports[1].t1);
+	lsdn_connect(
+		(struct lsdn_node*)sswitch[0], &sports[0].t2,
+		(struct lsdn_node*)sswitch[2], &sports[2].t1);
 
 	// And now the rules. The next test we make should already be
 	// able to auto-generate these rules from the network description
@@ -61,34 +62,34 @@ int main(int argc, const char* argv[]){
 	lsdn_mac_t mac;
 
 	c(lsdn_parse_mac(&mac, "00:00:00:00:00:01"));
-	c(lsdn_static_switch_add_rule(sswitch[0], &mac, PVM1));
-	c(lsdn_static_switch_add_rule(sswitch[1], &mac, PTRUNK1));
-	c(lsdn_static_switch_add_rule(sswitch[2], &mac, PTRUNK1));
+	c(lsdn_static_switch_add_rule(&mac, sports[0].vm0));
+	c(lsdn_static_switch_add_rule(&mac, sports[1].t1));
+	c(lsdn_static_switch_add_rule(&mac, sports[2].t1));
 
 	c(lsdn_parse_mac(&mac, "00:00:00:00:00:02"));
-	c(lsdn_static_switch_add_rule(sswitch[0], &mac, PVM2));
-	c(lsdn_static_switch_add_rule(sswitch[1], &mac, PTRUNK1));
-	c(lsdn_static_switch_add_rule(sswitch[2], &mac, PTRUNK1));
+	c(lsdn_static_switch_add_rule(&mac, sports[0].vm1));
+	c(lsdn_static_switch_add_rule(&mac, sports[1].t1));
+	c(lsdn_static_switch_add_rule(&mac, sports[2].t1));
 
 	c(lsdn_parse_mac(&mac, "00:00:00:00:00:03"));
-	c(lsdn_static_switch_add_rule(sswitch[0], &mac, PTRUNK1));
-	c(lsdn_static_switch_add_rule(sswitch[1], &mac, PVM1));
-	c(lsdn_static_switch_add_rule(sswitch[2], &mac, PTRUNK1));
+	c(lsdn_static_switch_add_rule(&mac, sports[0].t1));
+	c(lsdn_static_switch_add_rule(&mac, sports[1].vm0));
+	c(lsdn_static_switch_add_rule(&mac, sports[2].t1));
 
 	c(lsdn_parse_mac(&mac, "00:00:00:00:00:04"));
-	c(lsdn_static_switch_add_rule(sswitch[0], &mac, PTRUNK1));
-	c(lsdn_static_switch_add_rule(sswitch[1], &mac, PVM2));
-	c(lsdn_static_switch_add_rule(sswitch[2], &mac, PTRUNK1));
+	c(lsdn_static_switch_add_rule(&mac, sports[0].t1));
+	c(lsdn_static_switch_add_rule(&mac, sports[1].vm1));
+	c(lsdn_static_switch_add_rule(&mac, sports[2].t1));
 
 	c(lsdn_parse_mac(&mac, "00:00:00:00:00:05"));
-	c(lsdn_static_switch_add_rule(sswitch[0], &mac, PTRUNK2));
-	c(lsdn_static_switch_add_rule(sswitch[1], &mac, PTRUNK1));
-	c(lsdn_static_switch_add_rule(sswitch[2], &mac, PVM1));
+	c(lsdn_static_switch_add_rule(&mac, sports[0].t2));
+	c(lsdn_static_switch_add_rule(&mac, sports[1].t1));
+	c(lsdn_static_switch_add_rule(&mac, sports[2].vm0));
 
 	c(lsdn_parse_mac(&mac, "00:00:00:00:00:06"));
-	c(lsdn_static_switch_add_rule(sswitch[0], &mac, PTRUNK2));
-	c(lsdn_static_switch_add_rule(sswitch[1], &mac, PTRUNK1));
-	c(lsdn_static_switch_add_rule(sswitch[2], &mac, PVM2));
+	c(lsdn_static_switch_add_rule(&mac, sports[0].t2));
+	c(lsdn_static_switch_add_rule(&mac, sports[1].t1));
+	c(lsdn_static_switch_add_rule(&mac, sports[2].vm1));
 
 	c(lsdn_network_create(net));
 	lsdn_network_free(net);
