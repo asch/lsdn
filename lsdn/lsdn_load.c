@@ -2,6 +2,7 @@
 #include "config.h"
 #include "../netmodel/include/lsdn.h"
 
+#include <ctype.h>
 #include <getopt.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -32,11 +33,27 @@ static void usage(int status)
 	exit(status);
 }
 
+static bool is_name_valid(char *str)
+{	
+	if (!isalpha(str[0])) /* will fail for empty name as well */
+		return false;
+
+	char c;
+	int i = 0;
+	while ((c = str[i++]) != '\0') {
+		if (!isalpha(c) && !isdigit(c) && c != '_' && c != '-')
+			return false;
+	}
+
+	return true;
+}
+
 static bool load_static_switch(struct config_item *item, void *arg)
 {
-	DEBUG_PRINTF("Processing static_switch '%s'", item->key);
-
 	struct lsdn_network *net = arg;
+	char *name = item->key;
+
+	DEBUG_PRINTF("Processing static_switch '%s'", name);
 
 	struct config_option options[] = {
 		{ 0,		0,			0,		0 }
@@ -55,23 +72,30 @@ static struct lsdn_network *load_network(struct config_file *config)
 	struct config_map root_map;
 	struct config_item item;
 	struct lsdn_network *net = NULL;
+	char *netname;
 	
 	config_file_get_root_map(config, &root_map);
 
 	if (config_map_num_items(&root_map) != 1) {
 		fprintf(stderr, "Only 1 network definition per file allowed\n");
-		exit (EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 
 	config_map_next_item(&root_map, &item);
+	netname = item.key;
 
-	DEBUG_PRINTF("Processing network '%s'", item.key);
-	if (item.value_type != CONFIG_VALUE_MAP) {
-		fprintf(stderr, "Network definition has to be a map\n");
-		exit (EXIT_FAILURE);
+	DEBUG_PRINTF("Processing network '%s'", netname);
+
+	if (!is_name_valid(netname)) {
+		config_file_set_error(config, "'%s' is not a valid network name", netname);
 	}
 
-	net = lsdn_network_new(item.key);
+	if (item.value_type != CONFIG_VALUE_MAP) {
+		config_file_set_error(config, "Network definition has to be a map\n");
+		exit(EXIT_FAILURE);
+	}
+
+	net = lsdn_network_new(netname);
 
 	struct config_action actions[] = {
 		{ "static_switch",	load_static_switch,	net },
