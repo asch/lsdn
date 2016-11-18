@@ -28,17 +28,17 @@ void strbuf_resize(struct strbuf *buf, size_t new_size);
 /**
  * @brief Print at specific offset of the buffer.
  */
-void strbuf_printf(struct strbuf *buf, size_t offset, char *format, ...);
+void strbuf_printf(struct strbuf *buf, size_t offset, const char *format, ...);
 
 /**
  * @brief Print at specific offset of the buffer (va_list).
  */
-void strbuf_vprintf_at(struct strbuf *buf, size_t offset, char *format, va_list args);
+void strbuf_vprintf_at(struct strbuf *buf, size_t offset, const char *format, va_list args);
 
 /**
  * @brief Append string to the end of the buffer.
  */
-void strbuf_append(struct strbuf *buf, char *format, ...);
+void strbuf_append(struct strbuf *buf, const char *format, ...);
 
 /**
  * @brief Copy the string and return pointer to the copy.
@@ -48,7 +48,7 @@ char *strbuf_copy(struct strbuf *buf);
 /**
  * @brief Prepend a string before current value stored in the buffer.
  */
-void strbuf_prepend(struct strbuf *buf, char *format, ...);
+void strbuf_prepend(struct strbuf *buf, const char *format, ...);
 
 /**
  * @brief Free all memory used by the buffer.

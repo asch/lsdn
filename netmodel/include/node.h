@@ -18,9 +18,9 @@ struct lsdn_port;
 		return (struct lsdn_##name *) node; \
 	}
 
-struct lsdn_port *lsdn_create_port(struct lsdn_node *node, port_type_t type);
+struct lsdn_port *lsdn_create_port(struct lsdn_node *node, lsdn_port_type_t type);
 struct lsdn_port_group *lsdn_create_port_group(
-		struct lsdn_node *node, const char *name, port_type_t type);
+		struct lsdn_node *node, const char *name, lsdn_port_type_t type);
 struct lsdn_port_group *lsdn_port_group_by_name(
 		struct lsdn_node *node, const char *name);
 struct lsdn_port *lsdn_port_by_name(struct lsdn_node *node, const char* name);

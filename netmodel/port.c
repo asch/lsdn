@@ -45,6 +45,8 @@ void lsdn_port_free(struct lsdn_port *p){
 }
 
 void lsdn_port_set_name(struct lsdn_port *p, const char* name){
+	/* TODO: Check name uniqueness */
+	free(p->name);
 	p->name = strdup(name);
 }
 
@@ -52,6 +54,6 @@ const char* lsdn_port_get_name(struct lsdn_port *p, const char* name){
 	return p->name;
 }
 
-port_type_t lsdn_port_type(struct lsdn_port *p){
+lsdn_port_type_t lsdn_port_type(struct lsdn_port *p){
 	return p->type;
 }

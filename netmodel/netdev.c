@@ -46,7 +46,7 @@ struct lsdn_netdev *lsdn_netdev_new(
 	return netdev;
 }
 
-static struct lsdn_port *new_port(struct lsdn_node *node, port_type_t t)
+static struct lsdn_port *new_port(struct lsdn_node *node, lsdn_port_type_t t)
 {
 	assert(t ==  LSDN_PORTT_DEFAULT);
 

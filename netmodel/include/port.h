@@ -4,7 +4,7 @@
 struct lsdn_port;
 struct lsdn_port_group;
 struct lsdn_node;
-typedef int port_type_t;
+typedef int lsdn_port_type_t;
 
 
 #define LSDN_PORTT_DEFAULT 0
@@ -17,6 +17,6 @@ void lsdn_connect(
 void lsdn_port_free(struct lsdn_port *p);
 void lsdn_port_set_name(struct lsdn_port *p, const char* name);
 const char* lsdn_port_get_name(struct lsdn_port *p, const char* name);
-port_type_t lsdn_port_type(struct lsdn_port *p);
+lsdn_port_type_t lsdn_port_type(struct lsdn_port *p);
 
 #endif

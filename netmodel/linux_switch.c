@@ -39,7 +39,7 @@ struct lsdn_linux_switch *lsdn_linux_switch_new(
 	return lswitch;
 }
 
-static struct lsdn_port* new_port(struct lsdn_node *node, port_type_t type)
+static struct lsdn_port* new_port(struct lsdn_node *node, lsdn_port_type_t type)
 {
 	lsdn_as_linux_switch(node);
 	assert(type == LSDN_PORTT_DEFAULT);

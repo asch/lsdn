@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <yaml.h>
 
 
@@ -22,18 +23,35 @@ struct config_file {
 
 struct config_file *config_file;
 
-static bool load_map_from_node(struct config_map *map, yaml_node_t *node)
+
+static bool load_config_item_value(struct config_item *item, yaml_node_t *node)
 {
-	if (node->type != YAML_MAPPING_NODE)
+	switch (node->type) {
+	case YAML_SCALAR_NODE:
+		item->value_type = CONFIG_VALUE_SCALAR;
+		item->value = (char *)node->data.scalar.value;
+		break;
+
+	case YAML_MAPPING_NODE:
+		item->value_type = CONFIG_VALUE_MAP;
+		item->values.node = node;
+		config_map_reset(&item->values);
+		break;
+
+	case YAML_SEQUENCE_NODE:
+		item->value_type = CONFIG_VALUE_LIST;
+		item->list.node = node;
+		config_list_reset(&item->list);
+		break;
+
+	default:
+		DEBUG_MSG("Invalid item value type");
 		return false;
-
-	map->node = node;
-	config_map_reset(map);
-
+	}
 	return true;
 }
 
-void config_file_set_error(struct config_file *config, char *msg, ...)
+void config_file_set_error(struct config_file *config, const char *msg, ...)
 {
 	va_list args;
 	va_start(args, msg);
@@ -113,7 +131,9 @@ bool config_file_get_root_map(struct config_file *config, struct config_map *map
 	assert(config != NULL);
 	assert(map != NULL);
 
-	return load_map_from_node(map, config->root_node);
+	map->node = config->root_node;
+	config_map_reset(map);
+	return true;
 }
 
 void config_file_close(struct config_file *config)
@@ -141,26 +161,8 @@ bool config_map_next_item(struct config_map *map, struct config_item *item)
 
 	item->key = (char *)key_node->data.scalar.value;
 
-	switch (value_node->type) {
-	case YAML_SCALAR_NODE:
-		item->value_type = CONFIG_VALUE_SCALAR;
-		item->value = (char *)value_node->data.scalar.value;
-		break;
-
-	case YAML_MAPPING_NODE:
-		item->value_type = CONFIG_VALUE_MAP;
-		load_map_from_node(&item->values, value_node);
-		break;
-
-	case YAML_SEQUENCE_NODE:
-		/* TODO implement this */
-		item->value_type = CONFIG_VALUE_LIST;
-		break;
-
-	default:
-		DEBUG_MSG("Invalid item value type");
+	if(!load_config_item_value(item, value_node))
 		return false;
-	}
 
 	map->pair++;
 	return true;
@@ -178,8 +180,48 @@ size_t config_map_num_items(struct config_map *map)
 	return map->num_items;
 }
 
-bool config_map_get(struct config_map *map, char *key, struct config_item *item)
+void config_list_reset(struct config_list *list)
+{
+	yaml_node_item_t *start = list->node->data.sequence.items.start;
+	yaml_node_item_t *end = list->node->data.sequence.items.top;
+	list->element = start;
+	list->num_items = end - start;
+}
+
+bool config_list_next_item(struct config_list *list, struct config_item *item){
+	yaml_node_t *value_node;
+
+	assert(list != NULL);
+	assert(item != NULL);
+
+	if (list->element == list->node->data.sequence.items.top)
+		return false;
+	value_node = yaml_document_get_node(&config_file->doc, *list->element);
+	if(!load_config_item_value(item, value_node))
+		return false;
+
+	list->element++;
+	return true;
+}
+
+size_t config_list_num_items(struct config_list *list)
+{
+	return list->num_items;
+}
+
+bool config_list_get(struct config_list *list, size_t index, struct config_item *item)
+{
+	yaml_node_item_t val = list->node->data.sequence.items.start[index];
+	yaml_node_t* node_val = yaml_document_get_node(&config_file->doc, val);
+
+	item->key = NULL;
+	return load_config_item_value(item, node_val);
+}
+
+
+bool config_map_get(struct config_map *map, const char *key, struct config_item *item)
 {	
+	config_map_reset(map);
 	/* TODO O(n) time, maybe use a hashtable instead? */
 	while (config_map_next_item(map, item)) {
 		if (strcmp(item->key, key) == 0)
@@ -264,6 +306,16 @@ bool config_map_getopt(struct config_map *map, struct config_option *options)
 			*((char **)opt->ptr) = item.value;
 			break;
 
+		case CONFIG_OPTION_BOOL:
+			/* TODO: i think there is some YAML standard for this, find it */
+			if(strcmp("true", item.value) == 0)
+			   *((bool *)opt->ptr) = 1;
+			if(strcmp("false", item.value) == 0)
+			   *((bool *)opt->ptr) = 0;
+
+			/* TODO implement this */
+			break;
+
 		case CONFIG_OPTION_MAC:
 			/* TODO implement this */
 			break;
@@ -276,7 +328,7 @@ bool config_map_getopt(struct config_map *map, struct config_option *options)
 	return true;
 }
 
-bool config_map_dispatch(struct config_map *map, char *dispatch_key,
+bool config_map_dispatch(struct config_map *map, const char *dispatch_key,
 	struct config_action actions[], bool must_dispatch_all)
 {
 	struct config_item item, dispatch_item;

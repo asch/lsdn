@@ -16,7 +16,7 @@ struct lsdn_node_ops {
 	 *
 	 * Return an uninitialized port structure allocated with malloc.
 	 */
-	struct lsdn_port *(*new_port)(struct lsdn_node *node, port_type_t t);
+	struct lsdn_port *(*new_port)(struct lsdn_node *node, lsdn_port_type_t t);
 	/**
 	 * Update/create all rulesets on the lsdn_ports managed by this node
 	 */

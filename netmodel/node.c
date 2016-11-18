@@ -40,7 +40,7 @@ void lsdn_node_free(struct lsdn_node *node){
 	free(node);
 }
 
-struct lsdn_port *lsdn_create_port(struct lsdn_node *node, port_type_t type){
+struct lsdn_port *lsdn_create_port(struct lsdn_node *node, lsdn_port_type_t type){
 	struct lsdn_port *p = node->ops->new_port(node, type);
 	if(!p)
 		return NULL;
@@ -53,6 +53,24 @@ struct lsdn_port *lsdn_create_port(struct lsdn_node *node, port_type_t type){
 	lsdn_list_init(&p->class_ports);
 	lsdn_list_add(&node->ports, &p->ports);
 	return p;
+}
+
+struct lsdn_port_group *lsdn_create_port_group(
+		struct lsdn_node *node, const char *name, lsdn_port_type_t type)
+{
+	struct lsdn_port_group* pg = malloc(sizeof(*pg));
+	if(!pg)
+		return NULL;
+	pg->name = strdup(name);
+	if(!pg->name){
+		free(pg);
+		return NULL;
+	}
+	pg->owner = node;
+	pg->type = type;
+	lsdn_list_init(&pg->port_groups);
+	lsdn_list_add(&node->port_groups, &pg->port_groups);
+	return pg;
 }
 
 lsdn_err_t lsdn_noop(struct lsdn_node *node){

@@ -13,8 +13,10 @@ struct lsdn_port_ops {
 };
 
 struct lsdn_port_group{
+	char *name;
 	struct lsdn_node *owner;
-	port_type_t type;
+	lsdn_port_type_t type;
+	struct lsdn_list_entry port_groups;
 };
 
 struct lsdn_port {
@@ -22,7 +24,7 @@ struct lsdn_port {
 	struct lsdn_node *owner;
 	struct lsdn_ruleset *ruleset;
 	char *name;
-	port_type_t type;
+	lsdn_port_type_t type;
 	struct lsdn_port_ops *ops;
 
 	struct lsdn_list_entry ports;

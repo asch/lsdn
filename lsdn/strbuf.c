@@ -21,7 +21,7 @@ void strbuf_init(struct strbuf *buf)
 	strbuf_resize(buf, STRBUF_INIT_SIZE);
 }
 
-void strbuf_vprintf_at(struct strbuf *buf, size_t offset, char *format, va_list args)
+void strbuf_vprintf_at(struct strbuf *buf, size_t offset, const char *format, va_list args)
 {
 	va_list args2;
 	va_copy(args2, args);
@@ -41,7 +41,7 @@ void strbuf_vprintf_at(struct strbuf *buf, size_t offset, char *format, va_list 
 	va_end(args);
 }
 
-void strbuf_printf(struct strbuf *buf, size_t offset, char *format, ...)
+void strbuf_printf(struct strbuf *buf, size_t offset, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -51,7 +51,7 @@ void strbuf_printf(struct strbuf *buf, size_t offset, char *format, ...)
 	va_end(args);
 }
 
-void strbuf_append(struct strbuf *buf, char *format, ...)
+void strbuf_append(struct strbuf *buf, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -61,7 +61,7 @@ void strbuf_append(struct strbuf *buf, char *format, ...)
 	va_end(args);
 }
 
-void strbuf_prepend(struct strbuf *buf, char *format, ...)
+void strbuf_prepend(struct strbuf *buf, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);

@@ -161,7 +161,7 @@ static void free_port(struct lsdn_port* gen_port){
 	}
 }
 
-static struct lsdn_port* new_port(struct lsdn_node *node, port_type_t t){
+static struct lsdn_port* new_port(struct lsdn_node *node, lsdn_port_type_t t){
 	assert(t == LSDN_PORTT_DEFAULT);
 	lsdn_as_static_switch(node);
 

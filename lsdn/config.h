@@ -20,6 +20,12 @@ struct config_map {
 	size_t num_items;
 };
 
+struct config_list {
+	yaml_node_t *node;
+	yaml_node_item_t *element;
+	size_t num_items;
+};
+
 struct config_item {
 	char *key;
 	enum config_value_type value_type;	/* type of value stored */
@@ -27,6 +33,7 @@ struct config_item {
 	union {
 		char *value;			/* for CONFIG_VALUE_SCALAR */
 		struct config_map values;	/* for CONFIG_VALUE_MAP */
+		struct config_list list;        /* for CONFIG_VALUE_LIST */
 	};
 };
 
@@ -34,15 +41,21 @@ struct config_file *config_file_open(char *filename);
 struct config_file *config_file_open_stdin();
 bool config_file_get_root_map(struct config_file *file, struct config_map *map);
 bool config_file_has_errors(struct config_file *file);
-void config_file_set_error(struct config_file *file, char *msg, ...);
+void config_file_set_error(struct config_file *file, const char *msg, ...);
 char *config_file_get_error_string(struct config_file *config);
 void config_file_close(struct config_file *file);
 
 bool config_map_next_item(struct config_map *map, struct config_item *item);
 void config_map_reset(struct config_map *map);
 size_t config_map_num_items(struct config_map *map);
-bool config_map_search_item(struct config_map *map, char *key, struct config_item *item);
+/* TODO: purpose of search_item ? */
+bool config_map_search_item(struct config_map *map, const char *key, struct config_item *item);
+bool config_map_get(struct config_map *map, const char *key, struct config_item *item);
 
+bool config_list_next_item(struct config_list *list, struct config_item *item);
+void config_list_reset(struct config_list *list);
+size_t config_list_num_items(struct config_list *list);
+bool config_list_get(struct config_list *list, size_t index, struct config_item *item);
 
 enum config_option_type {
 	CONFIG_OPTION_BOOL,
@@ -74,7 +87,7 @@ struct config_action {
  * defines which function from the \a actions map will be called.
  *
  */
-bool config_map_dispatch(struct config_map *map, char *dispatch_key,
+bool config_map_dispatch(struct config_map *map, const char *dispatch_key,
 	struct config_action actions[], bool must_dispatch_all);
 
 #endif

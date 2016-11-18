@@ -10,5 +10,7 @@
 
 void *malloc_safe(size_t size);
 void *realloc_safe(void *ptr, size_t size);
+char *strdup_safe(const char* str);
+void abort_msg(const char* msg, ...);
 
 #endif
