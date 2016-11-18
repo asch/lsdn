@@ -10,7 +10,7 @@ function mkvm(){
    ip netns exec "${NSPREFIX}$1" ip link set "${NSPREFIX}peer-$1" name veth0
    ip netns exec "${NSPREFIX}$1" ip link set veth0 address "00:00:00:00:00:$2"
    ip netns exec "${NSPREFIX}$1" ip link set veth0 up
-   ip netns exec "${NSPREFIX}$1" ifconfig veth0 "192.168.59.$2"
+   ip netns exec "${NSPREFIX}$1" ip addr add "192.168.59.$2" dev veth0
 }
 
 mkvm a 01
