@@ -21,8 +21,6 @@ enum lsdn_rule_target{
 };
 
 enum lsdn_action_id{
-	/* Contiue processing the packet on a given LSDN logical port peer's */
-	LSDN_ACTION_PORT,
 	/* Redirect the packet to a linux interface (s) egress */
 	LSDN_ACTION_IF,
 	/* Drop the packet */
@@ -41,8 +39,6 @@ struct lsdn_action{
 	union{
 		/* Only valid for LSDN_ACTION_IF */
 		const char *ifname;
-		/* Only valid for LSDN_ACTION_PORT */
-		struct lsdn_port *port;
 		/* Only valid for LSDN_ACTION_RULE */
 		struct lsdn_ruleset *rule;
 	};

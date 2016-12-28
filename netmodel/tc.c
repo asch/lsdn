@@ -5,13 +5,11 @@
 #include <linux/tc_act/tc_mirred.h>
 #include <linux/tc_act/tc_gact.h>
 #include "private/tc.h"
-#include "private/port.h"
 #include "include/errors.h"
 
 static int is_action_valid(struct lsdn_action *a)
 {
-	return a->id != LSDN_ACTION_NONE &&
-		!(a->id == LSDN_ACTION_PORT && a->port->peer == NULL);
+	return a->id != LSDN_ACTION_NONE;
 }
 
 lsdn_err_t actions_for(struct lsdn_action *action, struct lsdn_filter *filter)
@@ -33,12 +31,6 @@ lsdn_err_t actions_for(struct lsdn_action *action, struct lsdn_filter *filter)
 		const char* ifname = NULL;
 
 		switch(a->id){
-		case LSDN_ACTION_PORT:
-			if(a->port->peer) {
-				ifindex= a->port->peer->ruleset->interface.ifindex;
-				ifname = a->port->peer->ruleset->interface.ifname;
-			}
-			break;
 		case LSDN_ACTION_IF:
 			ifname = a->ifname;
 			ifindex = if_nametoindex(ifname);

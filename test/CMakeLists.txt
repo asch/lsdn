@@ -30,5 +30,5 @@ simple_test(veth)
 simple_test(nl)
 simple_test(mirred_ingress)
 
-test_in_ns(switches)
-test_in_ns(linux_switch)
+#test_in_ns(switches)
+#test_in_ns(linux_switch)
