@@ -14,13 +14,14 @@ lsdn_net_create_vxlan(context, vxlan_id)
 
 /* Connection to a network at a physical level */
 struct lsdn_phys;
-lsdn_phys_create(net)
+lsdn_phys_create(context)
 /* needed by vxlan */
 lsdn_phys_set_ip(phys, ip)
 /* needed if the phys is local */
 lsdn_phys_set_iface(phys, iface_name)
 /* connect the phys locally to this computer*/
 lsdn_phys_claim_local(phys)
+lsdn_phys_attach(phys, net)
 
 
 /* Connection to a network at a virtual level (realized throught a phys) */
@@ -29,7 +30,7 @@ lsdn_virt_create(net)
 lsdn_virt_set_ip_range(virt, ip_range)
 lsdn_virt_set_mac_range(virt, mac_range)
 /* will include migration */
-lsdn_connect(virt, phys, interface)
+lsdn_virt_connect(virt, phys, interface)
 
 lsdn_cfg_firewall/qos(virt)
 

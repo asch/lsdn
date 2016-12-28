@@ -10,7 +10,7 @@
  * relevant: net/sched/cls_flower.c
  */
 
-struct lsdn_port;
+struct lsdn_virt;
 struct lsdn_rule;
 
 enum lsdn_rule_target{
@@ -56,6 +56,9 @@ struct lsdn_rule{
 	struct lsdn_action action;
 	lsdn_matchdata_t mask;
 	lsdn_matchdata_t contents;
+
+	struct lsdn_list_entry virt_rules_entry;
+	struct lsdn_virt *owning_virt;
 
 	int prio;
 	struct lsdn_list_entry ruleset_list;

@@ -2,6 +2,7 @@
 #define _LSDN_NETTYPES_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "errors.h"
 
 
@@ -13,6 +14,22 @@ enum lsdn_ethertype_{
 typedef union lsdn_mac {
 	uint8_t bytes[6];
 } lsdn_mac_t;
+
+typedef union lsdn_ipv4 {
+	uint8_t bytes[6];
+} lsdn_ipv4_t;
+
+typedef union lsdn_ipv6 {
+	uint8_t bytes[6];
+} lsdn_ipv6_t;
+
+typedef struct lsdn_ip {
+	uint8_t v;
+	union{
+		lsdn_ipv4_t v4;
+		lsdn_ipv6_t v6;
+	};
+} lsdn_ip_t;
 
 extern const lsdn_mac_t lsdn_broadcast_mac;
 extern const lsdn_mac_t lsdn_multicast_mac_mask;
