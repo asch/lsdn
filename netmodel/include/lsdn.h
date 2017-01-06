@@ -6,6 +6,16 @@
 #include "../private/list.h"
 #include "nettypes.h"
 
+/**
+ * A top-level object encompassing all network topology. This includes virtual networks
+ * (lsdn_network) and physical host connections (lsdn_phys). Only one context will typically exist
+ * in a given program.
+ *
+ * The same structures (lsdn_phys, lsdn_virt) are used to describe both remote objects
+ * and objects running on other machines. This allows the orchestrator to make the same API calls
+ * on all physical machines to construct the network topology. The only difference between the
+ * API calls on the physical machines will be the lsdn_phys_claim_local calls.
+ */
 struct lsdn_context{
 	/* Determines the prefix for interfaces created in the context */
 	char* name;
@@ -15,9 +25,17 @@ struct lsdn_context{
 	struct lsdn_list_entry phys_list;
 };
 
-enum lsdn_nettype{LSDN_NT_VXLAN, LSDN_NT_VLAN};
+enum lsdn_nettype{LSDN_NT_VXLAN, LSDN_NT_VLAN, LSDN_NT_DIRECT};
 enum lsdn_switch{LSDN_LEARNING, LSDN_STATIC};
 
+/**
+ * Virtual network to which nodes (lsd_virt) connect through physical host connections (lsdn_phys).
+ * Can be implemented using common tunneling techniques, like vlan or vxlan or no tunneling.
+ *
+ * Networks are defined by two main characteristics:
+ *  - the tunnel used to overlay the network over physical topology (transparent to end users)
+ *  - the forwarding methods used (visible to end users)
+ */
 struct lsdn_network {
 	struct lsdn_list_entry networks_entry;
 
@@ -35,6 +53,11 @@ struct lsdn_network {
 	enum lsdn_switch switch_type;
 };
 
+/**
+ * Represents a physical host connection (e.g. eth0 on lsdn1).
+ * Physical interfaces are used to connect to virtual networks. This connection is called
+ * lsdn_phys_attachement.
+ */
 struct lsdn_phys {
 	struct lsdn_list_entry phys_entry;
 	struct lsdn_list_entry attached_to_list;
@@ -44,6 +67,10 @@ struct lsdn_phys {
 	lsdn_ip_t *attr_ip;
 };
 
+/**
+ * A point of connection to a virtual network through a physical interface.
+ * Only single attachement may exist for a pair of a physical connection and network.
+ */
 struct lsdn_phys_atttachment {
 	struct lsdn_list_entry attached_entry;
 	struct lsdn_list_entry attached_to_entry;
@@ -54,6 +81,13 @@ struct lsdn_phys_atttachment {
 	/* we will probably have tunnel info/bridge info here */
 };
 
+/**
+ * A virtual machine (typically -- it may be any linux interface).
+ *
+ * Virtual machines participate in virtual networks (through phys_attachements on the host machine
+ * connection). They can be migrated between the physical machines by connecting them through
+ * different lsdn_phys.
+ */
 struct lsdn_virt{
 	struct lsdn_list_entry virt_entry;
 	struct lsdn_network* network;
