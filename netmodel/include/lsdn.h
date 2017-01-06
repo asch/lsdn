@@ -29,12 +29,12 @@ enum lsdn_nettype{LSDN_NT_VXLAN, LSDN_NT_VLAN, LSDN_NT_DIRECT};
 enum lsdn_switch{LSDN_LEARNING, LSDN_STATIC};
 
 /**
- * Virtual network to which nodes (lsd_virt) connect through physical host connections (lsdn_phys).
+ * Virtual network to which nodes (lsdn_virt) connect through physical host connections (lsdn_phys).
  * Can be implemented using common tunneling techniques, like vlan or vxlan or no tunneling.
  *
  * Networks are defined by two main characteristics:
  *  - the tunnel used to overlay the network over physical topology (transparent to end users)
- *  - the forwarding methods used (visible to end users)
+ *  - the switching methods used (visible to end users)
  */
 struct lsdn_network {
 	struct lsdn_list_entry networks_entry;
@@ -45,7 +45,7 @@ struct lsdn_network {
 	/* List of lsdn_phys_attachement attached to this network */
 	struct lsdn_list_entry attached_list;
 	enum lsdn_nettype nettype;
-	union{
+	union {
 		uint32_t vlan_id;
 		uint32_t vxlan_id;
 	};
@@ -69,7 +69,7 @@ struct lsdn_phys {
 
 /**
  * A point of connection to a virtual network through a physical interface.
- * Only single attachement may exist for a pair of a physical connection and network.
+ * Only single attachment may exist for a pair of a physical connection and network.
  */
 struct lsdn_phys_atttachment {
 	struct lsdn_list_entry attached_entry;
@@ -84,11 +84,11 @@ struct lsdn_phys_atttachment {
 /**
  * A virtual machine (typically -- it may be any linux interface).
  *
- * Virtual machines participate in virtual networks (through phys_attachements on the host machine
+ * Virtual machines participate in virtual networks (through phys_attachments on the host machine
  * connection). They can be migrated between the physical machines by connecting them through
  * different lsdn_phys.
  */
-struct lsdn_virt{
+struct lsdn_virt {
 	struct lsdn_list_entry virt_entry;
 	struct lsdn_network* network;
 	/* list of lsdn_rules which are present to implement forwarding to this virt*/
