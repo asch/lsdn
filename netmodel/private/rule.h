@@ -13,14 +13,33 @@
 struct lsdn_virt;
 struct lsdn_rule;
 
-enum lsdn_rule_target{
-	LSDN_MATCH_ANYTHING,
+enum lsdn_match_target {
 	LSDN_MATCH_SRC_MAC,
 	LSDN_MATCH_DST_MAC,
-	LSDN_MATCH_ETHERTYPE
+	LSDN_MATCH_MAX
 };
 
-enum lsdn_action_id{
+#define LSDN_MAX_MATCH_LEN 16
+typedef union lsdn_matchdata_ {
+	char bytes[LSDN_MAX_MATCH_LEN];
+	lsdn_mac_t mac;
+} lsdn_matchdata_t;
+
+struct lsdn_match{
+	/* number of significant bits from the left (similar to IP mask) */
+	uint8_t mask_len;
+	lsdn_matchdata_t data;
+};
+
+struct lsdn_ruleset {
+	/* list of fields agains which this ruleset matches */
+	enum lsdn_match_target target;
+	struct lsdn_list_entry rules_list;
+
+	struct lsdn_if interface;
+};
+
+enum lsdn_action_id {
 	/* Redirect the packet to a linux interface (s) egress */
 	LSDN_ACTION_IF,
 	/* Drop the packet */
@@ -44,44 +63,22 @@ struct lsdn_action{
 	};
 };
 
-#define LSDN_MAX_MATCH_LEN 16
-typedef union lsdn_matchdata_ {
-	char bytes[LSDN_MAX_MATCH_LEN];
-	lsdn_mac_t mac;
-	uint16_t ethertype;
-} lsdn_matchdata_t;
-
 struct lsdn_rule{
-	enum lsdn_rule_target target;
+	struct lsdn_match match;
 	struct lsdn_action action;
-	lsdn_matchdata_t mask;
-	lsdn_matchdata_t contents;
 
-	struct lsdn_list_entry virt_rules_entry;
-	struct lsdn_virt *owning_virt;
+	struct lsdn_list_entry rule_instance_entry;
+	struct lsdn_virt_rule *rule_template;
 
-	int prio;
-	struct lsdn_list_entry ruleset_list;
+	struct lsdn_list_entry rules_entry;
 };
 
-/*
- * The rules in a ruleset do not have to match against the same patterns.
- * It is job of the folding phase to produce more efficient data structure.
- */
-struct lsdn_ruleset{	
-	struct lsdn_list_entry node_rules;
-	struct lsdn_list_entry rules;
-	/* Linux interface that implements this ruleset. Managed by network.c. */
-	struct lsdn_if interface;
-	int if_rules_created;
-};
-
-/* Set-up a rule matching zero contents agains full mask, with drop action
- * and 'anything' rule target. This function must be called before adding
+/* Set-up a rule matching anything (mask 0). This function must be called before adding
  * the rule into ruleset
  */
 void lsdn_rule_init(struct lsdn_rule *rule);
 void lsdn_rule_free(struct lsdn_rule *rule);
+
 /* Set-up a drop action with no next action */
 void lsdn_action_init(struct lsdn_action *action);
 void lsdn_ruleset_init(struct lsdn_ruleset *ruleset);

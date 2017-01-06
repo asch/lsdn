@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "../private/list.h"
+#include "../private/rule.h"
 #include "nettypes.h"
 
 /**
@@ -74,6 +75,7 @@ struct lsdn_phys {
 struct lsdn_phys_atttachment {
 	struct lsdn_list_entry attached_entry;
 	struct lsdn_list_entry attached_to_entry;
+	struct lsdn_list_entry connected_virt_list;
 
 	struct lsdn_network net;
 	struct lsdn_phys phys;
@@ -90,8 +92,9 @@ struct lsdn_phys_atttachment {
  */
 struct lsdn_virt {
 	struct lsdn_list_entry virt_entry;
+	struct lsdn_list_entry connected_virt_entry;
 	struct lsdn_network* network;
-	/* list of lsdn_rules which are present to implement forwarding to this virt*/
+
 	struct lsdn_list_entry virt_rules_list;
 
 	struct lsdn_phys* connected_through;
@@ -99,6 +102,20 @@ struct lsdn_virt {
 
 	lsdn_mac_t *attr_mac;
 	/*lsdn_ip_t *attr_ip; */
+};
+
+/**
+ * An entry in routing/forwarding table for a given virt. This may serve as a template for multiple
+ * rules in different ruleset instances.
+ */
+struct lsdn_virt_rule{
+	/* list in lsdn_virt */
+	struct lsdn_list_entry virt_rules_entry;
+	/* entries in lsdn_rule */
+	struct lsdn_list_entry rule_instance_list;
+
+	struct lsdn_virt *owning_virt;
+	struct lsdn_match match;
 };
 
 #endif

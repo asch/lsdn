@@ -4,11 +4,12 @@
 
 void lsdn_rule_init(struct lsdn_rule *rule)
 {
-	lsdn_list_init(&rule->ruleset_list);
-	rule->target = LSDN_MATCH_ANYTHING;
-	lsdn_action_init(&rule->action);
-	memset(&rule->mask, 0xFF, LSDN_MAX_MATCH_LEN);
-	memset(&rule->contents, 0, LSDN_MAX_MATCH_LEN);
+	lsdn_list_init(&rule->rules_entry);
+	lsdn_list_init(&rule->rule_instance_entry);
+
+	rule->rule_template = NULL;
+	rule->match.mask_len = 0;
+	bzero(rule->match.data.bytes, LSDN_MAX_MATCH_LEN);
 }
 void lsdn_action_init(struct lsdn_action *action)
 {
@@ -18,34 +19,27 @@ void lsdn_action_init(struct lsdn_action *action)
 
 void lsdn_ruleset_init(struct lsdn_ruleset *ruleset)
 {
-	ruleset->if_rules_created = 0;
+	ruleset->target = LSDN_MATCH_DST_MAC;
+	lsdn_list_init(&ruleset->rules_list);
 	lsdn_init_if(&ruleset->interface);
-	lsdn_list_init(&ruleset->rules);
-	lsdn_list_init(&ruleset->node_rules);
 }
 
 void lsdn_ruleset_free(struct lsdn_ruleset *ruleset)
 {
-	assert(lsdn_is_list_empty(&ruleset->rules));
+	assert(lsdn_is_list_empty(&ruleset->rules_list));
 }
 void lsdn_rule_free(struct lsdn_rule *rule)
 {
-	if(!lsdn_is_list_empty(&rule->ruleset_list))
-		lsdn_list_remove(&rule->ruleset_list);
+	if(!lsdn_is_list_empty(&rule->rules_entry))
+		lsdn_list_remove(&rule->rules_entry);
 }
 
 void lsdn_add_rule(struct lsdn_ruleset *ruleset, struct lsdn_rule *rule, int prio){
-	/* find the nearest lowest priority */
-	struct lsdn_list_entry *nearest = ruleset->rules.next;
-	lsdn_foreach_list(ruleset->rules, ruleset_list, struct lsdn_rule, c) {
-		if(c->prio < prio)
-			nearest = &c->ruleset_list;
-	}
-	rule->prio = prio;
-	lsdn_list_add(nearest, &rule->ruleset_list);
+	/* TODO: check for collisions */
+	lsdn_list_add(&ruleset->rules_list, &rule->rules_entry);
 }
 
 void lsdn_remove_rule(struct lsdn_rule *rule)
 {
-	lsdn_list_remove(&rule->ruleset_list);
+	lsdn_list_remove(&rule->rules_entry);
 }
