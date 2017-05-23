@@ -7,6 +7,11 @@
 #include "../private/rule.h"
 #include "nettypes.h"
 
+#define LSDN_DEFINE_ATTR(obj, name, type) \
+	void lsdn_##obj##_set_##name(struct lsdn_##obj *name, const type* value); \
+	void lsdn_##obj##_clear_##name(struct lsdn_##obj *name); \
+	const type *lsdn_##obj##_get_##name(struct lsdn_##obj *name)
+
 /**
  * A top-level object encompassing all network topology. This includes virtual networks
  * (lsdn_network) and physical host connections (lsdn_phys). Only one context will typically exist
@@ -26,7 +31,10 @@ struct lsdn_context{
 	struct lsdn_list_entry phys_list;
 };
 
-enum lsdn_nettype{LSDN_NT_VXLAN, LSDN_NT_VLAN, LSDN_NT_DIRECT};
+struct lsdn_context *lsdn_context_new(const char* name);
+void lsdn_context_free(struct lsdn_context *ctx);
+
+enum lsdn_nettype{LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT};
 enum lsdn_switch{LSDN_LEARNING, LSDN_STATIC};
 
 /**
@@ -37,7 +45,7 @@ enum lsdn_switch{LSDN_LEARNING, LSDN_STATIC};
  *  - the tunnel used to overlay the network over physical topology (transparent to end users)
  *  - the switching methods used (visible to end users)
  */
-struct lsdn_network {
+struct lsdn_net {
 	struct lsdn_list_entry networks_entry;
 
 	struct lsdn_context* ctx;
@@ -54,6 +62,10 @@ struct lsdn_network {
 	enum lsdn_switch switch_type;
 };
 
+struct lsdn_net *lsdn_net_new_vlan(
+	struct lsdn_context *ctx, enum lsdn_switch switch_type, uint32_t vlan_id);
+void lsdn_net_free(struct lsdn_net *net);
+
 /**
  * Represents a physical host connection (e.g. eth0 on lsdn1).
  * Physical interfaces are used to connect to virtual networks. This connection is called
@@ -68,17 +80,27 @@ struct lsdn_phys {
 	lsdn_ip_t *attr_ip;
 };
 
+struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx);
+void lsdn_phys_free(struct lsdn_phys *phys);
+/* TODO: provide a way to get missing attributes */
+lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net);
+lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
+
+LSDN_DEFINE_ATTR(phys, ip, lsdn_ip_t);
+LSDN_DEFINE_ATTR(phys, iface, char);
+
+
 /**
  * A point of connection to a virtual network through a physical interface.
  * Only single attachment may exist for a pair of a physical connection and network.
  */
-struct lsdn_phys_atttachment {
+struct lsdn_phys_attachment {
 	struct lsdn_list_entry attached_entry;
 	struct lsdn_list_entry attached_to_entry;
 	struct lsdn_list_entry connected_virt_list;
 
-	struct lsdn_network net;
-	struct lsdn_phys phys;
+	struct lsdn_net *net;
+	struct lsdn_phys *phys;
 
 	/* we will probably have tunnel info/bridge info here */
 };
@@ -93,7 +115,7 @@ struct lsdn_phys_atttachment {
 struct lsdn_virt {
 	struct lsdn_list_entry virt_entry;
 	struct lsdn_list_entry connected_virt_entry;
-	struct lsdn_network* network;
+	struct lsdn_net* network;
 
 	struct lsdn_list_entry virt_rules_list;
 
@@ -103,6 +125,13 @@ struct lsdn_virt {
 	lsdn_mac_t *attr_mac;
 	/*lsdn_ip_t *attr_ip; */
 };
+
+struct lsdn_virt *lsdn_virt_new(struct lsdn_net *ctx);
+void lsdn_virt_free(struct lsdn_virt* vsirt);
+lsdn_err_t lsdn_virt_connect(
+	struct lsdn_virt* virt, struct lsdn_phys* phys, const char* iface);
+
+LSDN_DEFINE_ATTR(virt, mac, lsdn_mac_t);
 
 /**
  * An entry in routing/forwarding table for a given virt. This may serve as a template for multiple
@@ -117,5 +146,8 @@ struct lsdn_virt_rule{
 	struct lsdn_virt *owning_virt;
 	struct lsdn_match match;
 };
+
+/* TODO: This might need a bit crazier error handling than a return code to be usefull */
+void lsdn_commit(struct lsdn_context *ctx);
 
 #endif
