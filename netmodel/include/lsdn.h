@@ -7,9 +7,9 @@
 #include "../private/rule.h"
 #include "nettypes.h"
 
-#define LSDN_DEFINE_ATTR(obj, name, type) \
-	void lsdn_##obj##_set_##name(struct lsdn_##obj *name, const type* value); \
-	void lsdn_##obj##_clear_##name(struct lsdn_##obj *name); \
+#define LSDN_DECLARE_ATTR(obj, name, type) \
+	lsdn_err_t lsdn_##obj##_set_##name(struct lsdn_##obj *name, const type* value); \
+	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *name); \
 	const type *lsdn_##obj##_get_##name(struct lsdn_##obj *name)
 
 /**
@@ -27,8 +27,10 @@ struct lsdn_context{
 	char* name;
 
 	struct lsdn_list_entry networks_list;
-
 	struct lsdn_list_entry phys_list;
+	struct mnl_socket *nlsock;
+	int ifcount;
+	char namebuf[IF_NAMESIZE + 1];
 };
 
 struct lsdn_context *lsdn_context_new(const char* name);
@@ -76,6 +78,7 @@ struct lsdn_phys {
 	struct lsdn_list_entry attached_to_list;
 
 	struct lsdn_context* ctx;
+	bool is_local;
 	char *attr_iface;
 	lsdn_ip_t *attr_ip;
 };
@@ -86,8 +89,8 @@ void lsdn_phys_free(struct lsdn_phys *phys);
 lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net);
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
 
-LSDN_DEFINE_ATTR(phys, ip, lsdn_ip_t);
-LSDN_DEFINE_ATTR(phys, iface, char);
+LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
+LSDN_DECLARE_ATTR(phys, iface, char);
 
 
 /**
@@ -95,14 +98,22 @@ LSDN_DEFINE_ATTR(phys, iface, char);
  * Only single attachment may exist for a pair of a physical connection and network.
  */
 struct lsdn_phys_attachment {
+	/* list held by net */
 	struct lsdn_list_entry attached_entry;
+	/* list held by phys */
 	struct lsdn_list_entry attached_to_entry;
 	struct lsdn_list_entry connected_virt_list;
 
 	struct lsdn_net *net;
 	struct lsdn_phys *phys;
 
-	/* we will probably have tunnel info/bridge info here */
+	union{
+		/* Used for learning switch */
+		struct {
+			struct lsdn_if bridge_if;
+			struct lsdn_if tunnel_if;
+		} bridge;
+	};
 };
 
 /**
@@ -119,23 +130,26 @@ struct lsdn_virt {
 
 	struct lsdn_list_entry virt_rules_list;
 
-	struct lsdn_phys* connected_through;
-	char* connected_iface;
+	struct lsdn_phys_attachment* connected_through;
+	struct lsdn_if connected_if;
 
 	lsdn_mac_t *attr_mac;
 	/*lsdn_ip_t *attr_ip; */
 };
 
-struct lsdn_virt *lsdn_virt_new(struct lsdn_net *ctx);
+struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net);
 void lsdn_virt_free(struct lsdn_virt* vsirt);
 lsdn_err_t lsdn_virt_connect(
-	struct lsdn_virt* virt, struct lsdn_phys* phys, const char* iface);
+	struct lsdn_virt *virt, struct lsdn_phys *phys, const char *iface);
+void lsdn_virt_disconnect(struct lsdn_virt *virt);
 
-LSDN_DEFINE_ATTR(virt, mac, lsdn_mac_t);
+LSDN_DECLARE_ATTR(virt, mac, lsdn_mac_t);
 
 /**
  * An entry in routing/forwarding table for a given virt. This may serve as a template for multiple
  * rules in different ruleset instances.
+ *
+ * This is preliminary, may change.
  */
 struct lsdn_virt_rule{
 	/* list in lsdn_virt */
@@ -147,7 +161,10 @@ struct lsdn_virt_rule{
 	struct lsdn_match match;
 };
 
-/* TODO: This might need a bit crazier error handling than a return code to be usefull */
+/* TODO: This might need a bit crazier error handling than a return code to be usefull
+ * Also we may move all consistency checking from the model changes here (like LSDNE_NOATTR).
+ * That will leave us just with NOMEM errors and most apps do not want to handle those, so we
+ * would have an (optional) callback for those. */
 void lsdn_commit(struct lsdn_context *ctx);
 
 #endif

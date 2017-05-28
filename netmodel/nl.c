@@ -6,16 +6,28 @@
 #include <linux/tc_act/tc_gact.h>
 #include <linux/veth.h>
 #include <assert.h>
+#include <errno.h>
 
 void lsdn_init_if(struct lsdn_if *lsdn_if)
 {
 	lsdn_if->ifindex = 0;
-	lsdn_if->ifname = NULL;
+	lsdn_if->ifname[0] = 0;
 }
 
-void lsdn_destroy_if(struct lsdn_if *lsdn_if)
+lsdn_err_t lsdn_if_by_name(struct lsdn_if *lsdn_if, const char* ifname)
 {
-	UNUSED(lsdn_if);
+	if(strlen(ifname) > IF_NAMESIZE)
+		return LSDNE_NOIF;
+
+	int ifindex = if_nametoindex(ifname);
+	if(ifindex == 0){
+		assert(errno == ENXIO || errno == ENODEV);
+		return LSDNE_NOIF;
+	}
+
+	lsdn_if->ifindex = ifindex;
+	strcpy(lsdn_if->ifname, ifname);
+	return LSDNE_OK;
 }
 
 struct mnl_socket *lsdn_socket_init()
@@ -92,9 +104,8 @@ static int link_create_send(
 	if(*err_code != 0)
 		return *err_code;
 
-	dst_if->ifindex = if_nametoindex(if_name);
-	assert(dst_if->ifindex != 0);
-	dst_if->ifname = strdup(if_name);
+	lsdn_err_t lerr = lsdn_if_by_name(dst_if, if_name);
+	assert(lerr == LSDNE_OK);
 	return 0;
 }
 
@@ -235,9 +246,8 @@ int lsdn_link_veth_create(
 
 	int ret = link_create_send(sock, buf, nlh, linkinfo, if_name1, if1);
 	if(ret == 0) {
-		if2->ifindex = if_nametoindex(if_name2);
-		assert(if2->ifindex != 0);
-		if2->ifname = strdup(if_name2);
+		lsdn_err_t lerr = lsdn_if_by_name(if2, if_name2);
+		assert(lerr == LSDNE_OK);
 	}
 	return ret;
 }

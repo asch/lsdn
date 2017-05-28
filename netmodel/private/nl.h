@@ -26,22 +26,21 @@
 /* Our egress handle (major 1, minor 0)*/
 #define LSDN_DEFAULT_EGRESS_HANDLE 0x00010000U
 
-/* Linux interface managed by the network, used for deciding the packet
- * fates at a particular point. They back some of the rulesets (currently all)
+/*
+ * A handle used to identify a linux interface.
  */
 struct lsdn_if{
-	char *ifname;
 	unsigned int ifindex;
+	char ifname[IF_NAMESIZE + 1];
 };
 
-static inline int lsdn_if_created(struct lsdn_if *lsdn_if)
+static inline bool lsdn_if_created(const struct lsdn_if *lsdn_if)
 {
-	return !!lsdn_if->ifname;
+	return lsdn_if->ifindex != 0;
 }
 
+lsdn_err_t lsdn_if_by_name(struct lsdn_if *lsdn_if, const char* name);
 void lsdn_init_if(struct lsdn_if *lsdn_if);
-
-void lsdn_destroy_if(struct lsdn_if *lsdn_if);
 
 struct mnl_socket *lsdn_socket_init();
 
