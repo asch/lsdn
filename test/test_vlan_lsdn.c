@@ -22,8 +22,8 @@ int main(int argc, const char* argv[])
 	int local_phys = atoi(argv[1]);
 
 	ctx = lsdn_context_new("ls"); not_null(ctx);
-	vlan1 = lsdn_net_new_vlan(ctx, LSDN_LEARNING, 0x0B0B); not_null(vlan1);
-	vlan2 = lsdn_net_new_vlan(ctx, LSDN_LEARNING, 0x0B0A); not_null(vlan2);
+	vlan1 = lsdn_net_new_vlan(ctx, 0x0B0B); not_null(vlan1);
+	vlan2 = lsdn_net_new_vlan(ctx, 0x0B0A); not_null(vlan2);
 
 	phys_a = lsdn_phys_new(ctx); not_null(phys_a);
 	err = lsdn_phys_attach(phys_a, vlan1); not_err(err);

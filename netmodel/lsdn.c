@@ -44,15 +44,13 @@ void lsdn_context_free(struct lsdn_context *ctx)
 	// TODO: cleanup the name, context, socket and all children (nets and physes)
 }
 
-struct lsdn_net *lsdn_net_new_vlan(
-	struct lsdn_context *ctx,
-	enum lsdn_switch switch_type, uint32_t vlan_id)
+struct lsdn_net *lsdn_net_new_vlan(struct lsdn_context *ctx, uint32_t vlan_id)
 {
 	struct lsdn_net *net = malloc(sizeof(*net));
 	if(!net)
 		return NULL;
 	net->ctx = ctx;
-	net->switch_type = switch_type;
+	net->switch_type = LSDN_LEARNING;
 	net->nettype = LSDN_NET_VLAN;
 	net->vlan_id = vlan_id;
 	lsdn_list_init_add(&ctx->networks_list, &net->networks_entry);

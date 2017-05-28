@@ -65,7 +65,7 @@ struct lsdn_net {
 };
 
 struct lsdn_net *lsdn_net_new_vlan(
-	struct lsdn_context *ctx, enum lsdn_switch switch_type, uint32_t vlan_id);
+	struct lsdn_context *ctx, uint32_t vlan_id);
 void lsdn_net_free(struct lsdn_net *net);
 
 /**
