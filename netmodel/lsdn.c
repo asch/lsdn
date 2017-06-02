@@ -4,8 +4,9 @@
 #include <errno.h>
 
 extern struct lsdn_net_ops lsdn_net_vlan_ops;
+extern struct lsdn_net_ops lsdn_net_vxlan_mcast_ops;
 static struct lsdn_net_ops *net_ops_list[] = {
-	NULL, &lsdn_net_vlan_ops, NULL
+	&lsdn_net_vxlan_mcast_ops, NULL, &lsdn_net_vlan_ops, NULL
 };
 
 static struct lsdn_net_ops *net_ops(struct lsdn_net *net)
@@ -53,6 +54,25 @@ struct lsdn_net *lsdn_net_new_vlan(struct lsdn_context *ctx, uint32_t vlan_id)
 	net->switch_type = LSDN_LEARNING;
 	net->nettype = LSDN_NET_VLAN;
 	net->vlan_id = vlan_id;
+	lsdn_list_init_add(&ctx->networks_list, &net->networks_entry);
+	lsdn_list_init(&net->attached_list);
+	lsdn_list_init(&net->virt_list);
+	return net;
+}
+
+struct lsdn_net *lsdn_net_new_vxlan_mcast(
+	struct lsdn_context *ctx, uint32_t vxlan_id,
+	lsdn_ip_t mcast_ip, uint16_t port)
+{
+	struct lsdn_net *net = malloc(sizeof(*net));
+	if(!net)
+		return NULL;
+	net->ctx = ctx;
+	net->switch_type = LSDN_LEARNING;
+	net->nettype = LSDN_NET_VXLAN_MCAST;
+	net->vxlan_mcast.vxlan_id = vxlan_id;
+	net->vxlan_mcast.mcast_ip = mcast_ip;
+	net->vxlan_mcast.port = port;
 	lsdn_list_init_add(&ctx->networks_list, &net->networks_entry);
 	lsdn_list_init(&net->attached_list);
 	lsdn_list_init(&net->virt_list);

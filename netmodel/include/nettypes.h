@@ -11,20 +11,25 @@ enum lsdn_ethertype_{
 	LSDN_ETHERTYPE_IPV6 = 0x86DD
 };
 
+enum lsdn_ipv {
+	LSDN_IPv4,
+	LSDN_IPv6
+};
+
 typedef union lsdn_mac {
 	uint8_t bytes[6];
 } lsdn_mac_t;
 
 typedef union lsdn_ipv4 {
-	uint8_t bytes[6];
+	uint8_t bytes[4];
 } lsdn_ipv4_t;
 
 typedef union lsdn_ipv6 {
-	uint8_t bytes[6];
+	uint8_t bytes[16];
 } lsdn_ipv6_t;
 
 typedef struct lsdn_ip {
-	uint8_t v;
+	enum lsdn_ipv v;
 	union{
 		lsdn_ipv4_t v4;
 		lsdn_ipv6_t v6;
@@ -61,6 +66,11 @@ static inline uint16_t lsdn_mac_high16(const lsdn_mac_t *mac)
 {
 	const uint8_t *b = mac->bytes;
 	return (b[0] << 8) | b[1];
+}
+static inline uint32_t lsdn_ip4_u32(const lsdn_ipv4_t *v4)
+{
+	const uint8_t *b = v4->bytes;
+	return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 }
 
 #endif

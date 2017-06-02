@@ -36,7 +36,7 @@ struct lsdn_context{
 struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_free(struct lsdn_context *ctx);
 
-enum lsdn_nettype{LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT};
+enum lsdn_nettype{LSDN_NET_VXLAN_MCAST, LSDN_NET_VXLAN_E2E, LSDN_NET_VLAN, LSDN_NET_DIRECT};
 enum lsdn_switch{LSDN_LEARNING, LSDN_STATIC};
 
 /**
@@ -58,7 +58,11 @@ struct lsdn_net {
 	enum lsdn_nettype nettype;
 	union {
 		uint32_t vlan_id;
-		uint32_t vxlan_id;
+		struct {
+			lsdn_ip_t mcast_ip;
+			uint32_t vxlan_id;
+			uint16_t port;
+		} vxlan_mcast;
 	};
 
 	enum lsdn_switch switch_type;
@@ -66,6 +70,9 @@ struct lsdn_net {
 
 struct lsdn_net *lsdn_net_new_vlan(
 	struct lsdn_context *ctx, uint32_t vlan_id);
+struct lsdn_net *lsdn_net_new_vxlan_mcast(
+	struct lsdn_context *ctx, uint32_t vxlan_id,
+	lsdn_ip_t mcast_ip, uint16_t port);
 void lsdn_net_free(struct lsdn_net *net);
 
 /**

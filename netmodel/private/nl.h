@@ -2,10 +2,12 @@
 #define _LSDN_NL_H_PRIVATE_
 
 #include "../include/errors.h"
+#include "../include/nettypes.h"
 
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 #include <libmnl/libmnl.h>
 
@@ -55,6 +57,11 @@ int lsdn_link_vlan_create(
 		struct mnl_socket *sock,
 		struct lsdn_if *dst_if, const char *if_name,
 		const char *vlan_name, uint16_t vlanid);
+
+int lsdn_link_vxlan_mcast_create(
+		struct mnl_socket *sock, struct lsdn_if* dst_if,
+		const char *if_name, const char *vxlan_name,
+		lsdn_ip_t mcast_group, uint32_t vxlanid, uint16_t port);
 
 int lsdn_link_veth_create(struct mnl_socket *sock,
 		struct lsdn_if *if1, const char *if_name1,
