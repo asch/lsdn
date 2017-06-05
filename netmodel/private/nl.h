@@ -75,6 +75,9 @@ int lsdn_link_bridge_create(
 int lsdn_link_set_master(struct mnl_socket *sock,
 		unsigned int master, unsigned int slave);
 
+int lsdn_link_set_ip(struct mnl_socket *sock,
+		const char *iface, const lsdn_ip_t *ip);
+
 int lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up);
 
 int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int ifindex,

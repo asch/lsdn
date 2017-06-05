@@ -5,6 +5,10 @@ static struct lsdn_net *vxlan1, *vxlan2;
 static struct lsdn_phys *phys_a, *phys_b;
 static struct lsdn_virt *virt_a1, *virt_a2, *virt_a3, *virt_b1, *virt_b2;
 static lsdn_ip_t mcast_ip = { .v = LSDN_IPv4, .v4 = { .bytes = { 239, 239, 239, 239 } } };
+
+static lsdn_ip_t phys_a_ip = { .v = LSDN_IPv4, .v4 = { .bytes = { 172, 16, 0, 1 } } };
+static lsdn_ip_t phys_b_ip = { .v = LSDN_IPv4, .v4 = { .bytes = { 172, 16, 0, 2 } } };
+
 static uint16_t port = 4789;
 
 static inline void not_null(void* p){
@@ -31,11 +35,13 @@ int main(int argc, const char* argv[])
 	err = lsdn_phys_attach(phys_a, vxlan1); not_err(err);
 	err = lsdn_phys_attach(phys_a, vxlan2); not_err(err);
 	err = lsdn_phys_set_iface(phys_a, "out"); not_err(err);
+	err = lsdn_phys_set_ip(phys_a, &phys_a_ip); not_err(err);
 
 	phys_b = lsdn_phys_new(ctx); not_null(phys_b);
 	err = lsdn_phys_attach(phys_b, vxlan1); not_err(err);
 	err = lsdn_phys_attach(phys_b, vxlan2); not_err(err);
 	err = lsdn_phys_set_iface(phys_b, "out"); not_err(err);
+	err = lsdn_phys_set_ip(phys_b, &phys_b_ip); not_err(err);
 
 	err = lsdn_phys_claim_local(local_phys == 0 ? phys_a : phys_b); not_err(err);
 

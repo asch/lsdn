@@ -187,20 +187,16 @@ int lsdn_link_vxlan_mcast_create(
 	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "vxlan");
 
 	struct nlattr *vxlanid_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
+	mnl_attr_put_u32(nlh, IFLA_VXLAN_LINK, ifindex);
 	mnl_attr_put_u32(nlh, IFLA_VXLAN_ID, vxlanid);
+	mnl_attr_put_u16(nlh, IFLA_VXLAN_PORT, htons(port));
 
-	struct nlattr *port_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
-	mnl_attr_put_u16(nlh, IFLA_VXLAN_PORT, port);
-
-	struct nlattr *mcast_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
 	if (mcast_group.v == LSDN_IPv4) {
-		mnl_attr_put_u32(nlh, IFLA_VXLAN_GROUP, htons(lsdn_ip4_u32(&mcast_group.v4)));
+		mnl_attr_put_u32(nlh, IFLA_VXLAN_GROUP, htonl(lsdn_ip4_u32(&mcast_group.v4)));
 	} else {
 		// TODO
 	}
 
-	mnl_attr_nest_end(nlh, mcast_linkinfo);
-	mnl_attr_nest_end(nlh, port_linkinfo);
 	mnl_attr_nest_end(nlh, vxlanid_linkinfo);
 	mnl_attr_nest_end(nlh, linkinfo);
 
@@ -238,6 +234,54 @@ int lsdn_link_set_master(struct mnl_socket *sock,
 	ifm->ifi_index = slave;
 
 	mnl_attr_put_u32(nlh, IFLA_MASTER, master);
+
+	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
+	}
+
+	ret = mnl_socket_recvfrom(sock, buf, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+
+	nlh = (struct nlmsghdr *)buf;
+	if (nlh->nlmsg_type == NLMSG_ERROR) {
+		int *err_code = mnl_nlmsg_get_payload(nlh);
+		return *err_code;
+	} else {
+		return -1;
+	}
+}
+
+int lsdn_link_set_ip(struct mnl_socket *sock,
+		const char *iface, const lsdn_ip_t *ip)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
+	int ifindex = if_nametoindex(iface);
+	int ret;
+
+	unsigned int seq = time(NULL);
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type	= RTM_NEWADDR;
+	nlh->nlmsg_flags = NLM_F_REPLACE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ifaddrmsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifa_family = AF_INET;
+	ifm->ifa_prefixlen = 24;
+	ifm->ifa_index = ifindex;
+	ifm->ifa_scope = 0;
+
+	if (ip->v == LSDN_IPv4) {
+		mnl_attr_put(nlh, IFA_LOCAL, sizeof(ip->v4.bytes), ip->v4.bytes);
+	} else {
+		mnl_attr_put(nlh, IFA_LOCAL, sizeof(ip->v6.bytes), ip->v6.bytes);
+	}
 
 	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
 	if (ret == -1) {

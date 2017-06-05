@@ -147,6 +147,18 @@ lsdn_err_t lsdn_phys_clear_iface(struct lsdn_phys *phys){
 	return LSDNE_OK;
 }
 
+lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, const lsdn_ip_t *ip)
+{
+	lsdn_ip_t *ip_dup = malloc(sizeof(*ip_dup));
+	if (ip_dup == NULL)
+		return LSDNE_NOMEM;
+	*ip_dup = *ip;
+
+	free(phys->attr_ip);
+	phys->attr_ip = ip_dup;
+	return LSDNE_OK;
+}
+
 static bool is_phys_used(struct lsdn_phys *phys)
 {
 	lsdn_foreach(phys->attached_to_list, attached_to_entry, struct lsdn_phys_attachment, a) {
@@ -263,8 +275,15 @@ static void commit_attachment(struct lsdn_phys_attachment *a)
 
 void lsdn_commit(struct lsdn_context *ctx)
 {
+	int err;
 	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p){
 		if(p->is_local){
+			if (p->attr_ip) {
+				err = lsdn_link_set_ip(ctx->nlsock, p->attr_iface, p->attr_ip);
+				if (err)
+					abort();
+			}
+
 			lsdn_foreach(
 				p->attached_to_list, attached_to_entry,
 				struct lsdn_phys_attachment, a)
