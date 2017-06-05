@@ -18,7 +18,7 @@ run_stages() {
 }
 
 tracecmd=true
-if [ "$1" == "trace" ]; then
+if [ "${1:-}" == "trace" ]; then
 	tracecmd="set -x"
 	shift
 fi
