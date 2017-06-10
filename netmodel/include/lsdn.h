@@ -36,8 +36,23 @@ struct lsdn_context{
 struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_free(struct lsdn_context *ctx);
 
-enum lsdn_nettype{LSDN_NET_VXLAN_MCAST, LSDN_NET_VXLAN_E2E, LSDN_NET_VLAN, LSDN_NET_DIRECT};
-enum lsdn_switch{LSDN_LEARNING, LSDN_STATIC};
+enum lsdn_nettype{
+	LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT};
+enum lsdn_switch{
+	/* A learning switch with single tunnel shared from the phys */
+	LSDN_LEARNING,
+	/* A learning switch with a tunnel for each connected endpoint */
+	LSDN_LEARNING_E2E,
+	/* Static switching with a tunnel for each connected endpoint
+	 * Note: the endpoint might be represented by a single linux interface,
+	 * with the actual endpoint being selected by tc actions (
+	 */
+	LSDN_STATIC_E2E
+	/* LSDN_STATIC does not exists, because it does not make much sense ATM. It would have
+	 * static rules for the switching at local level, but it would go out through a single
+	 * interface to be switched by some sort of learning switch. May be added if it appears.
+	 */
+};
 
 /**
  * Virtual network to which nodes (lsdn_virt) connect through physical host connections (lsdn_phys).
@@ -51,6 +66,7 @@ struct lsdn_net {
 	struct lsdn_list_entry networks_entry;
 
 	struct lsdn_context* ctx;
+	struct lsdn_net_ops *ops;
 	char* name;
 	struct lsdn_list_entry virt_list;
 	/* List of lsdn_phys_attachement attached to this network */
