@@ -30,6 +30,7 @@ case "${1:-}" in
 	prepare|connect|test)
 		if [ -z "${2:-}" ]; then
 			echo "Test name expected" >&2
+			exit 1
 		fi
 		cleanup_handler=true
 		run_stages "$2" "$1"
@@ -37,6 +38,7 @@ case "${1:-}" in
 	run)
 		if [ -z "${2:-}" ]; then
 			echo "Test name expected" >&2
+			exit 1
 		fi
 		cleanup_handler=cleanup
 		run_stages "$2" "prepare connect test cleanup"
