@@ -21,7 +21,7 @@ void lsdn_ruleset_init(struct lsdn_ruleset *ruleset)
 {
 	ruleset->target = LSDN_MATCH_DST_MAC;
 	lsdn_list_init(&ruleset->rules_list);
-	lsdn_init_if(&ruleset->interface);
+	lsdn_if_init_empty(&ruleset->interface);
 }
 
 void lsdn_ruleset_free(struct lsdn_ruleset *ruleset)

@@ -33,16 +33,17 @@
  */
 struct lsdn_if{
 	unsigned int ifindex;
-	char ifname[IF_NAMESIZE + 1];
+	char* ifname;
 };
 
-static inline bool lsdn_if_created(const struct lsdn_if *lsdn_if)
+void lsdn_if_init_empty(struct lsdn_if *lsdn_if);
+void lsdn_if_init_known(struct lsdn_if *lsdn_if, const char* ifname, unsigned int ifindex);
+lsdn_err_t lsdn_if_init_name(struct lsdn_if *lsdn_if, const char* ifname);
+static inline bool lsdn_if_is_set(const struct lsdn_if *lsdn_if)
 {
-	return lsdn_if->ifindex != 0;
+	return lsdn_if->ifname;
 }
-
-lsdn_err_t lsdn_if_by_name(struct lsdn_if *lsdn_if, const char* name);
-void lsdn_init_if(struct lsdn_if *lsdn_if);
+lsdn_err_t lsdn_if_prepare(struct lsdn_if *lsdn_if);
 
 struct mnl_socket *lsdn_socket_init();
 

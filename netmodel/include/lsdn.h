@@ -12,6 +12,8 @@
 	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *name); \
 	const type *lsdn_##obj##_get_##name(struct lsdn_##obj *name)
 
+typedef void (*lsdn_nomem_cb)(void *user);
+
 /**
  * A top-level object encompassing all network topology. This includes virtual networks
  * (lsdn_network) and physical host connections (lsdn_phys). Only one context will typically exist
@@ -25,15 +27,27 @@
 struct lsdn_context{
 	/* Determines the prefix for interfaces created in the context */
 	char* name;
+	lsdn_nomem_cb nomem_cb;
+	void *nomem_cb_user;
 
 	struct lsdn_list_entry networks_list;
 	struct lsdn_list_entry phys_list;
 	struct mnl_socket *nlsock;
+
+	// error handling -- only valid during validation and commit
+	struct lsdn_problem problem;
+	struct lsdn_problem_ref problem_refs[LSDN_MAX_PROBLEM_REFS];
+	lsdn_problem_cb problem_cb;
+	void *problem_cb_user;
+	size_t problem_count;
+
 	int ifcount;
 	char namebuf[IF_NAMESIZE + 1];
 };
 
 struct lsdn_context *lsdn_context_new(const char* name);
+void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user);
+void lsdn_context_abort_on_nomem(struct lsdn_context *ctx);
 void lsdn_context_free(struct lsdn_context *ctx);
 
 enum lsdn_nettype{
@@ -129,6 +143,10 @@ struct lsdn_phys_attachment {
 
 	struct lsdn_net *net;
 	struct lsdn_phys *phys;
+	/* Was this attachment created by lsdn_phys_attach at some point, or was it implicitely
+	 * created by lsdn_virt_connect, just for bookkeeping?
+	 */
+	bool explicitely_attached;
 
 	union{
 		/* Used for learning switch */
@@ -184,10 +202,7 @@ struct lsdn_virt_rule{
 	struct lsdn_match match;
 };
 
-/* TODO: This might need a bit crazier error handling than a return code to be usefull
- * Also we may move all consistency checking from the model changes here (like LSDNE_NOATTR).
- * That will leave us just with NOMEM errors and most apps do not want to handle those, so we
- * would have an (optional) callback for those. */
-void lsdn_commit(struct lsdn_context *ctx);
+lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
+lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 
 #endif
