@@ -93,6 +93,10 @@ struct lsdn_net {
 			uint32_t vxlan_id;
 			uint16_t port;
 		} vxlan_mcast;
+		struct {
+			uint32_t vxlan_id;
+			uint16_t port;
+		} vxlan_e2e;
 	};
 
 	enum lsdn_switch switch_type;
@@ -103,6 +107,8 @@ struct lsdn_net *lsdn_net_new_vlan(
 struct lsdn_net *lsdn_net_new_vxlan_mcast(
 	struct lsdn_context *ctx, uint32_t vxlan_id,
 	lsdn_ip_t mcast_ip, uint16_t port);
+struct lsdn_net *lsdn_net_new_vxlan_e2e(
+	struct lsdn_context *ctx, uint32_t vxlan_id, uint16_t port);
 void lsdn_net_free(struct lsdn_net *net);
 
 /**

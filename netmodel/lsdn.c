@@ -119,7 +119,7 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 		return LSDNE_OK;
 
 	a->explicitely_attached = true;
-	if(net->switch_type == LSDN_LEARNING) {
+	if(net->switch_type == LSDN_LEARNING || net->switch_type == LSDN_LEARNING_E2E) {
 		lsdn_if_init_empty(&a->bridge.bridge_if);
 		lsdn_if_init_empty(&a->bridge.tunnel_if);
 	}
@@ -274,7 +274,8 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 static void commit_attachment(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_context *ctx = a->net->ctx;
-	if(a->net->switch_type == LSDN_LEARNING && !lsdn_if_is_set(&a->bridge.bridge_if)){
+	if((a->net->switch_type == LSDN_LEARNING || a->net->switch_type == LSDN_LEARNING_E2E)
+			&& !lsdn_if_is_set(&a->bridge.bridge_if)) {
 		struct lsdn_if bridge_if;
 		lsdn_if_init_empty(&bridge_if);
 
