@@ -266,7 +266,7 @@ int lsdn_link_set_master(struct mnl_socket *sock,
 	}
 }
 
-int lsdn_fdb_add_route(struct mnl_socket *sock, unsigned int ifindex,
+int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 		const lsdn_mac_t *mac, const lsdn_ip_t *ip)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];

@@ -59,7 +59,7 @@ static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
 		struct lsdn_phys_attachment, a_other) {
 		if (&a_other->phys->phys_entry == &a->phys->phys_entry)
 			continue;
-		err = lsdn_fdb_add_route(a->net->ctx->nlsock, a->bridge.tunnel_if.ifindex,
+		err = lsdn_fdb_add_entry(a->net->ctx->nlsock, a->bridge.tunnel_if.ifindex,
 					&lsdn_broadcast_mac, a_other->phys->attr_ip);
 		if (err)
 			abort();

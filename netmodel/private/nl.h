@@ -86,7 +86,7 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int ifindex,
 
 int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex);
 
-int lsdn_fdb_add_route(struct mnl_socket *sock, unsigned int ifindex,
+int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 		const lsdn_mac_t *mac, const lsdn_ip_t *ip);
 
 // filters -->
