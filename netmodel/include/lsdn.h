@@ -53,15 +53,25 @@ void lsdn_context_free(struct lsdn_context *ctx);
 enum lsdn_nettype{
 	LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT};
 enum lsdn_switch{
-	/* A learning switch with single tunnel shared from the phys */
+	/* A learning switch with single tunnel shared from the phys.
+	 *
+	 * The network is essentially autoconfiguring in this mode.
+	 */
 	LSDN_LEARNING,
-	/* A learning switch with a tunnel for each connected endpoint */
+	/* A learning switch with a tunnel for each connected endpoint
+	 *
+	 * In this mode the connection information (IP addr) for each physical node is required.
+	 */
 	LSDN_LEARNING_E2E,
 	/* Static switching with a tunnel for each connected endpoint
 	 * Note: the endpoint might be represented by a single linux interface,
-	 * with the actual endpoint being selected by tc actions (
+	 * with the actual endpoint being selected by tc actions.
+	 *
+	 * In this mode we need the connection information + MAC addresses of all virts and where
+	 * they reside.
 	 */
 	LSDN_STATIC_E2E
+
 	/* LSDN_STATIC does not exists, because it does not make much sense ATM. It would have
 	 * static rules for the switching at local level, but it would go out through a single
 	 * interface to be switched by some sort of learning switch. May be added if it appears.
