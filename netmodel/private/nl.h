@@ -59,10 +59,10 @@ int lsdn_link_vlan_create(
 		struct lsdn_if *dst_if, const char *if_name,
 		const char *vlan_name, uint16_t vlanid);
 
-int lsdn_link_vxlan_mcast_create(
+int lsdn_link_vxlan_create(
 		struct mnl_socket *sock, struct lsdn_if* dst_if,
 		const char *if_name, const char *vxlan_name,
-		lsdn_ip_t mcast_group, uint32_t vxlanid, uint16_t port);
+		lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port);
 
 int lsdn_link_veth_create(struct mnl_socket *sock,
 		struct lsdn_if *if1, const char *if_name1,
@@ -86,6 +86,8 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int ifindex,
 
 int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex);
 
+int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
+		const lsdn_mac_t *mac, const lsdn_ip_t *ip);
 
 // filters -->
 struct lsdn_filter{

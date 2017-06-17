@@ -165,11 +165,11 @@ int lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const
 	return link_create_send(sock, buf, nlh, linkinfo, vlan_name, dst_if);
 }
 
-//ip link add <vxlan_name> type vxlan id <vxlanid> group <mcast_group> dstport <port> dev <if_name>
-int lsdn_link_vxlan_mcast_create(
+//ip link add <vxlan_name> type vxlan id <vxlanid> [group <mcast_group>] dstport <port> dev <if_name>
+int lsdn_link_vxlan_create(
 	struct mnl_socket *sock, struct lsdn_if* dst_if,
 	const char *if_name, const char *vxlan_name,
-	lsdn_ip_t mcast_group, uint32_t vxlanid, uint16_t port)
+	lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	bzero(buf, sizeof(buf));
@@ -199,10 +199,12 @@ int lsdn_link_vxlan_mcast_create(
 	mnl_attr_put_u32(nlh, IFLA_VXLAN_ID, vxlanid);
 	mnl_attr_put_u16(nlh, IFLA_VXLAN_PORT, htons(port));
 
-	if (mcast_group.v == LSDN_IPv4) {
-		mnl_attr_put_u32(nlh, IFLA_VXLAN_GROUP, htonl(lsdn_ip4_u32(&mcast_group.v4)));
-	} else {
-		// TODO
+	if (mcast_group) {
+		if (mcast_group->v == LSDN_IPv4) {
+			mnl_attr_put_u32(nlh, IFLA_VXLAN_GROUP, htonl(lsdn_ip4_u32(&mcast_group->v4)));
+		} else {
+			// TODO
+		}
 	}
 
 	mnl_attr_nest_end(nlh, vxlanid_linkinfo);
@@ -242,6 +244,55 @@ int lsdn_link_set_master(struct mnl_socket *sock,
 	ifm->ifi_index = slave;
 
 	mnl_attr_put_u32(nlh, IFLA_MASTER, master);
+
+	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
+	}
+
+	ret = mnl_socket_recvfrom(sock, buf, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+
+	nlh = (struct nlmsghdr *)buf;
+	if (nlh->nlmsg_type == NLMSG_ERROR) {
+		int *err_code = mnl_nlmsg_get_payload(nlh);
+		return *err_code;
+	} else {
+		return -1;
+	}
+}
+
+int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
+		const lsdn_mac_t *mac, const lsdn_ip_t *ip)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
+	int ret;
+
+	unsigned int seq = time(NULL);
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type = RTM_NEWNEIGH;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_APPEND | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ndmsg *nd = mnl_nlmsg_put_extra_header(nlh, sizeof(*nd));
+	nd->ndm_family = PF_BRIDGE;
+	nd->ndm_state = NUD_NOARP | NUD_PERMANENT;
+	nd->ndm_ifindex = ifindex;
+	nd->ndm_flags = NTF_SELF;
+
+	mnl_attr_put(nlh, NDA_LLADDR, sizeof(mac->bytes), mac->bytes);
+
+	if (ip->v == LSDN_IPv4) {
+		mnl_attr_put(nlh, NDA_DST, sizeof(ip->v4.bytes), ip->v4.bytes);
+	} else {
+		// TODO
+	}
 
 	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
 	if (ret == -1) {
