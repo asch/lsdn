@@ -9,6 +9,14 @@ static lsdn_ip_t phys_a_ip = { .v = LSDN_IPv4, .v4 = { .bytes = { 172, 16, 0, 1 
 static lsdn_ip_t phys_b_ip = { .v = LSDN_IPv4, .v4 = { .bytes = { 172, 16, 0, 2 } } };
 static lsdn_ip_t phys_c_ip = { .v = LSDN_IPv4, .v4 = { .bytes = { 172, 16, 0, 3 } } };
 
+static lsdn_mac_t virt_a1_mac = { .bytes = { 0,0,0,0,0,1 } };
+static lsdn_mac_t virt_a2_mac = { .bytes = { 0,0,0,0,0,2 } };
+static lsdn_mac_t virt_a3_mac = { .bytes = { 0,0,0,0,0,3 } };
+static lsdn_mac_t virt_b1_mac = { .bytes = { 0,0,0,0,0,4 } };
+static lsdn_mac_t virt_b2_mac = { .bytes = { 0,0,0,0,0,5 } };
+static lsdn_mac_t virt_c1_mac = { .bytes = { 0,0,0,0,0,6 } };
+static lsdn_mac_t virt_c2_mac = { .bytes = { 0,0,0,0,0,7 } };
+
 static uint16_t port = 4789;
 
 int main(int argc, const char* argv[])
@@ -17,8 +25,8 @@ int main(int argc, const char* argv[])
 	int local_phys = atoi(argv[1]);
 
 	ctx = lsdn_context_new("ls");
-	vxlan1 = lsdn_net_new_vxlan_e2e_learning(ctx, 0x0B0B, port);
-	vxlan2 = lsdn_net_new_vxlan_e2e_learning(ctx, 0x0B0A, port);
+	vxlan1 = lsdn_net_new_vxlan_e2e_static(ctx, 0x0B0B, port);
+	vxlan2 = lsdn_net_new_vxlan_e2e_static(ctx, 0x0B0A, port);
 
 	phys_a = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys_a, vxlan1);
@@ -53,24 +61,31 @@ int main(int argc, const char* argv[])
 	}
 
 	virt_a1 = lsdn_virt_new(vxlan1);
+	lsdn_virt_set_mac(virt_a1, &virt_a1_mac);
 	lsdn_virt_connect(virt_a1, phys_a, "1");
 
 	virt_a2 = lsdn_virt_new(vxlan1);
+	lsdn_virt_set_mac(virt_a2, &virt_a2_mac);
 	lsdn_virt_connect(virt_a2, phys_a, "2");
 
 	virt_a3 = lsdn_virt_new(vxlan2);
+	lsdn_virt_set_mac(virt_a3, &virt_a3_mac);
 	lsdn_virt_connect(virt_a3, phys_a, "3");
 
 	virt_b1 = lsdn_virt_new(vxlan1);
+	lsdn_virt_set_mac(virt_b1, &virt_b1_mac);
 	lsdn_virt_connect(virt_b1, phys_b, "1");
 
 	virt_b2 = lsdn_virt_new(vxlan2);
+	lsdn_virt_set_mac(virt_b2, &virt_b2_mac);
 	lsdn_virt_connect(virt_b2, phys_b, "2");
 
 	virt_c1 = lsdn_virt_new(vxlan1);
+	lsdn_virt_set_mac(virt_c1, &virt_c1_mac);
 	lsdn_virt_connect(virt_c1, phys_c, "1");
 
 	virt_c2 = lsdn_virt_new(vxlan2);
+	lsdn_virt_set_mac(virt_c2, &virt_c2_mac);
 	lsdn_virt_connect(virt_c2, phys_c, "2");
 
 	lsdn_commit(ctx, lsdn_problem_stderr_handler, NULL);

@@ -45,3 +45,12 @@ void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf)
 	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", mac->bytes[0], mac->bytes[1], mac->bytes[2],
 			mac->bytes[3], mac->bytes[4], mac->bytes[5]);
 }
+
+void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf)
+{
+	if (ip->v == LSDN_IPv4)
+		sprintf(buf, "%d.%d.%d.%d", ip->v4.bytes[0], ip->v4.bytes[1], ip->v4.bytes[2],
+			ip->v4.bytes[3]);
+	else
+		; /* TODO */
+}

@@ -97,7 +97,7 @@ struct lsdn_net {
 	struct lsdn_list_entry attached_list;
 	enum lsdn_nettype nettype;
 	union {
-		uint32_t vlan_id;
+		uint16_t vlan_id;
 		struct {
 			lsdn_ip_t mcast_ip;
 			uint32_t vxlan_id;
@@ -106,18 +106,24 @@ struct lsdn_net {
 		struct {
 			uint32_t vxlan_id;
 			uint16_t port;
-		} vxlan_e2e;
+		} vxlan_e2e_learning;
+		struct {
+			uint32_t vxlan_id;
+			uint16_t port;
+		} vxlan_e2e_static;
 	};
 
 	enum lsdn_switch switch_type;
 };
 
 struct lsdn_net *lsdn_net_new_vlan(
-	struct lsdn_context *ctx, uint32_t vlan_id);
+	struct lsdn_context *ctx, uint16_t vlan_id);
 struct lsdn_net *lsdn_net_new_vxlan_mcast(
 	struct lsdn_context *ctx, uint32_t vxlan_id,
 	lsdn_ip_t mcast_ip, uint16_t port);
-struct lsdn_net *lsdn_net_new_vxlan_e2e(
+struct lsdn_net *lsdn_net_new_vxlan_e2e_learning(
+	struct lsdn_context *ctx, uint32_t vxlan_id, uint16_t port);
+struct lsdn_net *lsdn_net_new_vxlan_e2e_static(
 	struct lsdn_context *ctx, uint32_t vxlan_id, uint16_t port);
 void lsdn_net_free(struct lsdn_net *net);
 
@@ -144,6 +150,7 @@ lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
 
 LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
 LSDN_DECLARE_ATTR(phys, iface, char);
+LSDN_DECLARE_ATTR(virt, mac, lsdn_mac_t);
 
 
 /**
@@ -170,6 +177,11 @@ struct lsdn_phys_attachment {
 			struct lsdn_if bridge_if;
 			struct lsdn_if tunnel_if;
 		} bridge;
+		/* Used for static switch */
+		struct {
+			struct lsdn_if sswitch_if; /* backed up by a dummy interface */
+			struct lsdn_if tunnel_if;
+		} sswitch;
 	};
 };
 

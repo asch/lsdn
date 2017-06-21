@@ -108,6 +108,9 @@ void lsdn_filter_actions_end(struct lsdn_filter *f);
 void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
 		int action, int eaction, uint32_t ifindex);
 
+void lsdn_action_set_tunnel_key(struct lsdn_filter *f, uint16_t order,
+		lsdn_ip_t *src_ip, lsdn_ip_t *dst_ip);
+
 void lsdn_action_drop(struct lsdn_filter *f, uint16_t order, int action);
 
 void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,

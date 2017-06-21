@@ -43,6 +43,7 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii);
 
 #define LSDN_MAC_STRING_LEN (5 + 6 *2)
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf);
+void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf);
 
 /* These definitions are useful for the u32 TC classifier, where only
  * 32-bit values are accepted.

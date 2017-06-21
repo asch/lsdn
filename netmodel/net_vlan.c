@@ -15,7 +15,7 @@ static struct lsdn_net_ops lsdn_net_vlan_ops = {
 	.mktun_br = vlan_mktun_br
 };
 
-struct lsdn_net *lsdn_net_new_vlan(struct lsdn_context *ctx, uint32_t vlan_id)
+struct lsdn_net *lsdn_net_new_vlan(struct lsdn_context *ctx, uint16_t vlan_id)
 {
 	struct lsdn_net *net = malloc(sizeof(*net));
 	if(!net)
