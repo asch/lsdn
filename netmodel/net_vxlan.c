@@ -7,14 +7,15 @@ static void vxlan_mcast_mktun_br(struct lsdn_phys_attachment *a)
 {
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
-		&a->bridge.tunnel_if,
+		&a->tunnel.tunnel_if,
 		a->phys->attr_iface,
 		lsdn_mk_ifname(a->net->ctx),
-		&a->net->vxlan_mcast.mcast_ip,
-		a->net->vxlan_mcast.vxlan_id,
-		a->net->vxlan_mcast.port);
+		&a->net->vxlan.mcast.mcast_ip,
+		a->net->vxlan.vxlan_id,
+		a->net->vxlan.port);
 	if (err)
 		abort();
+	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
@@ -32,9 +33,9 @@ struct lsdn_net *lsdn_net_new_vxlan_mcast(
 	net->switch_type = LSDN_LEARNING;
 	net->nettype = LSDN_NET_VXLAN;
 	net->ops = &lsdn_net_vxlan_mcast_ops;
-	net->vxlan_mcast.vxlan_id = vxlan_id;
-	net->vxlan_mcast.mcast_ip = mcast_ip;
-	net->vxlan_mcast.port = port;
+	net->vxlan.vxlan_id = vxlan_id;
+	net->vxlan.mcast.mcast_ip = mcast_ip;
+	net->vxlan.port = port;
 	lsdn_list_init_add(&ctx->networks_list, &net->networks_entry);
 	lsdn_list_init(&net->attached_list);
 	lsdn_list_init(&net->virt_list);
@@ -45,25 +46,28 @@ static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
 {
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
-		&a->bridge.tunnel_if,
+		&a->tunnel.tunnel_if,
 		a->phys->attr_iface,
 		lsdn_mk_ifname(a->net->ctx),
 		NULL,
-		a->net->vxlan_e2e.vxlan_id,
-		a->net->vxlan_e2e.port);
+		a->net->vxlan.vxlan_id,
+		a->net->vxlan.port);
 	if (err)
 		abort();
 
 	lsdn_foreach(
 		a->net->attached_list, attached_entry,
-		struct lsdn_phys_attachment, a_other) {
-		if (&a_other->phys->phys_entry == &a->phys->phys_entry)
+		struct lsdn_phys_attachment, a_other)
+	{
+		if (&a_other->phys == &a->phys)
 			continue;
-		err = lsdn_fdb_add_entry(a->net->ctx->nlsock, a->bridge.tunnel_if.ifindex,
+		err = lsdn_fdb_add_entry(a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
 					&lsdn_broadcast_mac, a_other->phys->attr_ip);
 		if (err)
 			abort();
 	}
+
+	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
@@ -80,8 +84,8 @@ struct lsdn_net *lsdn_net_new_vxlan_e2e(
 	net->switch_type = LSDN_LEARNING_E2E;
 	net->nettype = LSDN_NET_VXLAN;
 	net->ops = &lsdn_net_vxlan_e2e_ops;
-	net->vxlan_e2e.vxlan_id = vxlan_id;
-	net->vxlan_e2e.port = port;
+	net->vxlan.vxlan_id = vxlan_id;
+	net->vxlan.port = port;
 	lsdn_list_init_add(&ctx->networks_list, &net->networks_entry);
 	lsdn_list_init(&net->attached_list);
 	lsdn_list_init(&net->virt_list);

@@ -119,10 +119,9 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 		return LSDNE_OK;
 
 	a->explicitely_attached = true;
-	if(net->switch_type == LSDN_LEARNING || net->switch_type == LSDN_LEARNING_E2E) {
-		lsdn_if_init_empty(&a->bridge.bridge_if);
-		lsdn_if_init_empty(&a->bridge.tunnel_if);
-	}
+
+	lsdn_if_init_empty(&a->bridge_if);
+	lsdn_list_init(&a->tunnel_list);
 
 	return LSDNE_OK;
 }
@@ -275,7 +274,8 @@ static void commit_attachment(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_context *ctx = a->net->ctx;
 	if((a->net->switch_type == LSDN_LEARNING || a->net->switch_type == LSDN_LEARNING_E2E)
-			&& !lsdn_if_is_set(&a->bridge.bridge_if)) {
+			&& !lsdn_if_is_set(&a->bridge_if)){
+		// create bridge and connect all virt interfaces to it
 		struct lsdn_if bridge_if;
 		lsdn_if_init_empty(&bridge_if);
 
@@ -288,21 +288,25 @@ static void commit_attachment(struct lsdn_phys_attachment *a)
 			add_virt_to_bridge(a, &bridge_if, v);
 		}
 
+		// create network-type specific tunnels
 		a->net->ops->mktun_br(a);
-		err = lsdn_link_set_master(
-			ctx->nlsock, bridge_if.ifindex, a->bridge.tunnel_if.ifindex);
-		if(err)
-			abort();
 
-		err = lsdn_link_set(ctx->nlsock, a->bridge.tunnel_if.ifindex, true);
-		if(err)
-			abort();
+		lsdn_foreach(a->tunnel_list, tunnel_entry, struct lsdn_tunnel, t) {
+			err = lsdn_link_set_master(
+				ctx->nlsock, bridge_if.ifindex, t->tunnel_if.ifindex);
+			if(err)
+				abort();
+
+			err = lsdn_link_set(ctx->nlsock, t->tunnel_if.ifindex, true);
+			if(err)
+				abort();
+		}
 
 		err = lsdn_link_set(ctx->nlsock, bridge_if.ifindex, true);
 		if(err)
 			abort();
 
-		a->bridge.bridge_if = bridge_if;
+		a->bridge_if = bridge_if;
 	}
 }
 

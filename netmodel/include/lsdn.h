@@ -51,7 +51,9 @@ void lsdn_context_abort_on_nomem(struct lsdn_context *ctx);
 void lsdn_context_free(struct lsdn_context *ctx);
 
 enum lsdn_nettype{
-	LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT};
+	LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT
+};
+
 enum lsdn_switch{
 	/* A learning switch with single tunnel shared from the phys.
 	 *
@@ -99,14 +101,12 @@ struct lsdn_net {
 	union {
 		uint32_t vlan_id;
 		struct {
-			lsdn_ip_t mcast_ip;
 			uint32_t vxlan_id;
 			uint16_t port;
-		} vxlan_mcast;
-		struct {
-			uint32_t vxlan_id;
-			uint16_t port;
-		} vxlan_e2e;
+			union{
+				lsdn_ip_t mcast_ip;
+			} mcast;
+		} vxlan;
 	};
 
 	enum lsdn_switch switch_type;
@@ -145,6 +145,10 @@ lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
 LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
 LSDN_DECLARE_ATTR(phys, iface, char);
 
+struct lsdn_tunnel {
+	struct lsdn_if tunnel_if;
+	struct lsdn_list_entry tunnel_entry;
+};
 
 /**
  * A point of connection to a virtual network through a physical interface.
@@ -164,14 +168,12 @@ struct lsdn_phys_attachment {
 	 */
 	bool explicitely_attached;
 
-	union{
-		/* Used for learning switch */
-		struct {
-			struct lsdn_if bridge_if;
-			struct lsdn_if tunnel_if;
-		} bridge;
-	};
+	struct lsdn_if bridge_if;
+	struct lsdn_list_entry tunnel_list;
+	/* for free internal use by the network */
+	struct lsdn_tunnel tunnel;
 };
+
 
 /**
  * A virtual machine (typically -- it may be any linux interface).
