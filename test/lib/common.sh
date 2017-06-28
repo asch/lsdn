@@ -92,6 +92,10 @@ set_ifattr(){
 				in_ns "$ns" ip addr replace "$1" dev "$if"
 				shift
 				;;
+			mac)
+				in_ns "$ns" ip link set dev "$if" address "$1"
+				shift
+				;;
 			*)
 				echo "Unknown attr key $key" >&2
 				return 1

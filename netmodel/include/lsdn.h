@@ -8,9 +8,9 @@
 #include "nettypes.h"
 
 #define LSDN_DECLARE_ATTR(obj, name, type) \
-	lsdn_err_t lsdn_##obj##_set_##name(struct lsdn_##obj *name, const type* value); \
-	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *name); \
-	const type *lsdn_##obj##_get_##name(struct lsdn_##obj *name)
+	lsdn_err_t lsdn_##obj##_set_##name(struct lsdn_##obj *obj, const type* value); \
+	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *obj); \
+	const type *lsdn_##obj##_get_##name(struct lsdn_##obj *obj)
 
 typedef void (*lsdn_nomem_cb)(void *user);
 
@@ -118,6 +118,8 @@ struct lsdn_net *lsdn_net_new_vxlan_mcast(
 	struct lsdn_context *ctx, uint32_t vxlan_id,
 	lsdn_ip_t mcast_ip, uint16_t port);
 struct lsdn_net *lsdn_net_new_vxlan_e2e(
+	struct lsdn_context *ctx, uint32_t vxlan_id, uint16_t port);
+struct lsdn_net *lsdn_net_new_vxlan_static(
 	struct lsdn_context *ctx, uint32_t vxlan_id, uint16_t port);
 void lsdn_net_free(struct lsdn_net *net);
 

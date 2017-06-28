@@ -203,6 +203,18 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt){
 	virt->connected_through = NULL;
 }
 
+lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, const lsdn_mac_t *mac)
+{
+	lsdn_mac_t *mac_dup = malloc(sizeof(*mac_dup));
+	if (mac_dup == NULL)
+		return LSDNE_NOMEM;
+	*mac_dup = *mac;
+
+	free(virt->attr_mac);
+	virt->attr_mac = mac_dup;
+	return LSDNE_OK;
+}
+
 const char *lsdn_mk_ifname(struct lsdn_context* ctx)
 {
 	snprintf(ctx->namebuf, sizeof(ctx->namebuf), "%s-%d", ctx->name, ++ctx->ifcount);
@@ -273,7 +285,9 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 static void commit_attachment(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_context *ctx = a->net->ctx;
-	if((a->net->switch_type == LSDN_LEARNING || a->net->switch_type == LSDN_LEARNING_E2E)
+	// TODO: in the feature the static_e2e should have its own category,
+	// where a statically configured bridge will be created. For now we create a regular bridge.
+	if((a->net->switch_type == LSDN_LEARNING || a->net->switch_type == LSDN_LEARNING_E2E || a->net->switch_type == LSDN_STATIC_E2E)
 			&& !lsdn_if_is_set(&a->bridge_if)){
 		// create bridge and connect all virt interfaces to it
 		struct lsdn_if bridge_if;

@@ -169,7 +169,8 @@ int lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const
 int lsdn_link_vxlan_create(
 	struct mnl_socket *sock, struct lsdn_if* dst_if,
 	const char *if_name, const char *vxlan_name,
-	lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port)
+	lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port,
+	bool learning)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	bzero(buf, sizeof(buf));
@@ -198,6 +199,7 @@ int lsdn_link_vxlan_create(
 	mnl_attr_put_u32(nlh, IFLA_VXLAN_LINK, ifindex);
 	mnl_attr_put_u32(nlh, IFLA_VXLAN_ID, vxlanid);
 	mnl_attr_put_u16(nlh, IFLA_VXLAN_PORT, htons(port));
+	mnl_attr_put_u8(nlh, IFLA_VXLAN_LEARNING, learning);
 
 	if (mcast_group) {
 		if (mcast_group->v == LSDN_IPv4) {

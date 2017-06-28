@@ -36,6 +36,9 @@ typedef struct lsdn_ip {
 	};
 } lsdn_ip_t;
 
+#define LSDN_MK_IPV4(a, b, c, d)\
+	(struct lsdn_ip) { .v = LSDN_IPv4, .v4 = { .bytes = { (a), (b), (c), (d) } } }
+
 extern const lsdn_mac_t lsdn_broadcast_mac;
 extern const lsdn_mac_t lsdn_multicast_mac_mask;
 
