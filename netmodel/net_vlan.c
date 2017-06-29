@@ -18,16 +18,10 @@ static struct lsdn_net_ops lsdn_net_vlan_ops = {
 
 struct lsdn_net *lsdn_net_new_vlan(struct lsdn_context *ctx, uint32_t vlan_id)
 {
-	struct lsdn_net *net = malloc(sizeof(*net));
+	struct lsdn_net *net = lsdn_net_new_common(ctx, LSDN_NET_VLAN, LSDN_LEARNING);
 	if(!net)
 		return NULL;
-	net->ctx = ctx;
-	net->switch_type = LSDN_LEARNING;
-	net->nettype = LSDN_NET_VLAN;
 	net->ops = &lsdn_net_vlan_ops;
 	net->vlan_id = vlan_id;
-	lsdn_list_init_add(&ctx->networks_list, &net->networks_entry);
-	lsdn_list_init(&net->attached_list);
-	lsdn_list_init(&net->virt_list);
 	return net;
 }

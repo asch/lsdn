@@ -27,19 +27,13 @@ struct lsdn_net *lsdn_net_new_vxlan_mcast(
 	struct lsdn_context *ctx, uint32_t vxlan_id,
 	lsdn_ip_t mcast_ip, uint16_t port)
 {
-	struct lsdn_net *net = malloc(sizeof(*net));
+	struct lsdn_net *net = lsdn_net_new_common(ctx, LSDN_NET_VXLAN, LSDN_LEARNING);
 	if(!net)
 		return NULL;
-	net->ctx = ctx;
-	net->switch_type = LSDN_LEARNING;
-	net->nettype = LSDN_NET_VXLAN;
 	net->ops = &lsdn_net_vxlan_mcast_ops;
 	net->vxlan.vxlan_id = vxlan_id;
 	net->vxlan.mcast.mcast_ip = mcast_ip;
 	net->vxlan.port = port;
-	lsdn_list_init_add(&ctx->networks_list, &net->networks_entry);
-	lsdn_list_init(&net->attached_list);
-	lsdn_list_init(&net->virt_list);
 	return net;
 }
 
@@ -105,18 +99,12 @@ struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 static struct lsdn_net *new_e2e(
 	struct lsdn_context *ctx, uint32_t vxlan_id, uint16_t port, enum lsdn_switch stype)
 {
-	struct lsdn_net *net = malloc(sizeof(*net));
+	struct lsdn_net *net = lsdn_net_new_common(ctx, LSDN_NET_VXLAN, stype);
 	if(!net)
 		return NULL;
-	net->ctx = ctx;
-	net->switch_type = stype;
-	net->nettype = LSDN_NET_VXLAN;
 	net->ops = &lsdn_net_vxlan_e2e_ops;
 	net->vxlan.vxlan_id = vxlan_id;
 	net->vxlan.port = port;
-	lsdn_list_init_add(&ctx->networks_list, &net->networks_entry);
-	lsdn_list_init(&net->attached_list);
-	lsdn_list_init(&net->virt_list);
 	return net;
 }
 
