@@ -1,8 +1,8 @@
 function prepare(){
 	mk_testnet net
-	mk_phys net a
-	mk_phys net b
-	mk_phys net c
+	mk_phys net a ip 172.16.0.1/24
+	mk_phys net b ip 172.16.0.2/24
+	mk_phys net c ip 172.16.0.3/24
 
 	mk_virt a 1 ip 192.168.99.1/24
 	mk_virt a 2 ip 192.168.99.2/24

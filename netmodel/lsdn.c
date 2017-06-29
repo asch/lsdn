@@ -336,11 +336,11 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 			// hand the user might not expect us to play games with his physical interfaces?
 			// This could e.g. disconnect a user from a network or something.
 			// The IP is probably already setup correctly
-			if (p->attr_ip) {
+			/*if (p->attr_ip) {
 				int err = lsdn_link_set_ip(ctx->nlsock, p->attr_iface, p->attr_ip);
 				if (err)
 					abort();
-			}
+			}*/
 
 			lsdn_foreach(
 				p->attached_to_list, attached_to_entry,
