@@ -40,6 +40,7 @@ typedef struct lsdn_ip {
 	(struct lsdn_ip) { .v = LSDN_IPv4, .v4 = { .bytes = { (a), (b), (c), (d) } } }
 
 extern const lsdn_mac_t lsdn_broadcast_mac;
+extern const lsdn_mac_t lsdn_all_zeroes_mac;
 extern const lsdn_mac_t lsdn_multicast_mac_mask;
 
 lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii);

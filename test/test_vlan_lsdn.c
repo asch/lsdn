@@ -25,7 +25,6 @@ int main(int argc, const char* argv[])
 	lsdn_phys_attach(phys_b, vlan1);
 	lsdn_phys_attach(phys_b, vlan2);
 	lsdn_phys_set_iface(phys_b, "out");
-	lsdn_phys_claim_local(local_phys == 0 ? phys_a : phys_b);
 
 	virt_a1 = lsdn_virt_new(vlan1);
 	lsdn_virt_connect(virt_a1, phys_a, "1");
@@ -41,6 +40,8 @@ int main(int argc, const char* argv[])
 
 	virt_b2 = lsdn_virt_new(vlan2);
 	lsdn_virt_connect(virt_b2, phys_b, "2");
+
+	lsdn_phys_claim_local(local_phys == 0 ? phys_a : phys_b);
 
 	lsdn_commit(ctx, lsdn_problem_stderr_handler, NULL);
 
