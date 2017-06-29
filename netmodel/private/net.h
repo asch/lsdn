@@ -15,8 +15,5 @@ struct lsdn_net_ops {
 	void (*validate_virt) (struct lsdn_virt *virt);
 };
 
-struct lsdn_net* lsdn_net_new_common(
-	struct lsdn_context *ctx,
-	enum lsdn_nettype type, enum lsdn_switch stype);
 
 #endif

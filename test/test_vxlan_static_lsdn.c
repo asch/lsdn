@@ -1,6 +1,7 @@
 #include "lsdn.h"
 
 static struct lsdn_context *ctx;
+static struct lsdn_settings *settings;
 static struct lsdn_net *vxlan1, *vxlan2;
 static struct lsdn_phys *phys_a, *phys_b, *phys_c;
 static struct lsdn_virt
@@ -20,8 +21,9 @@ int main(int argc, const char* argv[])
 	int local_phys = atoi(argv[1]);
 
 	ctx = lsdn_context_new("ls");
-	vxlan1 = lsdn_net_new_vxlan_static(ctx, 1, port);
-	vxlan2 = lsdn_net_new_vxlan_static(ctx, 2, port);
+	settings = lsdn_settings_new_vxlan_static(ctx, port);
+	vxlan1 = lsdn_net_new(settings, 1);
+	vxlan2 = lsdn_net_new(settings, 2);
 
 	phys_a = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys_a, vxlan1);

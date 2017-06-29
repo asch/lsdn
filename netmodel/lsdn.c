@@ -3,20 +3,7 @@
 #include "private/net.h"
 #include <errno.h>
 
-static lsdn_err_t ret_err(struct lsdn_context *ctx, lsdn_err_t err)
-{
-	if(err == LSDNE_NOMEM && ctx->nomem_cb)
-		ctx->nomem_cb(ctx->nomem_cb_user);
-	return err;
-}
-#define ret_err(ctx, x) return ret_err(ctx, x)
 
-static void *ret_ptr(struct lsdn_context *ctx, void *ptr){
-	if(ptr == NULL && ctx->nomem_cb)
-		ctx->nomem_cb(ctx->nomem_cb_user);
-	return ptr;
-}
-#define ret_ptr(ctx, x) return ret_ptr(ctx, x)
 
 struct lsdn_context *lsdn_context_new(const char* name)
 {
@@ -43,6 +30,7 @@ struct lsdn_context *lsdn_context_new(const char* name)
 
 	ctx->ifcount = 0;
 	lsdn_list_init(&ctx->networks_list);
+	lsdn_list_init(&ctx->settings_list);
 	lsdn_list_init(&ctx->phys_list);
 	return ctx;
 }
@@ -70,6 +58,24 @@ void lsdn_context_abort_on_nomem(struct lsdn_context *ctx)
 void lsdn_context_free(struct lsdn_context *ctx)
 {
 	// TODO: cleanup the name, context, socket and all children (nets and physes)
+}
+
+struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
+{
+	struct lsdn_net *net = malloc(sizeof(*net));
+	if(!net)
+		ret_ptr(s->ctx, NULL);
+
+	net->ctx = s->ctx;
+	net->name = NULL;
+	net->settings = s;
+	net->vnet_id = vnet_id;
+
+	lsdn_list_init_add(&s->ctx->networks_list, &net->networks_entry);
+	lsdn_list_init(&net->attached_list);
+	lsdn_list_init(&net->virt_list);
+	return net;
+
 }
 
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
@@ -255,8 +261,8 @@ static void validate_virts(struct lsdn_phys_attachment *pa)
 					LSDNS_IF, &v->connected_if,
 					LSDNS_VIRT, v, LSDNS_END);
 		}
-		if(pa->net->ops->validate_virt)
-			pa->net->ops->validate_virt(v);
+		if(pa->net->settings->ops->validate_virt)
+			pa->net->settings->ops->validate_virt(v);
 	}
 }
 
@@ -272,8 +278,8 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 			if(!a->explicitely_attached){
 				report_virts(a);
 			}else{
-				if(a->net->ops->validate_pa)
-					a->net->ops->validate_pa(a);
+				if(a->net->settings->ops->validate_pa)
+					a->net->settings->ops->validate_pa(a);
 				validate_virts(a);
 			}
 		}
@@ -285,9 +291,10 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 static void commit_attachment(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_context *ctx = a->net->ctx;
+	enum lsdn_switch stype = a->net->settings->switch_type;
 	// TODO: in the feature the static_e2e should have its own category,
 	// where a statically configured bridge will be created. For now we create a regular bridge.
-	if((a->net->switch_type == LSDN_LEARNING || a->net->switch_type == LSDN_LEARNING_E2E || a->net->switch_type == LSDN_STATIC_E2E)
+	if((stype == LSDN_LEARNING || stype == LSDN_LEARNING_E2E || stype == LSDN_STATIC_E2E)
 			&& !lsdn_if_is_set(&a->bridge_if)){
 		// create bridge and connect all virt interfaces to it
 		struct lsdn_if bridge_if;
@@ -303,7 +310,7 @@ static void commit_attachment(struct lsdn_phys_attachment *a)
 		}
 
 		// create network-type specific tunnels
-		a->net->ops->mktun_br(a);
+		a->net->settings->ops->mktun_br(a);
 
 		lsdn_foreach(a->tunnel_list, tunnel_entry, struct lsdn_tunnel, t) {
 			err = lsdn_link_set_master(

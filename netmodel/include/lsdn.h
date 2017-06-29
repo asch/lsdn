@@ -31,6 +31,7 @@ struct lsdn_context{
 	void *nomem_cb_user;
 
 	struct lsdn_list_entry networks_list;
+	struct lsdn_list_entry settings_list;
 	struct lsdn_list_entry phys_list;
 	struct mnl_socket *nlsock;
 
@@ -44,6 +45,8 @@ struct lsdn_context{
 	int ifcount;
 	char namebuf[IF_NAMESIZE + 1];
 };
+
+#include "../private/errors.h"
 
 struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user);
@@ -81,6 +84,34 @@ enum lsdn_switch{
 };
 
 /**
+ * Defines the type of a lsdn_net. Multiple networks can share the same settings
+ * (e.g. vxlan with static routing on port 1234) and only differ by their identifier
+ * (vlan id, vni ...).
+ */
+struct lsdn_settings{
+	struct lsdn_list_entry settings_entry;
+	struct lsdn_context *ctx;
+	struct lsdn_net_ops *ops;
+
+	enum lsdn_nettype nettype;
+	enum lsdn_switch switch_type;
+	union {
+		struct {
+			uint16_t port;
+			union{
+				lsdn_ip_t mcast_ip;
+			} mcast;
+		} vxlan;
+	};
+};
+
+struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx);
+struct lsdn_settings *lsdn_settings_new_vxlan_mcast(struct lsdn_context *ctx, lsdn_ip_t mcast_ip, uint16_t port);
+struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port);
+struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port);
+void lsdn_settings_free(struct lsdn_settings *settings);
+
+/**
  * Virtual network to which nodes (lsdn_virt) connect through physical host connections (lsdn_phys).
  * Can be implemented using common tunneling techniques, like vlan or vxlan or no tunneling.
  *
@@ -90,37 +121,19 @@ enum lsdn_switch{
  */
 struct lsdn_net {
 	struct lsdn_list_entry networks_entry;
+	struct lsdn_context *ctx;
+	struct lsdn_settings *settings;
 
-	struct lsdn_context* ctx;
-	struct lsdn_net_ops *ops;
 	char* name;
+	uint32_t vnet_id;
 	struct lsdn_list_entry virt_list;
 	/* List of lsdn_phys_attachement attached to this network */
 	struct lsdn_list_entry attached_list;
-	enum lsdn_nettype nettype;
-	union {
-		uint32_t vlan_id;
-		struct {
-			uint32_t vxlan_id;
-			uint16_t port;
-			union{
-				lsdn_ip_t mcast_ip;
-			} mcast;
-		} vxlan;
-	};
 
-	enum lsdn_switch switch_type;
+
 };
 
-struct lsdn_net *lsdn_net_new_vlan(
-	struct lsdn_context *ctx, uint32_t vlan_id);
-struct lsdn_net *lsdn_net_new_vxlan_mcast(
-	struct lsdn_context *ctx, uint32_t vxlan_id,
-	lsdn_ip_t mcast_ip, uint16_t port);
-struct lsdn_net *lsdn_net_new_vxlan_e2e(
-	struct lsdn_context *ctx, uint32_t vxlan_id, uint16_t port);
-struct lsdn_net *lsdn_net_new_vxlan_static(
-	struct lsdn_context *ctx, uint32_t vxlan_id, uint16_t port);
+struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
 void lsdn_net_free(struct lsdn_net *net);
 
 /**
