@@ -56,7 +56,7 @@ static void fdb_fill_virts(struct lsdn_phys_attachment *a, struct lsdn_phys_atta
 		// TODO: add validation to check that the mac is known and report errors
 		err = lsdn_fdb_add_entry(
 			a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
-			v->attr_mac, a_other->phys->attr_ip);
+			*v->attr_mac, *a_other->phys->attr_ip);
 		if (err)
 			abort();
 	}
@@ -89,8 +89,8 @@ static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
 		//TODO: all zeros
 		err = lsdn_fdb_add_entry(
 			a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
-			!learning ? &lsdn_broadcast_mac : &lsdn_all_zeroes_mac,
-			a_other->phys->attr_ip);
+			!learning ? lsdn_broadcast_mac : lsdn_all_zeroes_mac,
+			*a_other->phys->attr_ip);
 		if (err)
 			abort();
 	}

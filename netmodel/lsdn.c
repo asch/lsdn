@@ -148,12 +148,12 @@ lsdn_err_t lsdn_phys_clear_iface(struct lsdn_phys *phys){
 	return LSDNE_OK;
 }
 
-lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, const lsdn_ip_t *ip)
+lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, lsdn_ip_t ip)
 {
 	lsdn_ip_t *ip_dup = malloc(sizeof(*ip_dup));
 	if (ip_dup == NULL)
 		return LSDNE_NOMEM;
-	*ip_dup = *ip;
+	*ip_dup = ip;
 
 	free(phys->attr_ip);
 	phys->attr_ip = ip_dup;
@@ -209,12 +209,12 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt){
 	virt->connected_through = NULL;
 }
 
-lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, const lsdn_mac_t *mac)
+lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 {
 	lsdn_mac_t *mac_dup = malloc(sizeof(*mac_dup));
 	if (mac_dup == NULL)
 		return LSDNE_NOMEM;
-	*mac_dup = *mac;
+	*mac_dup = mac;
 
 	free(virt->attr_mac);
 	virt->attr_mac = mac_dup;

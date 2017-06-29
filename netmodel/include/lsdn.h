@@ -8,9 +8,9 @@
 #include "nettypes.h"
 
 #define LSDN_DECLARE_ATTR(obj, name, type) \
-	lsdn_err_t lsdn_##obj##_set_##name(struct lsdn_##obj *obj, const type* value); \
+	lsdn_err_t lsdn_##obj##_set_##name(struct lsdn_##obj *obj, type value); \
 	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *obj); \
-	const type *lsdn_##obj##_get_##name(struct lsdn_##obj *obj)
+	type lsdn_##obj##_get_##name(struct lsdn_##obj *obj)
 
 typedef void (*lsdn_nomem_cb)(void *user);
 
@@ -158,7 +158,7 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net);
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
 
 LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
-LSDN_DECLARE_ATTR(phys, iface, char);
+LSDN_DECLARE_ATTR(phys, iface, const char*);
 
 struct lsdn_tunnel {
 	struct lsdn_if tunnel_if;

@@ -26,19 +26,19 @@ int main(int argc, const char* argv[])
 	lsdn_phys_attach(phys_a, vxlan1);
 	lsdn_phys_attach(phys_a, vxlan2);
 	lsdn_phys_set_iface(phys_a, "out");
-	lsdn_phys_set_ip(phys_a, &phys_a_ip);
+	lsdn_phys_set_ip(phys_a, phys_a_ip);
 
 	phys_b = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys_b, vxlan1);
 	lsdn_phys_attach(phys_b, vxlan2);
 	lsdn_phys_set_iface(phys_b, "out");
-	lsdn_phys_set_ip(phys_b, &phys_b_ip);
+	lsdn_phys_set_ip(phys_b, phys_b_ip);
 
 	phys_c = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys_c, vxlan1);
 	lsdn_phys_attach(phys_c, vxlan2);
 	lsdn_phys_set_iface(phys_c, "out");
-	lsdn_phys_set_ip(phys_c, &phys_c_ip);
+	lsdn_phys_set_ip(phys_c, phys_c_ip);
 
 	switch (local_phys) {
 	case 0:

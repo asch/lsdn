@@ -269,7 +269,7 @@ int lsdn_link_set_master(struct mnl_socket *sock,
 }
 
 int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
-		const lsdn_mac_t *mac, const lsdn_ip_t *ip)
+		lsdn_mac_t mac, lsdn_ip_t ip)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	bzero(buf, sizeof(buf));
@@ -288,10 +288,10 @@ int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 	nd->ndm_ifindex = ifindex;
 	nd->ndm_flags = NTF_SELF;
 
-	mnl_attr_put(nlh, NDA_LLADDR, sizeof(mac->bytes), mac->bytes);
+	mnl_attr_put(nlh, NDA_LLADDR, sizeof(mac.bytes), mac.bytes);
 
-	if (ip->v == LSDN_IPv4) {
-		mnl_attr_put(nlh, NDA_DST, sizeof(ip->v4.bytes), ip->v4.bytes);
+	if (ip.v == LSDN_IPv4) {
+		mnl_attr_put(nlh, NDA_DST, sizeof(ip.v4.bytes), ip.v4.bytes);
 	} else {
 		// TODO
 	}
@@ -318,7 +318,7 @@ int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 }
 
 int lsdn_link_set_ip(struct mnl_socket *sock,
-		const char *iface, const lsdn_ip_t *ip)
+		const char *iface, lsdn_ip_t ip)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	bzero(buf, sizeof(buf));
@@ -338,10 +338,10 @@ int lsdn_link_set_ip(struct mnl_socket *sock,
 	ifm->ifa_index = ifindex;
 	ifm->ifa_scope = 0;
 
-	if (ip->v == LSDN_IPv4) {
-		mnl_attr_put(nlh, IFA_LOCAL, sizeof(ip->v4.bytes), ip->v4.bytes);
+	if (ip.v == LSDN_IPv4) {
+		mnl_attr_put(nlh, IFA_LOCAL, sizeof(ip.v4.bytes), ip.v4.bytes);
 	} else {
-		mnl_attr_put(nlh, IFA_LOCAL, sizeof(ip->v6.bytes), ip->v6.bytes);
+		mnl_attr_put(nlh, IFA_LOCAL, sizeof(ip.v6.bytes), ip.v6.bytes);
 	}
 
 	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);

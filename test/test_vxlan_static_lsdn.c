@@ -29,19 +29,19 @@ int main(int argc, const char* argv[])
 	lsdn_phys_attach(phys_a, vxlan1);
 	lsdn_phys_attach(phys_a, vxlan2);
 	lsdn_phys_set_iface(phys_a, "out");
-	lsdn_phys_set_ip(phys_a, &phys_a_ip);
+	lsdn_phys_set_ip(phys_a, phys_a_ip);
 
 	phys_b = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys_b, vxlan1);
 	lsdn_phys_attach(phys_b, vxlan2);
 	lsdn_phys_set_iface(phys_b, "out");
-	lsdn_phys_set_ip(phys_b, &phys_b_ip);
+	lsdn_phys_set_ip(phys_b, phys_b_ip);
 
 	phys_c = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys_c, vxlan1);
 	lsdn_phys_attach(phys_c, vxlan2);
 	lsdn_phys_set_iface(phys_c, "out");
-	lsdn_phys_set_ip(phys_c, &phys_c_ip);
+	lsdn_phys_set_ip(phys_c, phys_c_ip);
 
 	switch (local_phys) {
 	case 0:
@@ -60,35 +60,35 @@ int main(int argc, const char* argv[])
 	lsdn_mac_t mac = {.bytes = {0, 0, 0, 0, 0, 1}};
 
 	virt_a1 = lsdn_virt_new(vxlan1);
-	lsdn_virt_set_mac(virt_a1, &mac); mac.bytes[5]++;
+	lsdn_virt_set_mac(virt_a1, mac); mac.bytes[5]++;
 	lsdn_virt_connect(virt_a1, phys_a, "1");
 
 	virt_a2 = lsdn_virt_new(vxlan1);
-	lsdn_virt_set_mac(virt_a2, &mac); mac.bytes[5]++;
+	lsdn_virt_set_mac(virt_a2, mac); mac.bytes[5]++;
 	lsdn_virt_connect(virt_a2, phys_a, "2");
 
 	virt_a3 = lsdn_virt_new(vxlan2);
-	lsdn_virt_set_mac(virt_a3, &mac); mac.bytes[5]++;
+	lsdn_virt_set_mac(virt_a3, mac); mac.bytes[5]++;
 	lsdn_virt_connect(virt_a3, phys_a, "3");
 
 	virt_b1 = lsdn_virt_new(vxlan1);
-	lsdn_virt_set_mac(virt_b1, &mac); mac.bytes[5]++;
+	lsdn_virt_set_mac(virt_b1, mac); mac.bytes[5]++;
 	lsdn_virt_connect(virt_b1, phys_b, "1");
 
 	virt_b2 = lsdn_virt_new(vxlan2);
-	lsdn_virt_set_mac(virt_b2, &mac); mac.bytes[5]++;
+	lsdn_virt_set_mac(virt_b2, mac); mac.bytes[5]++;
 	lsdn_virt_connect(virt_b2, phys_b, "2");
 
 	virt_c1 = lsdn_virt_new(vxlan1);
-	lsdn_virt_set_mac(virt_c1, &mac); mac.bytes[5]++;
+	lsdn_virt_set_mac(virt_c1, mac); mac.bytes[5]++;
 	lsdn_virt_connect(virt_c1, phys_c, "1");
 
 	virt_c2 = lsdn_virt_new(vxlan2);
-	lsdn_virt_set_mac(virt_c2, &mac); mac.bytes[5]++;
+	lsdn_virt_set_mac(virt_c2, mac); mac.bytes[5]++;
 	lsdn_virt_connect(virt_c2, phys_c, "2");
 
 	virt_c3 = lsdn_virt_new(vxlan1);
-	lsdn_virt_set_mac(virt_c3, &mac); mac.bytes[5]++;
+	lsdn_virt_set_mac(virt_c3, mac); mac.bytes[5]++;
 	lsdn_virt_connect(virt_c3, phys_c, "3");
 
 	lsdn_commit(ctx, lsdn_problem_stderr_handler, NULL);

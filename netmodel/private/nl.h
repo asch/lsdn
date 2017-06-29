@@ -76,7 +76,7 @@ int lsdn_link_set_master(struct mnl_socket *sock,
 		unsigned int master, unsigned int slave);
 
 int lsdn_link_set_ip(struct mnl_socket *sock,
-		const char *iface, const lsdn_ip_t *ip);
+		const char *iface, lsdn_ip_t ip);
 
 int lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up);
 
@@ -86,7 +86,7 @@ int lsdn_qdisc_htb_create(struct mnl_socket *sock, unsigned int ifindex,
 int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex);
 
 int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
-		const lsdn_mac_t *mac, const lsdn_ip_t *ip);
+		lsdn_mac_t mac, lsdn_ip_t ip);
 
 // filters -->
 struct lsdn_filter{
