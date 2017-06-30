@@ -4,6 +4,7 @@
 #include <linux/pkt_cls.h>
 #include <linux/tc_act/tc_mirred.h>
 #include <linux/tc_act/tc_gact.h>
+#include <linux/tc_act/tc_tunnel_key.h>
 #include <linux/veth.h>
 #include <assert.h>
 #include <errno.h>
@@ -623,6 +624,30 @@ void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
 	mirred_act.ifindex = ifindex;
 
 	mnl_attr_put(f->nlh, TCA_MIRRED_PARMS, sizeof(mirred_act), &mirred_act);
+
+	mnl_attr_nest_end(f->nlh, nested_attr2);
+	mnl_attr_nest_end(f->nlh, nested_attr);
+}
+
+void lsdn_action_set_tunnel_key(struct lsdn_filter *f, uint16_t order,
+		lsdn_ip_t *src_ip, lsdn_ip_t *dst_ip)
+{
+	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
+	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "tunnel_key");
+
+	struct nlattr* nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
+
+	struct tc_tunnel_key tunnel_key;
+	bzero(&tunnel_key, sizeof(tunnel_key));
+	// TODO
+	if (src_ip->v == LSDN_IPv4 && dst_ip->v == LSDN_IPv4) {
+		mnl_attr_put_u32(f->nlh, TCA_TUNNEL_KEY_ENC_IPV4_SRC, htonl(lsdn_ip4_u32(&src_ip->v4)));
+		mnl_attr_put_u32(f->nlh, TCA_TUNNEL_KEY_ENC_IPV4_DST, htonl(lsdn_ip4_u32(&dst_ip->v4)));
+	} else {
+		// TODO
+	}
+
+	mnl_attr_put(f->nlh, TCA_ACT_TUNNEL_KEY, sizeof(tunnel_key), &tunnel_key);
 
 	mnl_attr_nest_end(f->nlh, nested_attr2);
 	mnl_attr_nest_end(f->nlh, nested_attr);

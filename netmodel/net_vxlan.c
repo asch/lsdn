@@ -62,7 +62,7 @@ static void fdb_fill_virts(struct lsdn_phys_attachment *a, struct lsdn_phys_atta
 	}
 }
 
-static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
+static void vxlan_e2e_learning_mktun_br(struct lsdn_phys_attachment *a)
 {
 	bool learning = a->net->settings->switch_type == LSDN_LEARNING_E2E;
 	int err = lsdn_link_vxlan_create(
@@ -74,6 +74,7 @@ static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
 		a->net->vnet_id,
 		a->net->settings->vxlan.port,
 		learning);
+
 	if (err)
 		abort();
 
@@ -97,11 +98,12 @@ static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
 	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
 }
 
-struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
-	.mktun_br = vxlan_e2e_mktun_br
+struct lsdn_net_ops lsdn_net_vxlan_e2e_learning_ops = {
+	.mktun_br = vxlan_e2e_learning_mktun_br
 };
 
-static struct lsdn_settings *new_e2e(struct lsdn_context *ctx, uint16_t port, enum lsdn_switch stype)
+
+struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));
 	if(!s)
@@ -109,19 +111,52 @@ static struct lsdn_settings *new_e2e(struct lsdn_context *ctx, uint16_t port, en
 
 	lsdn_list_init_add(&ctx->settings_list, &s->settings_entry);
 	s->ctx = ctx;
-	s->ops = &lsdn_net_vxlan_e2e_ops;
+	s->ops = &lsdn_net_vxlan_e2e_learning_ops;
 	s->nettype = LSDN_NET_VXLAN;
-	s->switch_type = stype;
+	s->switch_type = LSDN_LEARNING_E2E;
 	s->vxlan.port = port;
 	return s;
 }
 
-struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port)
+static void vxlan_e2e_static_mktun_br(struct lsdn_phys_attachment *a)
 {
-	return new_e2e(ctx, port, LSDN_LEARNING_E2E);
+	int err = lsdn_link_vxlan_create(
+		a->net->ctx->nlsock,
+		&a->bridge_if,
+		a->phys->attr_iface,
+		lsdn_mk_ifname(a->net->ctx),
+		NULL,
+		a->net->vnet_id,
+		a->net->settings->vxlan.port, true);
+	if (err)
+		abort();
+
+	lsdn_foreach(
+		a->net->attached_list, attached_entry,
+		struct lsdn_phys_attachment, a_other) {
+		if (&a_other->phys->phys_entry == &a->phys->phys_entry)
+			continue;
+		err = lsdn_fdb_add_entry(a->net->ctx->nlsock, a->bridge_if.ifindex,
+		lsdn_broadcast_mac, *a_other->phys->attr_ip);
+		if (err)
+			abort();
+	}
 }
+
+struct lsdn_net_ops lsdn_net_vxlan_e2e_static_ops = {
+	.mktun_br = vxlan_e2e_static_mktun_br
+};
 
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port)
 {
-	return new_e2e(ctx, port, LSDN_STATIC_E2E);
+	struct lsdn_settings *s = malloc(sizeof(*s));
+	if(!s)
+		ret_ptr(ctx, NULL);
+
+	s->ctx = ctx;
+	s->switch_type = LSDN_STATIC_E2E;
+	s->nettype = LSDN_NET_VXLAN;
+	s->ops = &lsdn_net_vxlan_e2e_static_ops;
+	s->vxlan.port = port;
+	return s;
 }

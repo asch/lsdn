@@ -2,6 +2,7 @@
 #include "private/nl.h"
 #include "private/net.h"
 #include <errno.h>
+#include <stdarg.h>
 
 
 
@@ -125,7 +126,6 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 		return LSDNE_OK;
 
 	a->explicitely_attached = true;
-
 	lsdn_if_init_empty(&a->bridge_if);
 	lsdn_list_init(&a->tunnel_list);
 
@@ -236,6 +236,91 @@ static void add_virt_to_bridge(
 		abort();
 }
 
+// TODO remove
+static void runcmd(const char *format, ...)
+{
+	char cmdbuf[1024];
+	va_list args;
+	va_start(args, format);
+	vsnprintf(cmdbuf, sizeof(cmdbuf), format, args);
+	va_end(args);
+	printf("Running: %s\n", cmdbuf);
+	system(cmdbuf);
+}
+
+static void redir_virt_to_static_switch(
+	struct lsdn_phys_attachment *a,
+	struct lsdn_if *sswitch, struct lsdn_virt *v)
+{
+	// * redir every packet to sswitch
+	runcmd("tc filter add dev %s parent ffff: protocol all flower action mirred ingress redirect dev %s",
+		v->connected_if.ifname, sswitch->ifname);
+}
+
+static void lsdn_static_switch_add_rule(
+	struct lsdn_phys_attachment *a, struct lsdn_if *sswitch,
+	struct lsdn_if *tunnel_if, struct lsdn_virt *v)
+{
+	// * add rule to sswitch matching on src_mac of v and on dst_mac of broadcast_mac
+	//   that sends packet to each local virt
+	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v_other){
+		if (&v->virt_entry == &v_other->virt_entry)
+			continue;
+        char buf1[64]; lsdn_mac_to_string(v->attr_mac, buf1);
+        char buf2[64]; lsdn_mac_to_string(&lsdn_broadcast_mac, buf2);
+		runcmd("tc filter add dev %s protocol ip parent ffff: flower match src_mac %s dst_mac %s "
+			"action mirred egress redirect dev %s",
+			sswitch->ifname, buf1, buf2, v_other->connected_if.ifname);
+	}
+
+	// * add rule to sswitch matching on src_mac of v and on dst_mac of broadcast_mac
+	//   that encapsulates the packet with tunnel_key and sends it to the tunnel_if
+	lsdn_foreach(a->net->attached_list, attached_entry, struct lsdn_phys_attachment, a_other) {
+		if (&a_other->phys->phys_entry == &a->phys->phys_entry)
+			continue;
+		char buf1[64]; lsdn_mac_to_string(v->attr_mac, buf1);
+		char buf2[64]; lsdn_mac_to_string(&lsdn_broadcast_mac, buf2);
+		char buf3[64]; lsdn_ip_to_string(a->phys->attr_ip, buf3);
+		char buf4[64]; lsdn_ip_to_string(a_other->phys->attr_ip, buf4);
+		runcmd("tc filter add dev %s protocol ip parent ffff: flower src_mac %s dst_mac %s "
+			"action tunnel_key set src_ip %s dst_ip %s id %d "
+			"action mirred egress redirect dev %s",
+		sswitch->ifname, buf1, buf2, buf3, buf4, a->net->vnet_id, tunnel_if->ifname);
+	}
+
+	// * add rule for every `other_v` residing on the same phys matching on src_mac of v and dst_mac of other_v
+	//   that just sends the packet to other_v
+	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v_other){
+		if (&v->virt_entry == &v_other->virt_entry)
+			continue;
+		char buf1[64]; lsdn_mac_to_string(v->attr_mac, buf1);
+		char buf2[64]; lsdn_mac_to_string(v_other->attr_mac, buf2);
+		runcmd("tc filter add dev %s protocol ip parent ffff: flower src_mac %s dst_mac %s "
+			"action mirred egress redirect dev %s",
+			sswitch->ifname, buf1, buf2, v_other->connected_if.ifname);
+	}
+
+	// * add rule for every `other_v` *not* residing on the same phys matching on src_mac of v and dst_mac of other_v
+	//   that encapsulates the packet with tunnel_key and sends it to the tunnel_if
+	lsdn_foreach(a->net->virt_list, virt_entry, struct lsdn_virt, v_other) {
+		// TODO match on phys instead of on v
+		lsdn_foreach(v_other->connected_through->connected_virt_list, connected_virt_entry, struct lsdn_virt, v_dummy) {
+			if (&v->virt_entry == &v_dummy->virt_entry)
+				goto next;
+		}
+		char buf1[64]; lsdn_mac_to_string(v->attr_mac, buf1);
+		char buf2[64]; lsdn_mac_to_string(v_other->attr_mac, buf2);
+		char buf3[64]; lsdn_ip_to_string(a->phys->attr_ip, buf3);
+		char buf4[64]; lsdn_ip_to_string(v->connected_through->phys->attr_ip, buf4);
+		runcmd("tc filter add dev %s protocol ip parent ffff: flower src_mac %s dst_mac %s "
+			"action tunnel_key set src_ip %s dst_ip %s id %d "
+			"action mirred egress redirect dev %s",
+			sswitch->ifname, buf1, buf2, buf3, buf4, a->net->vnet_id, tunnel_if->ifname);
+next:
+		;
+	}
+}
+
 static void report_virts(struct lsdn_phys_attachment *pa)
 {
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v)
@@ -292,10 +377,13 @@ static void commit_attachment(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_context *ctx = a->net->ctx;
 	enum lsdn_switch stype = a->net->settings->switch_type;
+
+	if(lsdn_if_is_set(&a->bridge_if))
+		return;
+
 	// TODO: in the feature the static_e2e should have its own category,
 	// where a statically configured bridge will be created. For now we create a regular bridge.
-	if((stype == LSDN_LEARNING || stype == LSDN_LEARNING_E2E || stype == LSDN_STATIC_E2E)
-			&& !lsdn_if_is_set(&a->bridge_if)){
+	if(stype == LSDN_LEARNING || stype == LSDN_LEARNING_E2E) {
 		// create bridge and connect all virt interfaces to it
 		struct lsdn_if bridge_if;
 		lsdn_if_init_empty(&bridge_if);
@@ -328,6 +416,27 @@ static void commit_attachment(struct lsdn_phys_attachment *a)
 			abort();
 
 		a->bridge_if = bridge_if;
+	} else if (stype == LSDN_STATIC_E2E) {
+		struct lsdn_if sswitch_if;
+		lsdn_if_init_empty(&sswitch_if);
+
+		int err = lsdn_link_dummy_create(ctx->nlsock, &sswitch_if, lsdn_mk_ifname(ctx));
+		if (err)
+			abort();
+
+		runcmd("tc qdisc add dev %s handle ffff: ingress", sswitch_if.ifname);
+		runcmd("tc qdisc add dev %s root handle 1: htb", sswitch_if.ifname);
+
+		lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
+			redir_virt_to_static_switch(a, &sswitch_if, v);
+		}
+
+		a->net->settings->ops->mktun_br(a);
+		lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
+			lsdn_static_switch_add_rule(a, &sswitch_if, &a->tunnel.tunnel_if, v);
+		}
+
+		a->bridge_if = sswitch_if;
 	}
 }
 

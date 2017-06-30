@@ -130,7 +130,6 @@ struct lsdn_net {
 	/* List of lsdn_phys_attachement attached to this network */
 	struct lsdn_list_entry attached_list;
 
-
 };
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
@@ -183,6 +182,7 @@ struct lsdn_phys_attachment {
 	 */
 	bool explicitely_attached;
 
+	/* Either a dummy interface for static switch or linux bridge for learning networks */
 	struct lsdn_if bridge_if;
 	struct lsdn_list_entry tunnel_list;
 	/* for free internal use by the network */
