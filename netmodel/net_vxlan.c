@@ -4,8 +4,9 @@
 #include "include/nettypes.h"
 #include "private/errors.h"
 
-static void vxlan_mcast_mktun_br(struct lsdn_phys_attachment *a)
+static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 {
+	lsdn_net_make_bridge(a);
 	struct lsdn_settings *s = a->net->settings;
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
@@ -19,10 +20,11 @@ static void vxlan_mcast_mktun_br(struct lsdn_phys_attachment *a)
 	if (err)
 		abort();
 	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
+	lsdn_net_connect_bridge(a);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
-	.mktun_br = vxlan_mcast_mktun_br
+	.create_pa = vxlan_mcast_create_pa
 };
 
 struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
@@ -62,8 +64,10 @@ static void fdb_fill_virts(struct lsdn_phys_attachment *a, struct lsdn_phys_atta
 	}
 }
 
-static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
+static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 {
+	lsdn_net_make_bridge(a);
+
 	bool learning = a->net->settings->switch_type == LSDN_LEARNING_E2E;
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
@@ -95,10 +99,11 @@ static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
 	}
 
 	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
+	lsdn_net_connect_bridge(a);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
-	.mktun_br = vxlan_e2e_mktun_br
+	.create_pa = vxlan_e2e_create_pa
 };
 
 static struct lsdn_settings *new_e2e(struct lsdn_context *ctx, uint16_t port, enum lsdn_switch stype)

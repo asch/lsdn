@@ -227,15 +227,6 @@ const char *lsdn_mk_ifname(struct lsdn_context* ctx)
 	return ctx->namebuf;
 }
 
-static void add_virt_to_bridge(
-	struct lsdn_phys_attachment *a,
-	struct lsdn_if *br, struct lsdn_virt *v)
-{
-	int err = lsdn_link_set_master(a->net->ctx->nlsock, br->ifindex, v->connected_if.ifindex);
-	if(err)
-		abort();
-}
-
 static void report_virts(struct lsdn_phys_attachment *pa)
 {
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v)
@@ -288,49 +279,6 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	return (ctx->problem_count == 0) ? LSDNE_OK : LSDNE_VALIDATE;
 }
 
-static void commit_attachment(struct lsdn_phys_attachment *a)
-{
-	struct lsdn_context *ctx = a->net->ctx;
-	enum lsdn_switch stype = a->net->settings->switch_type;
-	// TODO: in the feature the static_e2e should have its own category,
-	// where a statically configured bridge will be created. For now we create a regular bridge.
-	if((stype == LSDN_LEARNING || stype == LSDN_LEARNING_E2E || stype == LSDN_STATIC_E2E)
-			&& !lsdn_if_is_set(&a->bridge_if)){
-		// create bridge and connect all virt interfaces to it
-		struct lsdn_if bridge_if;
-		lsdn_if_init_empty(&bridge_if);
-
-		int err = lsdn_link_bridge_create(ctx->nlsock, &bridge_if, lsdn_mk_ifname(ctx));
-		if(err){
-			abort();
-		}
-
-		lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v){
-			add_virt_to_bridge(a, &bridge_if, v);
-		}
-
-		// create network-type specific tunnels
-		a->net->settings->ops->mktun_br(a);
-
-		lsdn_foreach(a->tunnel_list, tunnel_entry, struct lsdn_tunnel, t) {
-			err = lsdn_link_set_master(
-				ctx->nlsock, bridge_if.ifindex, t->tunnel_if.ifindex);
-			if(err)
-				abort();
-
-			err = lsdn_link_set(ctx->nlsock, t->tunnel_if.ifindex, true);
-			if(err)
-				abort();
-		}
-
-		err = lsdn_link_set(ctx->nlsock, bridge_if.ifindex, true);
-		if(err)
-			abort();
-
-		a->bridge_if = bridge_if;
-	}
-}
-
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	lsdn_err_t lerr = lsdn_validate(ctx, cb, user);
@@ -353,7 +301,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 				p->attached_to_list, attached_to_entry,
 				struct lsdn_phys_attachment, a)
 			{
-				commit_attachment(a);
+				a->net->settings->ops->create_pa(a);
 			}
 		}
 	}
