@@ -86,7 +86,6 @@ static void vxlan_e2e_mktun_br(struct lsdn_phys_attachment *a)
 		if(!learning)
 			fdb_fill_virts(a, a_other);
 
-		//TODO: all zeros
 		err = lsdn_fdb_add_entry(
 			a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
 			!learning ? lsdn_broadcast_mac : lsdn_all_zeroes_mac,
