@@ -31,12 +31,15 @@ void lsdn_net_connect_bridge(struct lsdn_phys_attachment *a)
 {
 	int err;
 	struct lsdn_context *ctx = a->net->ctx;
+	bool learning = a->net->settings->switch_type == LSDN_LEARNING_E2E;
 
 	lsdn_foreach(a->tunnel_list, tunnel_entry, struct lsdn_tunnel, t) {
-		err = lsdn_link_set_master(
-			ctx->nlsock, a->bridge_if.ifindex, t->tunnel_if.ifindex);
-		if(err)
-			abort();
+		if (learning) {
+			err = lsdn_link_set_master(
+				ctx->nlsock, a->bridge_if.ifindex, t->tunnel_if.ifindex);
+			if(err)
+				abort();
+		}
 
 		err = lsdn_link_set(ctx->nlsock, t->tunnel_if.ifindex, true);
 		if(err)
