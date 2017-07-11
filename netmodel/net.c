@@ -31,7 +31,7 @@ void lsdn_net_connect_bridge(struct lsdn_phys_attachment *a)
 {
 	int err;
 	struct lsdn_context *ctx = a->net->ctx;
-	bool learning = a->net->settings->switch_type == LSDN_LEARNING_E2E;
+	bool learning = a->net->settings->switch_type != LSDN_STATIC_E2E;
 
 	lsdn_foreach(a->tunnel_list, tunnel_entry, struct lsdn_tunnel, t) {
 		if (learning) {
