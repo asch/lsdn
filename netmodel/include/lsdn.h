@@ -69,7 +69,7 @@ enum lsdn_switch{
 	 */
 	LSDN_LEARNING_E2E,
 	/* Static switching with a tunnel for each connected endpoint
-	 * Note: the endpoint might be represented by a single linux interface,
+	 * Note: the endpoint is represented by a single linux interface,
 	 * with the actual endpoint being selected by tc actions.
 	 *
 	 * In this mode we need the connection information + MAC addresses of all virts and where
@@ -186,7 +186,7 @@ struct lsdn_phys_attachment {
 	struct lsdn_if bridge_if;
 	struct lsdn_list_entry tunnel_list;
 	/* for free internal use by the network */
-	struct lsdn_tunnel tunnel;
+	struct lsdn_tunnel *tunnel;
 };
 
 

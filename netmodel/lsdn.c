@@ -106,6 +106,26 @@ static struct lsdn_phys_attachment* find_or_create_attachement(
 
 	a->phys = phys;
 	a->net = net;
+	a->tunnel = NULL;
+	if (a->net->settings->switch_type == LSDN_STATIC_E2E) {
+		lsdn_foreach(
+			phys->attached_to_list, attached_to_entry,
+			struct lsdn_phys_attachment, a_other) {
+			if (a->net->vnet_id != a_other->net->vnet_id
+				&& a_other->net->settings->switch_type == LSDN_STATIC_E2E) {
+				a->tunnel = a_other->tunnel;
+				break;
+			}
+		}
+	}
+	if (a->tunnel == NULL) {
+		a->tunnel = malloc(sizeof(a->tunnel));
+		if (!a->tunnel) {
+			free(a);
+			return NULL;
+		}
+		lsdn_if_init_empty(&a->tunnel->tunnel_if);
+	}
 
 	lsdn_list_init_add(&net->attached_list, &a->attached_entry);
 	lsdn_list_init_add(&phys->attached_to_list, &a->attached_to_entry);

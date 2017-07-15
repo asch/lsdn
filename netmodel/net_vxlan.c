@@ -11,16 +11,16 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 	struct lsdn_settings *s = a->net->settings;
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
-		&a->tunnel.tunnel_if,
+		&a->tunnel->tunnel_if,
 		a->phys->attr_iface,
 		lsdn_mk_ifname(a->net->ctx),
 		&s->vxlan.mcast.mcast_ip,
 		a->net->vnet_id,
 		s->vxlan.port,
-		true);
+		true,
+		false);
 	if (err)
 		abort();
-	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
 	lsdn_net_connect_bridge(a);
 }
 
@@ -58,7 +58,7 @@ static void fdb_fill_virts(struct lsdn_phys_attachment *a, struct lsdn_phys_atta
 
 		// TODO: add validation to check that the mac is known and report errors
 		err = lsdn_fdb_add_entry(
-			a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
+			a->net->ctx->nlsock, a->tunnel->tunnel_if.ifindex,
 			*v->attr_mac, *a_other->phys->attr_ip);
 		if (err)
 			abort();
@@ -72,13 +72,14 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 	bool learning = a->net->settings->switch_type == LSDN_LEARNING_E2E;
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
-		&a->tunnel.tunnel_if,
+		&a->tunnel->tunnel_if,
 		a->phys->attr_iface,
 		lsdn_mk_ifname(a->net->ctx),
 		NULL,
 		a->net->vnet_id,
 		a->net->settings->vxlan.port,
-		learning);
+		learning,
+		false);
 
 	if (err)
 		abort();
@@ -93,21 +94,19 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 			fdb_fill_virts(a, a_other);
 
 		err = lsdn_fdb_add_entry(
-			a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
+			a->net->ctx->nlsock, a->tunnel->tunnel_if.ifindex,
 			!learning ? lsdn_broadcast_mac : lsdn_all_zeroes_mac,
 			*a_other->phys->attr_ip);
 		if (err)
 			abort();
 	}
 
-	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
 	lsdn_net_connect_bridge(a);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 	.create_pa = vxlan_e2e_create_pa
 };
-
 
 
 struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port)
@@ -226,7 +225,6 @@ next:
 	}
 }
 
-
 static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_context *ctx = a->net->ctx;
@@ -252,30 +250,25 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 		redir_virt_to_static_switch(a, &sswitch_if, v);
 	}
 
-	err = lsdn_link_vxlan_create(
-		a->net->ctx->nlsock,
-		&a->tunnel.tunnel_if,
-		a->phys->attr_iface,
-		lsdn_mk_ifname(a->net->ctx),
-		NULL,
-		a->net->vnet_id,
-		a->net->settings->vxlan.port,
-		false);
-	if (err)
-		abort();
-
-	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
-
-	runcmd("tc qdisc add dev %s handle ffff: ingress", a->tunnel.tunnel_if.ifname);
-
-	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		lsdn_static_switch_add_rule(a, &sswitch_if, &a->tunnel.tunnel_if, v);
+	if (a->tunnel->tunnel_if.ifindex == 0) {
+		err = lsdn_link_vxlan_create(
+			a->net->ctx->nlsock,
+			&a->tunnel->tunnel_if,
+			a->phys->attr_iface,
+			lsdn_mk_ifname(a->net->ctx),
+			NULL,
+			0,
+			a->net->settings->vxlan.port,
+			false,
+			true);
+		if (err)
+			abort();
+		runcmd("tc qdisc add dev %s handle ffff: ingress", a->tunnel->tunnel_if.ifname);
 	}
 
-	// * add rule to tunnel device that redirects all incoming tunneled traffic to sswitch
-	runcmd("tc filter add dev %s parent ffff: protocol all flower "
-		"action mirred ingress redirect dev %s",
-		a->tunnel.tunnel_if.ifname, sswitch_if.ifname);
+	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
+		lsdn_static_switch_add_rule(a, &sswitch_if, &a->tunnel->tunnel_if, v);
+	}
 
 	lsdn_foreach(
 		a->net->attached_list, attached_entry,
@@ -283,13 +276,13 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 		if (&a->phys->phys_entry == &a_other->phys->phys_entry)
 			continue;
 
-		fdb_fill_virts(a, a_other);
-
-		err = lsdn_fdb_add_entry(
-			a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
-			lsdn_broadcast_mac, *a_other->phys->attr_ip);
-		if (err)
-			abort();
+		char buf1[64]; lsdn_ip_to_string(a_other->phys->attr_ip, buf1);
+		char buf2[64]; lsdn_ip_to_string(a->phys->attr_ip, buf2);
+		runcmd("tc filter add dev %s parent ffff: protocol all flower "
+			"enc_src_ip %s enc_dst_ip %s enc_key_id %d "
+			"action tunnel_key unset "
+			"action mirred ingress redirect dev %s",
+			a->tunnel->tunnel_if.ifname, buf1, buf2, a->net->vnet_id, sswitch_if.ifname);
 	}
 
 	lsdn_net_connect_bridge(a);

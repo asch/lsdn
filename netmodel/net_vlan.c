@@ -8,11 +8,10 @@ static void vlan_create_pa(struct lsdn_phys_attachment *p)
 	lsdn_net_make_bridge(p);
 
 	int err = lsdn_link_vlan_create(
-		p->net->ctx->nlsock, &p->tunnel.tunnel_if,
+		p->net->ctx->nlsock, &p->tunnel->tunnel_if,
 		p->phys->attr_iface, lsdn_mk_ifname(p->net->ctx), p->net->vnet_id);
 	if(err)
 		abort();
-	lsdn_list_init_add(&p->tunnel_list, &p->tunnel.tunnel_entry);
 
 	lsdn_net_connect_bridge(p);
 }
