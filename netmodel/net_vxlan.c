@@ -178,16 +178,12 @@ static void lsdn_static_switch_add_rule(
 			sswitch->ifname, buf1, buf2, buf3, buf4, a->net->vnet_id, tunnel_if->ifname);
 	}
 
-	// * add rule for every `other_v` residing on the same phys matching on src_mac of v and dst_mac of other_v
-	//   that just sends the packet to other_v
-	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v_other){
-		if (&v->virt_entry == &v_other->virt_entry)
-			continue;
+	// * add rule matching on dst_mac of v that just sends the packet to v
+	{
 		char buf1[64]; lsdn_mac_to_string(v->attr_mac, buf1);
-		char buf2[64]; lsdn_mac_to_string(v_other->attr_mac, buf2);
-		runcmd("tc filter add dev %s parent ffff: protocol all flower src_mac %s dst_mac %s "
+		runcmd("tc filter add dev %s parent ffff: protocol all flower dst_mac %s "
 			"action mirred egress redirect dev %s",
-			sswitch->ifname, buf1, buf2, v_other->connected_if.ifname);
+			sswitch->ifname, buf1, v->connected_if.ifname);
 	}
 
 	lsdn_foreach(a->net->virt_list, virt_entry, struct lsdn_virt, v_other) {
@@ -200,17 +196,12 @@ static void lsdn_static_switch_add_rule(
 		char buf2[64]; lsdn_mac_to_string(v_other->attr_mac, buf2);
 		char buf3[64]; lsdn_ip_to_string(a->phys->attr_ip, buf3);
 		char buf4[64]; lsdn_ip_to_string(v_other->connected_through->phys->attr_ip, buf4);
-		// * add rule for every `other_v` *not* residing on the same phys matching on src_mac of v and dst_mac of other_v
+		// * add rule for every `other_v` *not* residing on the same phys matching on dst_mac of other_v
 		//   that encapsulates the packet with tunnel_key and sends it to the tunnel_if
-		runcmd("tc filter add dev %s parent ffff: protocol all flower src_mac %s dst_mac %s "
+		runcmd("tc filter add dev %s parent ffff: protocol all flower dst_mac %s "
 			"action tunnel_key set src_ip %s dst_ip %s id %d "
 			"action mirred egress redirect dev %s",
-			sswitch->ifname, buf1, buf2, buf3, buf4, a->net->vnet_id, tunnel_if->ifname);
-
-		// * distribute every incoming packet from v_other to the appropriate v
-		runcmd("tc filter add dev %s parent ffff: protocol all flower src_mac %s dst_mac %s "
-			"action mirred egress redirect dev %s",
-			sswitch->ifname, buf2, buf1, v->connected_if.ifname);
+			sswitch->ifname, buf2, buf3, buf4, a->net->vnet_id, tunnel_if->ifname);
 
 		// * distribute every incoming packet from v_other with broadcast
 		//   dst_mac to the appropriate v
