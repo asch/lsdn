@@ -145,6 +145,8 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 
 	a->explicitely_attached = true;
 	lsdn_if_init_empty(&a->bridge_if);
+	if (net->settings->switch_type == LSDN_STATIC_E2E)
+		lsdn_if_init_empty(&a->dummy_if);
 	lsdn_list_init(&a->tunnel_list);
 
 	return LSDNE_OK;

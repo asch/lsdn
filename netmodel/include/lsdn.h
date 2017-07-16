@@ -184,6 +184,10 @@ struct lsdn_phys_attachment {
 
 	/* Either a dummy interface for static switch or linux bridge for learning networks */
 	struct lsdn_if bridge_if;
+	union {
+		/* Only valid for LSDN_STATIC_E2E */
+		struct lsdn_if dummy_if;
+	};
 	struct lsdn_list_entry tunnel_list;
 	/* for free internal use by the network */
 	struct lsdn_tunnel *tunnel;
