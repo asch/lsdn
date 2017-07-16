@@ -209,6 +209,7 @@ static void static_switch_add_rules(
 
 static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 {
+	char buf[4096];
 	struct lsdn_context *ctx = a->net->ctx;
 
 	// create the static switch and the auxiliary dummy interface
@@ -256,30 +257,20 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 
 	static_switch_add_rules(a, &sswitch_if, &a->tunnel->tunnel_if);
 
-	lsdn_foreach(
-		a->net->attached_list, attached_entry,
-		struct lsdn_phys_attachment, a_other) {
-		if (&a->phys->phys_entry == &a_other->phys->phys_entry)
-			continue;
+	// * redir broadcast packets to dummy_if
+	lsdn_mac_to_string(&lsdn_broadcast_mac, buf);
+	runcmd("tc filter add dev %s parent ffff: protocol all prio 1 flower "
+		"dst_mac %s "
+		"enc_key_id %d "
+		"action mirred ingress redirect dev %s",
+		a->tunnel->tunnel_if.ifname, buf, a->net->vnet_id, dummy_if.ifname);
 
-		char buf1[64]; lsdn_mac_to_string(&lsdn_broadcast_mac, buf1);
-		char buf2[64]; lsdn_ip_to_string(a_other->phys->attr_ip, buf2);
-		char buf3[64]; lsdn_ip_to_string(a->phys->attr_ip, buf3);
-		// * redir broadcast packets to dummy_if
-		runcmd("tc filter add dev %s parent ffff: protocol all prio 1 flower "
-			"dst_mac %s "
-			"enc_src_ip %s enc_dst_ip %s enc_key_id %d "
-			"action mirred ingress redirect dev %s",
-			a->tunnel->tunnel_if.ifname, buf1, buf2, buf3, a->net->vnet_id, dummy_if.ifname);
+	// * redir unicast packets to sswitch_if
+	runcmd("tc filter add dev %s parent ffff: protocol all prio 2 flower "
+		"enc_key_id %d "
+		"action mirred ingress redirect dev %s",
+		a->tunnel->tunnel_if.ifname, a->net->vnet_id, sswitch_if.ifname);
 
-		// * redir unicast packets to sswitch_if
-		runcmd("tc filter add dev %s parent ffff: protocol all prio 2 flower "
-			"enc_src_ip %s enc_dst_ip %s enc_key_id %d "
-			"action mirred ingress redirect dev %s",
-			a->tunnel->tunnel_if.ifname, buf2, buf3, a->net->vnet_id, sswitch_if.ifname);
-	}
-
-	char buf[4096];
 	sprintf(buf, "tc filter add dev %s parent ffff: protocol all flower ", dummy_if.ifname);
 	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v){
 		sprintf(buf + strlen(buf), "action mirred egress mirror dev %s ", v->connected_if.ifname);
