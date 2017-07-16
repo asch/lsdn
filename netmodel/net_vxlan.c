@@ -183,7 +183,7 @@ static void static_switch_add_rules(
 	// * add rule matching on dst_mac of v that just sends the packet to v
 	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
 		char buf1[64]; lsdn_mac_to_string(v->attr_mac, buf1);
-		runcmd("tc filter add dev %s parent ffff: protocol all flower dst_mac %s "
+		runcmd("tc filter add dev %s parent ffff: protocol all prio 1 flower dst_mac %s "
 			"action mirred egress redirect dev %s",
 			sswitch->ifname, buf1, v->connected_if.ifname);
 	}
@@ -199,7 +199,7 @@ static void static_switch_add_rules(
 			char buf3[64]; lsdn_ip_to_string(a_other->phys->attr_ip, buf3);
 			// * add rule for every `other_v` *not* residing on the same phys matching on dst_mac of other_v
 			//   that encapsulates the packet with tunnel_key and sends it to the tunnel_if
-			runcmd("tc filter add dev %s parent ffff: protocol all flower dst_mac %s "
+			runcmd("tc filter add dev %s parent ffff: protocol all prio 1 flower dst_mac %s "
 				"action tunnel_key set src_ip %s dst_ip %s id %d "
 				"action mirred egress redirect dev %s",
 				sswitch->ifname, buf1, buf2, buf3, a->net->vnet_id, tunnel_if->ifname);
