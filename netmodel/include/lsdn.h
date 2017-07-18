@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "../private/list.h"
 #include "../private/rule.h"
+#include "../private/names.h"
 #include "nettypes.h"
 
 #define LSDN_DECLARE_ATTR(obj, name, type) \
@@ -29,6 +30,8 @@ struct lsdn_context{
 	char* name;
 	lsdn_nomem_cb nomem_cb;
 	void *nomem_cb_user;
+	struct lsdn_names phys_names;
+	struct lsdn_names net_names;
 
 	struct lsdn_list_entry networks_list;
 	struct lsdn_list_entry settings_list;
@@ -123,8 +126,8 @@ struct lsdn_net {
 	struct lsdn_list_entry networks_entry;
 	struct lsdn_context *ctx;
 	struct lsdn_settings *settings;
+	struct lsdn_name name;
 
-	char* name;
 	uint32_t vnet_id;
 	struct lsdn_list_entry virt_list;
 	/* List of lsdn_phys_attachement attached to this network */
@@ -133,6 +136,9 @@ struct lsdn_net {
 };
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
+lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name);
+const char* lsdn_net_get_name(struct lsdn_net *net);
+struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name);
 void lsdn_net_free(struct lsdn_net *net);
 
 /**
@@ -141,6 +147,7 @@ void lsdn_net_free(struct lsdn_net *net);
  * lsdn_phys_attachement.
  */
 struct lsdn_phys {
+	struct lsdn_name name;
 	struct lsdn_list_entry phys_entry;
 	struct lsdn_list_entry attached_to_list;
 
@@ -151,6 +158,9 @@ struct lsdn_phys {
 };
 
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx);
+lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name);
+const char* lsdn_phys_get_name(struct lsdn_phys *phys);
+struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name);
 void lsdn_phys_free(struct lsdn_phys *phys);
 /* TODO: provide a way to get missing attributes */
 lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net);

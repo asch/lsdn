@@ -28,6 +28,8 @@ struct lsdn_context *lsdn_context_new(const char* name)
 	}
 
 	ctx->ifcount = 0;
+	lsdn_names_init(&ctx->phys_names);
+	lsdn_names_init(&ctx->net_names);
 	lsdn_list_init(&ctx->networks_list);
 	lsdn_list_init(&ctx->settings_list);
 	lsdn_list_init(&ctx->phys_list);
@@ -66,15 +68,32 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 		ret_ptr(s->ctx, NULL);
 
 	net->ctx = s->ctx;
-	net->name = NULL;
 	net->settings = s;
 	net->vnet_id = vnet_id;
 
 	lsdn_list_init_add(&s->ctx->networks_list, &net->networks_entry);
 	lsdn_list_init(&net->attached_list);
 	lsdn_list_init(&net->virt_list);
+	lsdn_name_init(&net->name);
 	return net;
+}
 
+lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name)
+{
+	ret_err(net->ctx, lsdn_name_set(&net->name, &net->ctx->net_names, name));
+}
+
+const char* lsdn_net_get_name(struct lsdn_net *net)
+{
+	return net->name.str;
+}
+
+struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name)
+{
+	struct lsdn_name *r = lsdn_names_search(&ctx->net_names, name);
+	if(!r)
+		return NULL;
+	return lsdn_container_of(r, struct lsdn_net, name);
 }
 
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
@@ -87,9 +106,27 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 	phys->attr_iface = NULL;
 	phys->attr_ip = NULL;
 	phys->is_local = false;
+	lsdn_name_init(&phys->name);
 	lsdn_list_init_add(&ctx->phys_list, &phys->phys_entry);
 	lsdn_list_init(&phys->attached_to_list);
 	ret_ptr(ctx, phys);
+}
+lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name)
+{
+	ret_err(phys->ctx, lsdn_name_set(&phys->name, &phys->ctx->phys_names, name));
+}
+
+const char* lsdn_phys_get_name(struct lsdn_phys *phys)
+{
+	return phys->name.str;
+}
+
+struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name)
+{
+	struct lsdn_name *r = lsdn_names_search(&ctx->phys_names, name);
+	if(!r)
+		return NULL;
+	return lsdn_container_of(r, struct lsdn_phys, name);
 }
 
 static struct lsdn_phys_attachment* find_or_create_attachement(

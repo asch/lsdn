@@ -11,6 +11,7 @@ enum lsdn_err {
 	LSDNE_NOMEM,
 	/* Parsing from textual representatio has failed (for parsing IPs, MACs etc.) */
 	LSDNE_PARSE,
+	LSDNE_DUPLICATE,
 	LSDNE_NOIF,
 	LSDNE_OS,
 	LSDNE_VALIDATE,
