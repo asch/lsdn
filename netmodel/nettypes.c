@@ -8,7 +8,9 @@ const lsdn_mac_t lsdn_broadcast_mac = {
 const lsdn_mac_t lsdn_multicast_mac_mask = {
 	{0x01, 0x00, 0x00, 0x00, 0x00, 0x00}
 };
-
+const lsdn_mac_t lsdn_single_mac_mask = {
+	{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+};
 const lsdn_mac_t lsdn_all_zeroes_mac = {
 	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 };
@@ -48,4 +50,13 @@ void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf)
 {
 	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", mac->bytes[0], mac->bytes[1], mac->bytes[2],
 			mac->bytes[3], mac->bytes[4], mac->bytes[5]);
+}
+
+void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf)
+{
+	if (ip->v == LSDN_IPv4)
+		sprintf(buf, "%d.%d.%d.%d", ip->v4.bytes[0], ip->v4.bytes[1], ip->v4.bytes[2],
+			ip->v4.bytes[3]);
+	else
+		; /* TODO */
 }

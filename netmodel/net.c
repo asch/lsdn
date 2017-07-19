@@ -27,16 +27,31 @@ void lsdn_net_make_bridge(struct lsdn_phys_attachment *a)
 	a->bridge_if = bridge_if;
 }
 
+// TODO code cleanup
 void lsdn_net_connect_bridge(struct lsdn_phys_attachment *a)
 {
 	int err;
 	struct lsdn_context *ctx = a->net->ctx;
+	bool learning = a->net->settings->switch_type != LSDN_STATIC_E2E;
+
+	if (learning) {
+		err = lsdn_link_set_master(
+			ctx->nlsock, a->bridge_if.ifindex, a->tunnel->tunnel_if.ifindex);
+		if(err)
+		abort();
+	}
+
+	err = lsdn_link_set(ctx->nlsock, a->tunnel->tunnel_if.ifindex, true);
+	if(err)
+		abort();
 
 	lsdn_foreach(a->tunnel_list, tunnel_entry, struct lsdn_tunnel, t) {
-		err = lsdn_link_set_master(
-			ctx->nlsock, a->bridge_if.ifindex, t->tunnel_if.ifindex);
-		if(err)
-			abort();
+		if (learning) {
+			err = lsdn_link_set_master(
+				ctx->nlsock, a->bridge_if.ifindex, t->tunnel_if.ifindex);
+			if(err)
+				abort();
+		}
 
 		err = lsdn_link_set(ctx->nlsock, t->tunnel_if.ifindex, true);
 		if(err)
@@ -46,4 +61,10 @@ void lsdn_net_connect_bridge(struct lsdn_phys_attachment *a)
 	err = lsdn_link_set(ctx->nlsock, a->bridge_if.ifindex, true);
 	if(err)
 		abort();
+
+	if (!learning) {
+		err = lsdn_link_set(ctx->nlsock, a->dummy_if.ifindex, true);
+		if (err)
+			abort();
+	}
 }

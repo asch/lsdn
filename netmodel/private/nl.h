@@ -61,7 +61,8 @@ int lsdn_link_vlan_create(
 
 int lsdn_link_vxlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if,
 		const char *if_name, const char *vxlan_name,
-		lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port, bool learning);
+		lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port,
+		bool learning, bool collect_metadata);
 
 int lsdn_link_veth_create(struct mnl_socket *sock,
 		struct lsdn_if *if1, const char *if_name1,
@@ -95,25 +96,40 @@ struct lsdn_filter{
 	struct nlattr *nested_acts;
 };
 
-struct lsdn_filter *lsdn_filter_init(const char *kind, uint32_t if_index,
-		uint32_t handle, uint32_t parent, uint16_t priority, uint16_t protocol);
+struct lsdn_filter *lsdn_flower_init(
+		uint32_t if_index, uint32_t parent, uint16_t prio);
 
 void lsdn_filter_free(struct lsdn_filter *f);
 
-void lsdn_filter_actions_start(struct lsdn_filter *f, uint16_t type);
+void lsdn_flower_actions_start(struct lsdn_filter *f);
 
 void lsdn_filter_actions_end(struct lsdn_filter *f);
 
-void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
-		int action, int eaction, uint32_t ifindex);
+void lsdn_action_redir_ingress_add(
+		struct lsdn_filter *f, uint16_t order, uint32_t ifindex);
 
-void lsdn_action_drop(struct lsdn_filter *f, uint16_t order, int action);
+void lsdn_action_mirror_ingress_add(
+		struct lsdn_filter *f, uint16_t order, uint32_t ifindex);
+
+void lsdn_action_redir_egress_add(
+		struct lsdn_filter *f, uint16_t order, uint32_t ifindex);
+
+void lsdn_action_mirror_egress_add(
+		struct lsdn_filter *f, uint16_t order, uint32_t ifindex);
+
+void lsdn_action_set_tunnel_key(
+		struct lsdn_filter *f, uint16_t order,
+		uint32_t vni, lsdn_ip_t *src_ip, lsdn_ip_t *dst_ip);
+
+void lsdn_action_drop(struct lsdn_filter *f, uint16_t order);
 
 void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask);
 
 void lsdn_flower_set_dst_mac(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask);
+
+void lsdn_flower_set_enc_key_id(struct lsdn_filter *f, uint32_t vni);
 
 void lsdn_flower_set_eth_type(struct lsdn_filter *f, uint16_t eth_type);
 
