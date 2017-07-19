@@ -32,6 +32,9 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 	struct lsdn_context *ctx,
 	lsdn_ip_t mcast_ip, uint16_t port)
 {
+	if(port == 0)
+		port = 4789;
+
 	struct lsdn_settings *s = malloc(sizeof(*s));
 	if(!s)
 		ret_ptr(ctx, NULL);

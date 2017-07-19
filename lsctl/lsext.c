@@ -61,15 +61,42 @@ CMD(settings_vlan)
 
 	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
 		return TCL_ERROR;
+
 	struct lsdn_settings * settings = lsdn_settings_new_vlan(ctx->lsctx);
+	return create_nets(interp, nets, settings);
+}
+
+CMD(settings_vxlan_mcast)
+{
+	Tcl_Obj *nets = NULL;
+	const char* ip;
+	lsdn_ip_t ip_parsed;
+	int port = 0;
+
+	const Tcl_ArgvInfo opts[] = {
+		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
+		{TCL_ARGV_STRING, "-mcastIp", NULL, &ip},
+		{TCL_ARGV_INT, "-port", NULL, &port},
+		{TCL_ARGV_END}
+	};
+	argc--; argv++;
+	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
+		return TCL_ERROR;
+
+	if(!ip)
+		return tcl_error(interp, "vxlan multicast require the -mcastIp argument");
+	if(lsdn_parse_ip(&ip_parsed, ip) != LSDNE_OK)
+		return tcl_error(interp, "mcastIp is not a valid ip address");
+
+	struct lsdn_settings * settings = lsdn_settings_new_vxlan_mcast(ctx->lsctx, ip_parsed, port);
 	return create_nets(interp, nets, settings);
 }
 
 CMD(settings)
 {
 	int type;
-	static const char *type_names[] = {"vlan", NULL};
-	enum types {T_VLAN};
+	static const char *type_names[] = {"vlan", "vxlan/mcast", NULL};
+	enum types {T_VLAN, T_VXLAN_MCAST};
 
 	if(argc < 2) {
 		Tcl_WrongNumArgs(interp, 1, argv, "type");
@@ -85,6 +112,8 @@ CMD(settings)
 	switch(type){
 		case T_VLAN:
 			return tcl_settings_vlan(ctx, interp, argc, argv);
+		case T_VXLAN_MCAST:
+			return tcl_settings_vxlan_mcast(ctx, interp, argc, argv);
 	}
 
 	return TCL_OK;
@@ -168,6 +197,7 @@ CMD(phys)
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_STRING, "-if", NULL, &iface},
+		{TCL_ARGV_STRING, "-ip", NULL, &ip},
 		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
 		{TCL_ARGV_END}
 	};
@@ -176,12 +206,18 @@ CMD(phys)
 
 	if(nets && Tcl_ListObjGetElements(interp, nets, &netc, &netv) != TCL_OK)
 		return TCL_ERROR;
+	if(ip) {
+		if(lsdn_parse_ip(&ip_parsed, ip) != LSDNE_OK)
+			return tcl_error(interp, "ip address not in valid format");
+	}
 
 	struct lsdn_phys *phys = lsdn_phys_new(ctx->lsctx);
 	if(name)
 		lsdn_phys_set_name(phys, name);
 	if(iface)
 		lsdn_phys_set_iface(phys, iface);
+	if(ip)
+		lsdn_phys_set_ip(phys, ip_parsed);
 
 	if(nets){
 		for(int i = 0; i < netc; i++) {

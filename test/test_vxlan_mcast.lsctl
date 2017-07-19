@@ -1,7 +1,7 @@
-settings vlan -nets {42 43}
+settings vxlan/mcast -mcastIp 239.239.239.239 -nets {42 43}
 
-phys -if out -name a -nets {42 43}
-phys -if out -name b -nets {42 43}
+phys -name a -if out -ip 172.16.0.1 -nets {42 43}
+phys -name b -if out -ip 172.16.0.2 -nets {42 43}
 
 net 42 {
     virt -if 1 -phys a
