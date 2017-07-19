@@ -12,8 +12,8 @@ function prepare(){
 }
 
 function connect(){
-	in_phys a $lsctl 0
-	in_phys b $lsctl 1
+	in_phys a $lsctl -d localPhys=a $config
+	in_phys b $lsctl -d localPhys=b $config
 }
 
 function test(){

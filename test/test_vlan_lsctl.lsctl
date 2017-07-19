@@ -14,7 +14,6 @@ net 43 {
     virt -if 2 -phys b
 }
 
-set physIndex [lindex $argv 1]
-claimLocal [lindex {a b} $physIndex]
+claimLocal $localPhys
 
 commit

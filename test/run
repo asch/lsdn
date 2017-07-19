@@ -11,7 +11,8 @@ run_stages() {
 	source "test_$test.sh"
 	$tracecmd
 
-	lsctl="../lsctl/lsctl test_$test.lsctl"
+	lsctl="../lsctl/lsctl"
+	config="test_$test.lsctl"
 	test="./test_$test"
 
 	for s in $stages; do
