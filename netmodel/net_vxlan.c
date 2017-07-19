@@ -124,56 +124,45 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
 	return s;
 }
 
-// TODO remove
-static void runcmd(const char *format, ...)
-{
-	char cmdbuf[1024];
-	va_list args;
-	va_start(args, format);
-	vsnprintf(cmdbuf, sizeof(cmdbuf), format, args);
-	va_end(args);
-	printf("Running: %s\n", cmdbuf);
-	system(cmdbuf);
-}
-
 static void virt_add_rules(
 	struct lsdn_phys_attachment *a,
 	struct lsdn_if *sswitch, struct lsdn_virt *v)
 {
-	char buf[4096];
-	char buf1[64]; lsdn_mac_to_string(&lsdn_broadcast_mac, buf1);
-	char buf2[64]; lsdn_ip_to_string(a->phys->attr_ip, buf2);
-
 	// * add rule to v matching on broadcast_mac
 	//   that mirrors the packet to each other local virt
 	/* TODO limit the number of actions to TCA_ACT_MAX_PRIO */
-	sprintf(buf,
-		"tc filter add dev %s parent ffff: protocol all prio 1 flower dst_mac %s ",
-		v->connected_if.ifname, buf1);
-
+	struct lsdn_filter *f = lsdn_flower_init(v->connected_if.ifindex, LSDN_INGRESS_HANDLE, 1);
+	lsdn_flower_set_dst_mac(f, (char *) lsdn_broadcast_mac.bytes, (char *) lsdn_single_mac_mask.bytes);
+	lsdn_flower_actions_start(f);
+	uint16_t order = 1;
 	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v_other){
 		if (&v->virt_entry == &v_other->virt_entry)
 			continue;
-		sprintf(buf + strlen(buf),
-			"action mirred egress mirror dev %s ",
-			v_other->connected_if.ifname);
+		lsdn_action_mirror_egress_add(f, order++, v_other->connected_if.ifindex);
 	}
-
 	// * also encapsulate the packet with tunnel_key and send it to the tunnel_if
 	lsdn_foreach(a->net->attached_list, attached_entry, struct lsdn_phys_attachment, a_other) {
 		if (&a->phys->phys_entry == &a_other->phys->phys_entry)
 			continue;
-		char buf3[64]; lsdn_ip_to_string(a_other->phys->attr_ip, buf3);
-		sprintf(buf + strlen(buf),
-			"action tunnel_key set src_ip %s dst_ip %s id %d "
-			"action mirred egress mirror dev %s ",
-			buf2, buf3, a->net->vnet_id, a->tunnel->tunnel_if.ifname);
+		lsdn_action_set_tunnel_key(f, order++, a->net->vnet_id,
+		a->phys->attr_ip, a_other->phys->attr_ip);
+		lsdn_action_mirror_egress_add(f, order++, a->tunnel->tunnel_if.ifindex);
 	}
-	runcmd(buf);
+	lsdn_filter_actions_end(f);
+	int err = lsdn_filter_create(a->net->ctx->nlsock, f);
+	if (err)
+		abort();
+	lsdn_filter_free(f);
 
 	// * redir every other (unicast) packet to sswitch
-	runcmd("tc filter add dev %s parent ffff: protocol all prio 2 flower action mirred ingress redirect dev %s",
-		v->connected_if.ifname, sswitch->ifname);
+	f = lsdn_flower_init(v->connected_if.ifindex, LSDN_INGRESS_HANDLE, 2);
+	lsdn_flower_actions_start(f);
+	lsdn_action_redir_ingress_add(f, 1, sswitch->ifindex);
+	lsdn_filter_actions_end(f);
+	err = lsdn_filter_create(a->net->ctx->nlsock, f);
+	if (err)
+		abort();
+	lsdn_filter_free(f);
 }
 
 static void static_switch_add_rules(
@@ -182,34 +171,41 @@ static void static_switch_add_rules(
 {
 	// * add rule matching on dst_mac of v that just sends the packet to v
 	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		char buf1[64]; lsdn_mac_to_string(v->attr_mac, buf1);
-		runcmd("tc filter add dev %s parent ffff: protocol all prio 1 flower dst_mac %s "
-			"action mirred egress redirect dev %s",
-			sswitch->ifname, buf1, v->connected_if.ifname);
+		struct lsdn_filter *f = lsdn_flower_init(sswitch->ifindex, LSDN_INGRESS_HANDLE, 1);
+		lsdn_flower_set_dst_mac(f, (char *) v->attr_mac->bytes, (char *) lsdn_single_mac_mask.bytes);
+		lsdn_flower_actions_start(f);
+		lsdn_action_redir_egress_add(f, 1, v->connected_if.ifindex);
+		lsdn_filter_actions_end(f);
+		int err = lsdn_filter_create(a->net->ctx->nlsock, f);
+		if (err)
+			abort();
+		lsdn_filter_free(f);
 	}
 
+	// * add rule for every `other_v` *not* residing on the same phys matching on dst_mac of other_v
+	//   that encapsulates the packet with tunnel_key and sends it to the tunnel_if
 	lsdn_foreach(
 		a->net->attached_list, attached_entry,
 		struct lsdn_phys_attachment, a_other) {
 		if (&a->phys->phys_entry == &a_other->phys->phys_entry)
 			continue;
 		lsdn_foreach(a_other->connected_virt_list, connected_virt_entry, struct lsdn_virt, v_other) {
-			char buf1[64]; lsdn_mac_to_string(v_other->attr_mac, buf1);
-			char buf2[64]; lsdn_ip_to_string(a->phys->attr_ip, buf2);
-			char buf3[64]; lsdn_ip_to_string(a_other->phys->attr_ip, buf3);
-			// * add rule for every `other_v` *not* residing on the same phys matching on dst_mac of other_v
-			//   that encapsulates the packet with tunnel_key and sends it to the tunnel_if
-			runcmd("tc filter add dev %s parent ffff: protocol all prio 1 flower dst_mac %s "
-				"action tunnel_key set src_ip %s dst_ip %s id %d "
-				"action mirred egress redirect dev %s",
-				sswitch->ifname, buf1, buf2, buf3, a->net->vnet_id, tunnel_if->ifname);
+			struct lsdn_filter *f = lsdn_flower_init(sswitch->ifindex, LSDN_INGRESS_HANDLE, 1);
+			lsdn_flower_set_dst_mac(f, (char *) v_other->attr_mac->bytes, (char *) lsdn_single_mac_mask.bytes);
+			lsdn_flower_actions_start(f);
+			lsdn_action_set_tunnel_key(f, 1, a->net->vnet_id, a->phys->attr_ip, a_other->phys->attr_ip);
+			lsdn_action_redir_egress_add(f, 2, tunnel_if->ifindex);
+			lsdn_filter_actions_end(f);
+			int err = lsdn_filter_create(a->net->ctx->nlsock, f);
+			if (err)
+				abort();
+			lsdn_filter_free(f);
 		}
 	}
 }
 
 static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 {
-	char buf[4096];
 	struct lsdn_context *ctx = a->net->ctx;
 
 	// create the static switch and the auxiliary dummy interface
@@ -227,6 +223,7 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 	a->bridge_if = sswitch_if;
 	a->dummy_if = dummy_if;
 
+	// create the shared tunnel interface
 	if (a->tunnel->tunnel_if.ifindex == 0) {
 		err = lsdn_link_vxlan_create(
 			ctx->nlsock,
@@ -240,14 +237,22 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 			true);
 		if (err)
 			abort();
-		runcmd("tc qdisc add dev %s handle ffff: ingress", a->tunnel->tunnel_if.ifname);
+		err = lsdn_qdisc_ingress_create(ctx->nlsock, a->tunnel->tunnel_if.ifindex);
+		if (err)
+			abort();
 	}
 
-	runcmd("tc qdisc add dev %s handle ffff: ingress", sswitch_if.ifname);
-	runcmd("tc qdisc add dev %s handle ffff: ingress", dummy_if.ifname);
+	err = lsdn_qdisc_ingress_create(ctx->nlsock, sswitch_if.ifindex);
+	if (err)
+		abort();
+	err = lsdn_qdisc_ingress_create(ctx->nlsock, dummy_if.ifindex);
+	if (err)
+		abort();
 
 	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		runcmd("tc qdisc add dev %s handle ffff: ingress", v->connected_if.ifname);
+		err = lsdn_qdisc_ingress_create(ctx->nlsock, v->connected_if.ifindex);
+		if (err)
+			abort();
 	}
 
 	// redir packets outgoing from virts
@@ -258,24 +263,41 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 	static_switch_add_rules(a, &sswitch_if, &a->tunnel->tunnel_if);
 
 	// * redir broadcast packets to dummy_if
-	lsdn_mac_to_string(&lsdn_broadcast_mac, buf);
-	runcmd("tc filter add dev %s parent ffff: protocol all prio 1 flower "
-		"dst_mac %s "
-		"enc_key_id %d "
-		"action mirred ingress redirect dev %s",
-		a->tunnel->tunnel_if.ifname, buf, a->net->vnet_id, dummy_if.ifname);
+	struct lsdn_filter *f = lsdn_flower_init(
+		a->tunnel->tunnel_if.ifindex, LSDN_INGRESS_HANDLE, 1);
+	lsdn_flower_set_dst_mac(f, (char *) lsdn_broadcast_mac.bytes, (char *) lsdn_single_mac_mask.bytes);
+	lsdn_flower_set_enc_key_id(f, a->net->vnet_id);
+	lsdn_flower_actions_start(f);
+	lsdn_action_redir_ingress_add(f, 1, dummy_if.ifindex);
+	lsdn_filter_actions_end(f);
+	err = lsdn_filter_create(a->net->ctx->nlsock, f);
+	if (err)
+		abort();
+	lsdn_filter_free(f);
 
 	// * redir unicast packets to sswitch_if
-	runcmd("tc filter add dev %s parent ffff: protocol all prio 2 flower "
-		"enc_key_id %d "
-		"action mirred ingress redirect dev %s",
-		a->tunnel->tunnel_if.ifname, a->net->vnet_id, sswitch_if.ifname);
+	f = lsdn_flower_init(a->tunnel->tunnel_if.ifindex, LSDN_INGRESS_HANDLE, 2);
+	lsdn_flower_set_enc_key_id(f, a->net->vnet_id);
+	lsdn_flower_actions_start(f);
+	lsdn_action_redir_ingress_add(f, 1, sswitch_if.ifindex);
+	lsdn_filter_actions_end(f);
+	err = lsdn_filter_create(a->net->ctx->nlsock, f);
+	if (err)
+		abort();
+	lsdn_filter_free(f);
 
-	sprintf(buf, "tc filter add dev %s parent ffff: protocol all flower ", dummy_if.ifname);
+	// * copy broadcast packets to each connected virt
+	f = lsdn_flower_init(dummy_if.ifindex, LSDN_INGRESS_HANDLE, 1);
+	lsdn_flower_actions_start(f);
+	uint16_t order = 1;
 	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v){
-		sprintf(buf + strlen(buf), "action mirred egress mirror dev %s ", v->connected_if.ifname);
+		lsdn_action_mirror_egress_add(f, order++, v->connected_if.ifindex);
 	}
-	runcmd(buf);
+	lsdn_filter_actions_end(f);
+	err = lsdn_filter_create(a->net->ctx->nlsock, f);
+	if (err)
+		abort();
+	lsdn_filter_free(f);
 
 	lsdn_net_connect_bridge(a);
 }

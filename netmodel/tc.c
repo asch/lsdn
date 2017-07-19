@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <linux/tc_act/tc_mirred.h>
-#include <linux/tc_act/tc_gact.h>
 #include "private/tc.h"
 #include "include/errors.h"
 
@@ -50,16 +48,16 @@ lsdn_err_t actions_for(struct lsdn_action *action, struct lsdn_filter *filter)
 
 			if (a == last_action){
 				printf("Redirecting to %s (%d)\n", ifname, if_index);
-				lsdn_action_mirred_add(filter, action_id++, TC_ACT_STOLEN, TCA_EGRESS_REDIR, if_index);
+				lsdn_action_redir_egress_add(filter, action_id++, if_index);
 			} else {
 				printf("Mirrorring to %s (%d)\n", ifname, if_index);
-				lsdn_action_mirred_add(filter, action_id++, TC_ACT_PIPE, TCA_EGRESS_MIRROR, if_index);
+				lsdn_action_mirror_egress_add(filter, action_id++, if_index);
 			}
 		}
 	}
 	if(!last_action) {
 		printf("Dropping\n");
-		lsdn_action_drop(filter, action_id++, TC_ACT_SHOT);
+		lsdn_action_drop(filter, action_id++);
 	}
 	return LSDNE_OK;
 }

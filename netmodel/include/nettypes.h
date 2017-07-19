@@ -42,6 +42,7 @@ typedef struct lsdn_ip {
 extern const lsdn_mac_t lsdn_broadcast_mac;
 extern const lsdn_mac_t lsdn_all_zeroes_mac;
 extern const lsdn_mac_t lsdn_multicast_mac_mask;
+extern const lsdn_mac_t lsdn_single_mac_mask;
 
 lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii);
 

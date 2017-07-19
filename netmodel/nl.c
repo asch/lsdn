@@ -57,7 +57,7 @@ struct mnl_socket *lsdn_socket_init()
 
 void lsdn_socket_free(struct mnl_socket *s)
 {
-    mnl_socket_close(s);
+	mnl_socket_close(s);
 }
 
 static void link_create_header(
@@ -132,7 +132,7 @@ int lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_if, cons
 
 //ip link add link <if_name> name <vlan_name> type vlan id <vlanid>
 int lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name,
-		          const char *vlan_name, uint16_t vlanid)
+		const char *vlan_name, uint16_t vlanid)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	bzero(buf, sizeof(buf));
@@ -560,14 +560,14 @@ int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex)
  * @brief lsdn_filter_init
  * @param kind Type of filter (e.g. "flower" or "u32")
  * @param if_index Interface index.
- * @param handle Identification of the filter. (?)
- * @param parent Handle of the qdisc.
+ * @param handle Identification of the filter. Assigned by kernel when handle = 0
+ * @param parent Parent qdisc.
  * @param priority Defines ordering of the filter chain.
  * @param protocol Ethertype of the filter.
  * @return Pre-prepared nl message headers and options that can be further modified.
  */
-struct lsdn_filter *lsdn_filter_init(const char *kind, uint32_t if_index,
-		uint32_t handle, uint32_t parent, uint16_t priority, uint16_t protocol)
+static struct lsdn_filter *filter_init(const char *kind, uint32_t if_index,
+		uint32_t parent, uint16_t priority)
 {
 	struct lsdn_filter *f = malloc(sizeof(*f));
 	if (!f)
@@ -583,9 +583,9 @@ struct lsdn_filter *lsdn_filter_init(const char *kind, uint32_t if_index,
 	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(f->nlh, sizeof(*tcm));
 	tcm->tcm_family = AF_UNSPEC;
 	tcm->tcm_ifindex = if_index;
-	tcm->tcm_handle = handle;
+	tcm->tcm_handle = 0;
 	tcm->tcm_parent = parent;
-	tcm->tcm_info = TC_H_MAKE(priority << 16, protocol);
+	tcm->tcm_info = TC_H_MAKE(priority << 16, ETH_P_ALL << 8);
 
 	mnl_attr_put_str(f->nlh, TCA_KIND, kind);
 	f->nested_opts = mnl_attr_nest_start(f->nlh, TCA_OPTIONS);
@@ -594,15 +594,27 @@ struct lsdn_filter *lsdn_filter_init(const char *kind, uint32_t if_index,
 	return f;
 }
 
+struct lsdn_filter *lsdn_flower_init(
+		uint32_t if_index, uint32_t parent, uint16_t prio)
+{
+	return filter_init("flower", if_index, parent, prio);
+}
+
+
 void lsdn_filter_free(struct lsdn_filter *f)
 {
 	free(f->nlh);
 	free(f);
 }
 
-void lsdn_filter_actions_start(struct lsdn_filter *f, uint16_t type)
+static void filter_actions_start(struct lsdn_filter *f, uint16_t type)
 {
 	f->nested_acts = mnl_attr_nest_start(f->nlh, type);
+}
+
+void lsdn_flower_actions_start(struct lsdn_filter *f)
+{
+	filter_actions_start (f, TCA_FLOWER_ACT);
 }
 
 void lsdn_filter_actions_end(struct lsdn_filter *f)
@@ -610,7 +622,7 @@ void lsdn_filter_actions_end(struct lsdn_filter *f)
 	mnl_attr_nest_end(f->nlh, f->nested_acts);
 }
 
-void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
+static void action_mirred_add(struct lsdn_filter *f, uint16_t order,
 		int action, int eaction, uint32_t ifindex)
 {
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
@@ -630,8 +642,33 @@ void lsdn_action_mirred_add(struct lsdn_filter *f, uint16_t order,
 	mnl_attr_nest_end(f->nlh, nested_attr);
 }
 
-void lsdn_action_set_tunnel_key(struct lsdn_filter *f, uint16_t order,
-		lsdn_ip_t *src_ip, lsdn_ip_t *dst_ip)
+void lsdn_action_redir_ingress_add(
+		struct lsdn_filter *f, uint16_t order, uint32_t ifindex)
+{
+	action_mirred_add(f, order, TC_ACT_STOLEN, TCA_INGRESS_REDIR, ifindex);
+}
+
+void lsdn_action_mirror_ingress_add(
+		struct lsdn_filter *f, uint16_t order, uint32_t ifindex)
+{
+	action_mirred_add(f, order, TC_ACT_PIPE, TCA_INGRESS_REDIR, ifindex);
+}
+
+void lsdn_action_redir_egress_add(
+		struct lsdn_filter *f, uint16_t order, uint32_t ifindex)
+{
+	action_mirred_add(f, order, TC_ACT_STOLEN, TCA_EGRESS_REDIR, ifindex);
+}
+
+void lsdn_action_mirror_egress_add(
+		struct lsdn_filter *f, uint16_t order, uint32_t ifindex)
+{
+	action_mirred_add(f, order, TC_ACT_PIPE, TCA_EGRESS_REDIR, ifindex);
+}
+
+void lsdn_action_set_tunnel_key(
+		struct lsdn_filter *f, uint16_t order,
+		uint32_t vni, lsdn_ip_t *src_ip, lsdn_ip_t *dst_ip)
 {
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
 	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "tunnel_key");
@@ -640,7 +677,10 @@ void lsdn_action_set_tunnel_key(struct lsdn_filter *f, uint16_t order,
 
 	struct tc_tunnel_key tunnel_key;
 	bzero(&tunnel_key, sizeof(tunnel_key));
-	// TODO
+	tunnel_key.action = TC_ACT_PIPE;
+	tunnel_key.t_action = TCA_TUNNEL_KEY_ACT_SET;
+
+	mnl_attr_put_u32(f->nlh, TCA_TUNNEL_KEY_ENC_KEY_ID, htonl(vni));
 	if (src_ip->v == LSDN_IPv4 && dst_ip->v == LSDN_IPv4) {
 		mnl_attr_put_u32(f->nlh, TCA_TUNNEL_KEY_ENC_IPV4_SRC, htonl(lsdn_ip4_u32(&src_ip->v4)));
 		mnl_attr_put_u32(f->nlh, TCA_TUNNEL_KEY_ENC_IPV4_DST, htonl(lsdn_ip4_u32(&dst_ip->v4)));
@@ -648,13 +688,13 @@ void lsdn_action_set_tunnel_key(struct lsdn_filter *f, uint16_t order,
 		// TODO
 	}
 
-	mnl_attr_put(f->nlh, TCA_ACT_TUNNEL_KEY, sizeof(tunnel_key), &tunnel_key);
+	mnl_attr_put(f->nlh, TCA_TUNNEL_KEY_PARMS, sizeof(tunnel_key), &tunnel_key);
 
 	mnl_attr_nest_end(f->nlh, nested_attr2);
 	mnl_attr_nest_end(f->nlh, nested_attr);
 }
 
-void lsdn_action_drop(struct lsdn_filter *f, uint16_t order, int action)
+void lsdn_action_drop(struct lsdn_filter *f, uint16_t order)
 {
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
 	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "gact");
@@ -662,7 +702,7 @@ void lsdn_action_drop(struct lsdn_filter *f, uint16_t order, int action)
 	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
 	struct tc_gact gact_act;
 	bzero(&gact_act, sizeof(gact_act));
-	gact_act.action = action;
+	gact_act.action = TC_ACT_SHOT;
 
 	mnl_attr_put(f->nlh, TCA_GACT_PARMS, sizeof(gact_act), &gact_act);
 
@@ -682,6 +722,11 @@ void lsdn_flower_set_dst_mac(struct lsdn_filter *f, const char *addr,
 {
 	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ETH_DST, 6, addr);
 	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ETH_DST_MASK, 6, addr_mask);
+}
+
+void lsdn_flower_set_enc_key_id(struct lsdn_filter *f, uint32_t vni)
+{
+	mnl_attr_put_u32(f->nlh, TCA_FLOWER_KEY_ENC_KEY_ID, htonl(vni));
 }
 
 void lsdn_flower_set_eth_type(struct lsdn_filter *f, uint16_t eth_type)
