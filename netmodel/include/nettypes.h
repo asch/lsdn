@@ -45,8 +45,16 @@ extern const lsdn_mac_t lsdn_multicast_mac_mask;
 extern const lsdn_mac_t lsdn_single_mac_mask;
 
 lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii);
+lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii);
+lsdn_err_t lsdn_parse_ipv4(lsdn_ipv4_t *ip, const char *ascii);
+lsdn_err_t lsdn_parse_ipv6(lsdn_ipv6_t *ip, const char *ascii);
+bool lsdn_ip_eq(lsdn_ip_t a, lsdn_ip_t b);
+bool lsdn_ipv4_eq(lsdn_ipv4_t a, lsdn_ipv4_t b);
+bool lsdn_ipv6_eq(lsdn_ipv6_t a, lsdn_ipv6_t b);
 
+/* Five colons, six octets */
 #define LSDN_MAC_STRING_LEN (5 + 6 *2)
+
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf);
 void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf);
 
