@@ -11,7 +11,7 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 	struct lsdn_settings *s = a->net->settings;
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
-		&a->tunnel->tunnel_if,
+		&a->tun.tunnel->tunnel_if,
 		a->phys->attr_iface,
 		lsdn_mk_ifname(a->net->ctx),
 		&s->vxlan.mcast.mcast_ip,
@@ -22,6 +22,7 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 	if (err)
 		abort();
 	lsdn_net_connect_bridge(a);
+	lsdn_net_set_up(a);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
@@ -61,7 +62,7 @@ static void fdb_fill_virts(struct lsdn_phys_attachment *a, struct lsdn_phys_atta
 
 		// TODO: add validation to check that the mac is known and report errors
 		err = lsdn_fdb_add_entry(
-			a->net->ctx->nlsock, a->tunnel->tunnel_if.ifindex,
+			a->net->ctx->nlsock, a->tun.tunnel->tunnel_if.ifindex,
 			*v->attr_mac, *a_other->phys->attr_ip);
 		if (err)
 			abort();
@@ -75,7 +76,7 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 	bool learning = a->net->settings->switch_type == LSDN_LEARNING_E2E;
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
-		&a->tunnel->tunnel_if,
+		&a->tun.tunnel->tunnel_if,
 		a->phys->attr_iface,
 		lsdn_mk_ifname(a->net->ctx),
 		NULL,
@@ -97,7 +98,7 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 			fdb_fill_virts(a, a_other);
 
 		err = lsdn_fdb_add_entry(
-			a->net->ctx->nlsock, a->tunnel->tunnel_if.ifindex,
+			a->net->ctx->nlsock, a->tun.tunnel->tunnel_if.ifindex,
 			!learning ? lsdn_broadcast_mac : lsdn_all_zeroes_mac,
 			*a_other->phys->attr_ip);
 		if (err)
@@ -105,6 +106,7 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 	}
 
 	lsdn_net_connect_bridge(a);
+	lsdn_net_set_up(a);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
@@ -149,7 +151,7 @@ static void virt_add_rules(
 			continue;
 		lsdn_action_set_tunnel_key(f, order++, a->net->vnet_id,
 		a->phys->attr_ip, a_other->phys->attr_ip);
-		lsdn_action_mirror_egress_add(f, order++, a->tunnel->tunnel_if.ifindex);
+		lsdn_action_mirror_egress_add(f, order++, a->tun.tunnel->tunnel_if.ifindex);
 	}
 	lsdn_filter_actions_end(f);
 	int err = lsdn_filter_create(a->net->ctx->nlsock, f);
@@ -227,10 +229,10 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 	a->dummy_if = dummy_if;
 
 	// create the shared tunnel interface
-	if (a->tunnel->tunnel_if.ifindex == 0) {
+	if (a->tun.tunnel->tunnel_if.ifindex == 0) {
 		err = lsdn_link_vxlan_create(
 			ctx->nlsock,
-			&a->tunnel->tunnel_if,
+			&a->tun.tunnel->tunnel_if,
 			a->phys->attr_iface,
 			lsdn_mk_ifname(ctx),
 			NULL,
@@ -240,7 +242,7 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 			true);
 		if (err)
 			abort();
-		err = lsdn_qdisc_ingress_create(ctx->nlsock, a->tunnel->tunnel_if.ifindex);
+		err = lsdn_qdisc_ingress_create(ctx->nlsock, a->tun.tunnel->tunnel_if.ifindex);
 		if (err)
 			abort();
 	}
@@ -263,11 +265,11 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 		virt_add_rules(a, &sswitch_if, v);
 	}
 
-	static_switch_add_rules(a, &sswitch_if, &a->tunnel->tunnel_if);
+	static_switch_add_rules(a, &sswitch_if, &a->tun.tunnel->tunnel_if);
 
 	// * redir broadcast packets to dummy_if
 	struct lsdn_filter *f = lsdn_flower_init(
-		a->tunnel->tunnel_if.ifindex, LSDN_INGRESS_HANDLE, 1);
+		a->tun.tunnel->tunnel_if.ifindex, LSDN_INGRESS_HANDLE, 1);
 	lsdn_flower_set_dst_mac(f, (char *) lsdn_broadcast_mac.bytes, (char *) lsdn_single_mac_mask.bytes);
 	lsdn_flower_set_enc_key_id(f, a->net->vnet_id);
 	lsdn_flower_actions_start(f);
@@ -279,7 +281,7 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 	lsdn_filter_free(f);
 
 	// * redir unicast packets to sswitch_if
-	f = lsdn_flower_init(a->tunnel->tunnel_if.ifindex, LSDN_INGRESS_HANDLE, 2);
+	f = lsdn_flower_init(a->tun.tunnel->tunnel_if.ifindex, LSDN_INGRESS_HANDLE, 2);
 	lsdn_flower_set_enc_key_id(f, a->net->vnet_id);
 	lsdn_flower_actions_start(f);
 	lsdn_action_redir_ingress_add(f, 1, sswitch_if.ifindex);
@@ -302,7 +304,7 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 		abort();
 	lsdn_filter_free(f);
 
-	lsdn_net_connect_bridge(a);
+	lsdn_net_set_up(a);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_e2e_static_ops = {

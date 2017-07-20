@@ -20,7 +20,9 @@ struct lsdn_net_ops {
 
 /** Create a bridge interface for the attachment and connect all virts */
 void lsdn_net_make_bridge(struct lsdn_phys_attachment *phys);
-/** Connect all tunnels to the bridge created by lsdn_net_make_bridge and activate the bridge */
+/** Connect all tunnels to the bridge created by lsdn_net_make_bridge */
 void lsdn_net_connect_bridge(struct lsdn_phys_attachment *phys);
+/** Activate the bridge and all tunnels */
+void lsdn_net_set_up(struct lsdn_phys_attachment *a);
 
 #endif

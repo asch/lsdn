@@ -108,6 +108,7 @@ struct lsdn_settings{
 	};
 };
 
+struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx);
 struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx);
 struct lsdn_settings *lsdn_settings_new_vxlan_mcast(struct lsdn_context *ctx, lsdn_ip_t mcast_ip, uint16_t port);
 struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port);
@@ -198,9 +199,15 @@ struct lsdn_phys_attachment {
 		/* Only valid for LSDN_STATIC_E2E */
 		struct lsdn_if dummy_if;
 	};
-	struct lsdn_list_entry tunnel_list;
-	/* for free internal use by the network */
-	struct lsdn_tunnel *tunnel;
+
+	union {
+		/* Not used by the direct network */
+		struct {
+			struct lsdn_list_entry tunnel_list;
+			/* for free internal use by the network */
+			struct lsdn_tunnel *tunnel;
+		} tun;
+	};
 };
 
 
