@@ -16,9 +16,9 @@ function prepare(){
 }
 
 function connect(){
-	in_phys a $test 0
-	in_phys b $test 1
-	in_phys c $test 2
+	in_phys a $lsctl -d localPhys=a $config
+	in_phys b $lsctl -d localPhys=b $config
+	in_phys c $lsctl -d localPhys=c $config
 }
 
 function test(){

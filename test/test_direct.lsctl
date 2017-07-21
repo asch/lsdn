@@ -1,0 +1,19 @@
+settings direct -nets {0}
+
+phys -if out -name a -nets {0}
+phys -if out -name b -nets {0}
+phys -if out -name c -nets {0}
+
+net 0 {
+    virt -if 1 -phys a
+    virt -if 2 -phys a
+    virt -if 3 -phys a
+    virt -if 1 -phys b
+    virt -if 2 -phys b
+    virt -if 1 -phys c
+    virt -if 2 -phys c
+    virt -if 3 -phys c
+}
+
+claimLocal $localPhys
+commit

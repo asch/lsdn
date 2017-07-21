@@ -39,7 +39,7 @@ function(test test)
 endfunction(test)
 
 test(nettypes)
-test_in_ns(direct_lsdn)
+test_in_ns_lsctl(direct)
 test_in_ns(vlan_lsdn)
 test_in_ns_lsctl(vlan_lsctl)
 test_in_ns_lsctl(vxlan_mcast)
