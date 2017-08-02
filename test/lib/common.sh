@@ -79,6 +79,12 @@ mk_testnet(){
 	mk_netns "$1"
 }
 
+set_up_if(){
+	local ns="$1"
+	local if="$2"
+	in_ns "$ns" ip link set "$if" up
+}
+
 set_ifattr(){
 	local ns="$1"
 	local if="$2"
@@ -102,7 +108,7 @@ set_ifattr(){
 				;;
 		esac
 	done
-	in_ns "$ns" ip link set "$if" up
+	set_up_if "$ns" "$if"
 }
 
 cleanup() {

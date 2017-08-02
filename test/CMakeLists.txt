@@ -45,3 +45,5 @@ test_in_ns_lsctl(vlan_lsctl)
 test_in_ns_lsctl(vxlan_mcast)
 test_in_ns(vxlan_e2e_learning)
 test_in_ns(vxlan_static)
+
+test_in_ns(dhcp_in_vlan)
