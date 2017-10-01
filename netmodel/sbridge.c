@@ -48,7 +48,7 @@ static void cb_add_tunneled_virt_broadcast(
 	lsdn_action_mirror_egress_add(filter, order + 1, tunnel->tunnel_if.ifindex);
 }
 
-void lsdn_net_init_static_tunnel(struct lsdn_context *ctx, struct lsdn_shared_tunnel* tun)
+void lsdn_sbridge_init_shared_tunnel(struct lsdn_context *ctx, struct lsdn_shared_tunnel* tun)
 {
 	int err = lsdn_qdisc_ingress_create(ctx->nlsock, tun->tunnel_if.ifindex);
 	if (err)
@@ -65,7 +65,7 @@ void lsdn_net_init_static_tunnel(struct lsdn_context *ctx, struct lsdn_shared_tu
 #define LSDN_SWITCH_PRIORITY (LSDN_DEFAULT_PRIORITY+1)
 #define LSDN_BROADCAST_CHAIN 1
 
-void lsdn_net_setup_static_bridge(struct lsdn_phys_attachment *a)
+void lsdn_sbridge_setup(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_context *ctx = a->net->ctx;
 	// create the static switch
@@ -128,7 +128,7 @@ void lsdn_net_setup_static_bridge(struct lsdn_phys_attachment *a)
 	static_bridge_add_rules(a, &sbridge_if, &a->tunnel.tunnel_if);
 }
 
-void lsdn_net_connect_shared_static_tunnel(
+void lsdn_sbridge_connect_shared_tunnel(
 	struct lsdn_phys_attachment *a,
 	struct lsdn_shared_tunnel *tunnel)
 {

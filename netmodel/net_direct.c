@@ -1,4 +1,5 @@
 #include "private/net.h"
+#include "private/lbridge.h"
 #include "private/nl.h"
 #include "include/lsdn.h"
 #include "private/errors.h"
@@ -16,8 +17,8 @@ static void direct_create_pa(struct lsdn_phys_attachment *a)
 	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
 
 	// create and acivate the bridge
-	lsdn_net_make_bridge(a);
-	lsdn_net_connect_bridge(a);
+	lsdn_lbridge_make(a);
+	lsdn_lbridge_connect(a);
 	lsdn_net_set_up(a);
 }
 

@@ -1,4 +1,5 @@
 #include "private/net.h"
+#include "private/lbridge.h"
 #include "private/nl.h"
 #include "include/lsdn.h"
 #include "private/errors.h"
@@ -14,8 +15,8 @@ static void vlan_create_pa(struct lsdn_phys_attachment *p)
 	lsdn_list_init_add(&p->tunnel_list, &p->tunnel.tunnel_entry);
 
 	// register it as a bridge
-	lsdn_net_make_bridge(p);
-	lsdn_net_connect_bridge(p);
+	lsdn_lbridge_make(p);
+	lsdn_lbridge_connect(p);
 	lsdn_net_set_up(p);
 }
 

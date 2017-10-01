@@ -257,12 +257,6 @@ lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 	return LSDNE_OK;
 }
 
-const char *lsdn_mk_ifname(struct lsdn_context* ctx)
-{
-	snprintf(ctx->namebuf, sizeof(ctx->namebuf), "%s-%d", ctx->name, ++ctx->ifcount);
-	return ctx->namebuf;
-}
-
 static void report_virts(struct lsdn_phys_attachment *pa)
 {
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v)

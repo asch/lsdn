@@ -1,5 +1,6 @@
 #include "private/net.h"
 #include "private/sbridge.h"
+#include "private/lbridge.h"
 #include "private/nl.h"
 #include "include/lsdn.h"
 #include "include/nettypes.h"
@@ -24,8 +25,8 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 
 	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
 
-	lsdn_net_make_bridge(a);
-	lsdn_net_connect_bridge(a);
+	lsdn_lbridge_make(a);
+	lsdn_lbridge_connect(a);
 	lsdn_net_set_up(a);
 }
 
@@ -112,8 +113,8 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 			abort();
 	}
 
-	lsdn_net_make_bridge(a);
-	lsdn_net_connect_bridge(a);
+	lsdn_lbridge_make(a);
+	lsdn_lbridge_connect(a);
 	lsdn_net_set_up(a);
 }
 
@@ -157,7 +158,7 @@ static void vxlan_init_static_tunnel(struct lsdn_settings *s)
 		if (err)
 			abort();
 
-		lsdn_net_init_static_tunnel(ctx, tun);
+		lsdn_sbridge_init_shared_tunnel(ctx, tun);
 	}
 	tun->refcount++;
 }
@@ -167,8 +168,8 @@ static void vxlan_e2e_static_create_pa(struct lsdn_phys_attachment *a)
 	struct lsdn_shared_tunnel *tunnel = &a->net->settings->vxlan.e2e_static.tunnel;
 
 	vxlan_init_static_tunnel(a->net->settings);
-	lsdn_net_setup_static_bridge(a);
-	lsdn_net_connect_shared_static_tunnel(a, tunnel);
+	lsdn_sbridge_setup(a);
+	lsdn_sbridge_connect_shared_tunnel(a, tunnel);
 	lsdn_net_set_up(a);
 }
 
