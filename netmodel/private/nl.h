@@ -19,11 +19,14 @@
 
 /* Pseudo-handle for the linux ingress qdiscs */
 #define LSDN_INGRESS_HANDLE 0xffff0000
+#define LSDN_NULL_HANDLE 0
 
 /* Default priority for our fixed-function filters
  * (like those who catch ingress trafic and redirect to appropriate internal if)
  */
 #define LSDN_DEFAULT_PRIORITY 10
+
+#define LSDN_DEFAULT_CHAIN 0
 
 /* Our egress handle (major 1, minor 0)*/
 #define LSDN_DEFAULT_EGRESS_HANDLE 0x00010000U
@@ -96,8 +99,8 @@ struct lsdn_filter{
 	struct nlattr *nested_acts;
 };
 
-struct lsdn_filter *lsdn_flower_init(
-		uint32_t if_index, uint32_t parent, uint16_t prio);
+struct lsdn_filter *lsdn_filter_flower_init(
+		uint32_t if_index, uint32_t handle, uint32_t parent, uint32_t chain, uint16_t prio);
 
 void lsdn_filter_free(struct lsdn_filter *f);
 
@@ -122,6 +125,9 @@ void lsdn_action_set_tunnel_key(
 		uint32_t vni, lsdn_ip_t *src_ip, lsdn_ip_t *dst_ip);
 
 void lsdn_action_drop(struct lsdn_filter *f, uint16_t order);
+void lsdn_action_continue(struct lsdn_filter *f, uint16_t order);
+
+void lsdn_action_goto_chain(struct lsdn_filter *f, uint16_t order, uint32_t chain);
 
 void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask);

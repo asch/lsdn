@@ -179,7 +179,9 @@ int lsdn_link_vxlan_create(
 	struct nlattr *linkinfo;
 
 	unsigned int seq = time(NULL);
-	unsigned int ifindex = if_nametoindex(if_name);
+	unsigned int ifindex = 0;
+	if (if_name)
+		ifindex = if_nametoindex(if_name);
 
 	nlh->nlmsg_type = RTM_NEWLINK;
 	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
@@ -189,8 +191,9 @@ int lsdn_link_vxlan_create(
 	ifm->ifi_family = AF_UNSPEC;
 	ifm->ifi_change = 0;
 	ifm->ifi_flags = 0;
-
-	mnl_attr_put_u32(nlh, IFLA_LINK, ifindex);
+	if (if_name) {
+		mnl_attr_put_u32(nlh, IFLA_LINK, ifindex);
+	}
 	mnl_attr_put_str(nlh, IFLA_IFNAME, vxlan_name);
 
 	linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
@@ -566,8 +569,8 @@ int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex)
  * @param protocol Ethertype of the filter.
  * @return Pre-prepared nl message headers and options that can be further modified.
  */
-static struct lsdn_filter *filter_init(const char *kind, uint32_t if_index,
-		uint32_t parent, uint16_t priority)
+static struct lsdn_filter *filter_init(const char *kind, uint32_t if_index, uint32_t handle,
+		uint32_t parent, uint32_t chain, uint16_t priority)
 {
 	struct lsdn_filter *f = malloc(sizeof(*f));
 	if (!f)
@@ -583,21 +586,21 @@ static struct lsdn_filter *filter_init(const char *kind, uint32_t if_index,
 	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(f->nlh, sizeof(*tcm));
 	tcm->tcm_family = AF_UNSPEC;
 	tcm->tcm_ifindex = if_index;
-	tcm->tcm_handle = 0;
+	tcm->tcm_handle = handle;
 	tcm->tcm_parent = parent;
 	tcm->tcm_info = TC_H_MAKE(priority << 16, ETH_P_ALL << 8);
 
 	mnl_attr_put_str(f->nlh, TCA_KIND, kind);
+	mnl_attr_put_u32(f->nlh, TCA_CHAIN, chain);
 	f->nested_opts = mnl_attr_nest_start(f->nlh, TCA_OPTIONS);
 	f->nested_acts = NULL;
 
 	return f;
 }
 
-struct lsdn_filter *lsdn_flower_init(
-		uint32_t if_index, uint32_t parent, uint16_t prio)
+struct lsdn_filter *lsdn_filter_flower_init(uint32_t if_index, uint32_t handle, uint32_t parent, uint32_t chain, uint16_t prio)
 {
-	return filter_init("flower", if_index, parent, prio);
+	return filter_init("flower", if_index, handle, parent, chain, prio);
 }
 
 
@@ -686,6 +689,7 @@ void lsdn_action_set_tunnel_key(
 		mnl_attr_put_u32(f->nlh, TCA_TUNNEL_KEY_ENC_IPV4_DST, htonl(lsdn_ip4_u32(&dst_ip->v4)));
 	} else {
 		// TODO
+		abort();
 	}
 
 	mnl_attr_put(f->nlh, TCA_TUNNEL_KEY_PARMS, sizeof(tunnel_key), &tunnel_key);
@@ -703,6 +707,38 @@ void lsdn_action_drop(struct lsdn_filter *f, uint16_t order)
 	struct tc_gact gact_act;
 	bzero(&gact_act, sizeof(gact_act));
 	gact_act.action = TC_ACT_SHOT;
+
+	mnl_attr_put(f->nlh, TCA_GACT_PARMS, sizeof(gact_act), &gact_act);
+
+	mnl_attr_nest_end(f->nlh, nested_attr2);
+	mnl_attr_nest_end(f->nlh, nested_attr);
+}
+
+void lsdn_action_continue(struct lsdn_filter *f, uint16_t order)
+{
+	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
+	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "gact");
+
+	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
+	struct tc_gact gact_act;
+	bzero(&gact_act, sizeof(gact_act));
+	gact_act.action = TC_ACT_UNSPEC;
+
+	mnl_attr_put(f->nlh, TCA_GACT_PARMS, sizeof(gact_act), &gact_act);
+
+	mnl_attr_nest_end(f->nlh, nested_attr2);
+	mnl_attr_nest_end(f->nlh, nested_attr);
+}
+
+void lsdn_action_goto_chain(struct lsdn_filter *f, uint16_t order, uint32_t chain)
+{
+	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
+	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "gact");
+
+	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
+	struct tc_gact gact_act;
+	bzero(&gact_act, sizeof(gact_act));
+	gact_act.action = TC_ACT_GOTO_CHAIN | (chain & TC_ACT_EXT_VAL_MASK);
 
 	mnl_attr_put(f->nlh, TCA_GACT_PARMS, sizeof(gact_act), &gact_act);
 
@@ -737,7 +773,7 @@ void lsdn_flower_set_eth_type(struct lsdn_filter *f, uint16_t eth_type)
 int lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f)
 {
 	unsigned seq = 0;
-	f->nlh->nlmsg_type	= RTM_NEWTFILTER;
+	f->nlh->nlmsg_type = RTM_NEWTFILTER;
 	f->nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK;
 	f->nlh->nlmsg_seq = seq;
 

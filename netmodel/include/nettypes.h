@@ -18,6 +18,7 @@ enum lsdn_ipv {
 
 typedef union lsdn_mac {
 	uint8_t bytes[6];
+	char chr[6];
 } lsdn_mac_t;
 
 typedef union lsdn_ipv4 {

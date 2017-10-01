@@ -3,9 +3,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <net/if.h>
 #include "../private/list.h"
-#include "../private/rule.h"
+#include "../private/rules.h"
 #include "../private/names.h"
+#include "../private/nl.h"
+#include "../private/idalloc.h"
 #include "nettypes.h"
 
 #define LSDN_DECLARE_ATTR(obj, name, type) \
@@ -86,6 +89,21 @@ enum lsdn_switch{
 	 */
 };
 
+struct lsdn_shared_tunnel {
+	int refcount;
+	struct lsdn_idalloc chain_ids;
+	struct lsdn_if tunnel_if;
+	/* Used for redirecting to an appropriate interface handling the switching */
+	struct lsdn_ruleset rules;
+	/* Used for redirecting to an appropriate chain handling the broadcast */
+	struct lsdn_ruleset broadcast_rules;
+};
+
+struct lsdn_tunnel {
+	struct lsdn_if tunnel_if;
+	struct lsdn_list_entry tunnel_entry;
+};
+
 /**
  * Defines the type of a lsdn_net. Multiple networks can share the same settings
  * (e.g. vxlan with static routing on port 1234) and only differ by their identifier
@@ -102,8 +120,13 @@ struct lsdn_settings{
 		struct {
 			uint16_t port;
 			union{
-				lsdn_ip_t mcast_ip;
-			} mcast;
+				struct mcast {
+					lsdn_ip_t mcast_ip;
+				} mcast;
+				struct {
+					struct lsdn_shared_tunnel tunnel;
+				} e2e_static;
+			};
 		} vxlan;
 	};
 };
@@ -170,11 +193,6 @@ lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
 LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
 LSDN_DECLARE_ATTR(phys, iface, const char*);
 
-struct lsdn_tunnel {
-	struct lsdn_if tunnel_if;
-	struct lsdn_list_entry tunnel_entry;
-};
-
 /**
  * A point of connection to a virtual network through a physical interface.
  * Only single attachment may exist for a pair of a physical connection and network.
@@ -189,25 +207,33 @@ struct lsdn_phys_attachment {
 	struct lsdn_net *net;
 	struct lsdn_phys *phys;
 	/* Was this attachment created by lsdn_phys_attach at some point, or was it implicitely
-	 * created by lsdn_virt_connect, just for bookkeeping?
+	 * created by lsdn_virt_connect, just for bookkeeping? All fields bellow are valid only for
+	 * explicit attachments. If you try to commit a network and some attachment is not
+	 * explicitely attached, we assume you just made a mistake.
 	 */
 	bool explicitely_attached;
 
 	/* Either a dummy interface for static switch or linux bridge for learning networks */
 	struct lsdn_if bridge_if;
-	union {
-		/* Only valid for LSDN_STATIC_E2E */
-		struct lsdn_if dummy_if;
-	};
+	struct lsdn_ruleset bridge_rules;
 
-	union {
-		/* Not used by the direct network */
-		struct {
-			struct lsdn_list_entry tunnel_list;
-			/* for free internal use by the network */
-			struct lsdn_tunnel *tunnel;
-		} tun;
-	};
+	/* List of tunnels connected to the bridge interface. Used by the generic functions such
+	 * as lsdn_net_connect_bridge.
+	 */
+	struct lsdn_list_entry tunnel_list;
+	/* For free internal use by the network. It can store it's tunnel here if it uses one.
+	 * If it uses multiple tunnels, it will probably allocate them somwhere else. Generic
+	 * functions ignore this field.
+	 */
+	struct lsdn_tunnel tunnel;
+	/* Broadcast rules from shared tunnels to virts, on a seprate chain on the tunnel interface */
+	struct lsdn_broadcast broadcast_actions;
+	/* Rules on the shared tunnel sorting the packets by VNI */
+	struct lsdn_list_entry shared_tunnel_rules_entry;
+	/* The chain allocated for broadcast on rules on the shared tunnel */
+	uint32_t shared_tunnel_br_chain;
+	/* Rules on the virts doing the broadcast to the tunnel */
+	struct lsdn_list_entry owned_broadcast_list;
 };
 
 
@@ -223,7 +249,11 @@ struct lsdn_virt {
 	struct lsdn_list_entry connected_virt_entry;
 	struct lsdn_net* network;
 
-	struct lsdn_list_entry virt_rules_list;
+	/* List of struct lsdn_flower_rule. They are flower entries used for switching packets. */
+	struct lsdn_list_entry owned_rules_list;
+	/* List of struct lsdn_broadcast_ation. */
+	struct lsdn_list_entry owned_actions_list;
+	struct lsdn_broadcast broadcast_actions;
 
 	struct lsdn_phys_attachment* connected_through;
 	struct lsdn_if connected_if;
@@ -239,22 +269,6 @@ lsdn_err_t lsdn_virt_connect(
 void lsdn_virt_disconnect(struct lsdn_virt *virt);
 
 LSDN_DECLARE_ATTR(virt, mac, lsdn_mac_t);
-
-/**
- * An entry in routing/forwarding table for a given virt. This may serve as a template for multiple
- * rules in different ruleset instances.
- *
- * This is preliminary, may change.
- */
-struct lsdn_virt_rule{
-	/* list in lsdn_virt */
-	struct lsdn_list_entry virt_rules_entry;
-	/* entries in lsdn_rule */
-	struct lsdn_list_entry rule_instance_list;
-
-	struct lsdn_virt *owning_virt;
-	struct lsdn_match match;
-};
 
 lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);

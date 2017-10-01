@@ -143,28 +143,6 @@ static struct lsdn_phys_attachment* find_or_create_attachement(
 
 	a->phys = phys;
 	a->net = net;
-	if (a->net->settings->nettype != LSDN_NET_DIRECT) {
-		a->tun.tunnel = NULL;
-		if (a->net->settings->switch_type == LSDN_STATIC_E2E) {
-			lsdn_foreach(
-				phys->attached_to_list, attached_to_entry,
-				struct lsdn_phys_attachment, a_other) {
-				if (a->net->vnet_id != a_other->net->vnet_id
-					&& a_other->net->settings->switch_type == LSDN_STATIC_E2E) {
-					a->tun.tunnel = a_other->tun.tunnel;
-					break;
-				}
-			}
-		}
-		if (a->tun.tunnel == NULL) {
-			a->tun.tunnel = malloc(sizeof(a->tun.tunnel));
-			if (!a->tun.tunnel) {
-				free(a);
-				return NULL;
-			}
-			lsdn_if_init_empty(&a->tun.tunnel->tunnel_if);
-		}
-	}
 
 	lsdn_list_init_add(&net->attached_list, &a->attached_entry);
 	lsdn_list_init_add(&phys->attached_to_list, &a->attached_to_entry);
@@ -184,9 +162,7 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 
 	a->explicitely_attached = true;
 	lsdn_if_init_empty(&a->bridge_if);
-	if (net->settings->switch_type == LSDN_STATIC_E2E)
-		lsdn_if_init_empty(&a->dummy_if);
-	lsdn_list_init(&a->tun.tunnel_list);
+	lsdn_list_init(&a->tunnel_list);
 
 	return LSDNE_OK;
 }
@@ -235,7 +211,8 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	virt->connected_through = NULL;
 	lsdn_if_init_empty(&virt->connected_if);
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
-	lsdn_list_init(&virt->virt_rules_list);
+	lsdn_list_init(&virt->owned_rules_list);
+	lsdn_list_init(&virt->owned_actions_list);
 
 	return virt;
 }

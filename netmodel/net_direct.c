@@ -5,13 +5,19 @@
 
 static void direct_create_pa(struct lsdn_phys_attachment *a)
 {
-	lsdn_net_make_bridge(a);
-
-	int ifindex = if_nametoindex(a->phys->attr_iface);
-	int err = lsdn_link_set_master(a->net->ctx->nlsock, a->bridge_if.ifindex, ifindex);
-	if(err)
+	// register the interface directly as tunnel
+	lsdn_err_t err;
+	err = lsdn_if_init_name(&a->tunnel.tunnel_if, a->phys->attr_iface);
+	if (err != LSDNE_OK)
 		abort();
+	err = lsdn_if_prepare(&a->tunnel.tunnel_if);
+	if (err != LSDNE_OK)
+		abort();
+	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
 
+	// create and acivate the bridge
+	lsdn_net_make_bridge(a);
+	lsdn_net_connect_bridge(a);
 	lsdn_net_set_up(a);
 }
 

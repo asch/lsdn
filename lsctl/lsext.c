@@ -109,11 +109,29 @@ CMD(settings_vxlan_mcast)
 	return create_nets(interp, nets, settings);
 }
 
+CMD(settings_vxlan_static)
+{
+	Tcl_Obj *nets = NULL;
+	int port = 0;
+	const Tcl_ArgvInfo opts[] = {
+		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
+		{TCL_ARGV_INT, "-port", NULL, &port},
+		{TCL_ARGV_END}
+	};
+	argc--; argv++;
+
+	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
+		return TCL_ERROR;
+
+	struct lsdn_settings * settings = lsdn_settings_new_vxlan_static(ctx->lsctx, port);
+	return create_nets(interp, nets, settings);
+}
+
 CMD(settings)
 {
 	int type;
-	static const char *type_names[] = {"direct", "vlan", "vxlan/mcast", NULL};
-	enum types {T_DIRECT, T_VLAN, T_VXLAN_MCAST};
+	static const char *type_names[] = {"direct", "vlan", "vxlan/mcast", "vxlan/static", NULL};
+	enum types {T_DIRECT, T_VLAN, T_VXLAN_MCAST, T_VXLAN_STATIC};
 
 	if(argc < 2) {
 		Tcl_WrongNumArgs(interp, 1, argv, "type");
@@ -133,6 +151,8 @@ CMD(settings)
 			return tcl_settings_vlan(ctx, interp, argc, argv);
 		case T_VXLAN_MCAST:
 			return tcl_settings_vxlan_mcast(ctx, interp, argc, argv);
+		case T_VXLAN_STATIC:
+			return tcl_settings_vxlan_static(ctx, interp, argc, argv);
 	}
 
 	return TCL_OK;

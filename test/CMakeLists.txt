@@ -25,6 +25,8 @@ function(test_in_ns testname)
 endfunction(test_in_ns)
 
 function(test_in_ns_lsctl testname)
+	# Custom target for IDEs
+	add_custom_target(test_${testname} SOURCES test_${testname}.sh test_${testname}.lsctl)
 	add_test(
 		NAME ${testname}
 		COMMAND ./run run ${testname}
@@ -45,5 +47,6 @@ test_in_ns_lsctl(vlan_lsctl)
 test_in_ns_lsctl(vxlan_mcast)
 test_in_ns(vxlan_e2e_learning)
 test_in_ns(vxlan_static)
+test_in_ns_lsctl(vxlan_static_large)
 
 test_in_ns(dhcp_in_vlan)
