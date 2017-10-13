@@ -1,0 +1,32 @@
+#!/bin/bash
+
+echo "Mounting build directory ..."
+
+mkdir -p /lsdn/build/
+mount -t 9p -o trans=virtio build /lsdn/build -oversion=9p2000.L
+
+echo OK
+
+echo Preparing environment ...
+mount -t proc none /proc
+mount -t sysfs none /sys
+mkdir -p /run/netns
+mount -t tmpfs none /run/netns
+echo OK
+
+echo Mounting kernel modules ...
+mount -t 9p -o trans=virtio mods /lib/modules -oversion=9p2000.L
+modprobe dummy
+modprobe veth
+
+echo OK
+
+cd /lsdn/build/hooks
+
+echo Running custom init script ...
+cat qemu/script
+. qemu/script
+
+agetty --autologin root /dev/ttyS0
+
+poweroff -f

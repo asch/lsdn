@@ -33,6 +33,14 @@ function(test_in_ns_lsctl testname)
 	)
 endfunction(test_in_ns_lsctl)
 
+# TODO
+function(test_in_vm testname)
+	add_test(
+		NAME ${testname}
+		COMMAND ./run run ${testname}
+	)
+endfunction(test_in_vm)
+
 function(test test)
 	add_executable(test_${test} test_${test}.c)
 	target_include_directories(test_${test} PRIVATE ${MNL_INCLUDE_DIRS} ../netmodel/include)
@@ -50,3 +58,4 @@ test_in_ns(vxlan_static)
 test_in_ns_lsctl(vxlan_static_large)
 
 test_in_ns(dhcp_in_vlan)
+test_in_vm(dhcp_in_vms)

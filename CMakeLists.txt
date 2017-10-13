@@ -5,9 +5,11 @@ enable_testing()
 
 find_package(PkgConfig)
 pkg_check_modules(MNL libmnl)
+pkg_check_modules(LIBVIRT libvirt)
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 add_subdirectory(netmodel)
 add_subdirectory(test)
 add_subdirectory(lsctl)
+add_subdirectory(hooks)

@@ -59,7 +59,38 @@ void lsdn_context_abort_on_nomem(struct lsdn_context *ctx)
 void lsdn_context_free(struct lsdn_context *ctx)
 {
 	// TODO: cleanup the name, context, socket and all children (nets and physes)
+	// TODO?: call shutdown hook?
 }
+
+void lsdn_settings_register_hook(
+        struct lsdn_settings *settings, lsdn_hook hook, void *hook_user)
+{
+	if (!settings)
+		return;
+	settings->hook = hook;
+	settings->hook_user = hook_user;
+}
+
+// TODO
+/*
+void lsdn_settings_register_virt_startup_hook(
+	struct lsdn_settings *settings, lsdn_virt_hook startup_hook, void *user)
+{
+	if (!settings)
+		return;
+	settings->virt_startup_hook = startup_hook;
+	settings->virt_startup_hook_user = user;
+}
+
+void lsdn_settings_register_virt_shutdown_hook(
+	struct lsdn_settings *settings, lsdn_virt_hook shutdown_hook, void *user)
+{
+	if (!settings)
+		return;
+	settings->virt_shutdown_hook = shutdown_hook;
+	settings->virt_shutdown_hook_user = user;
+}
+*/
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 {
@@ -234,12 +265,26 @@ lsdn_err_t lsdn_virt_connect(
 	virt->connected_through = a;
 	lsdn_list_init_add(&a->connected_virt_list, &virt->connected_virt_entry);
 
+	// TODO
+	/*
+	lsdn_settings *settings = virt->network->settings;
+	if (settings->virt_startup_hook)
+		settings->virt_startup_hook(virt, settings->virt_startup_hook_user);
+	*/
+
 	return LSDNE_OK;
 }
 
 void lsdn_virt_disconnect(struct lsdn_virt *virt){
 	if(!virt->connected_through)
 		return;
+
+	// TODO
+	/*
+	lsdn_settings *settings = virt->network->settings;
+	if (settings->virt_shutdown_hook)
+		settings->virt_shutdown_hook(virt, settings->virt_shutdown_hook_user);
+	*/
 
 	lsdn_list_remove(&virt->connected_virt_entry);
 	virt->connected_through = NULL;
@@ -309,8 +354,26 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	return (ctx->problem_count == 0) ? LSDNE_OK : LSDNE_VALIDATE;
 }
 
+static void trigger_hooks(struct lsdn_context *ctx)
+{
+	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p) {
+		if (p->is_local) {
+			lsdn_foreach(
+				p->attached_to_list, attached_to_entry,
+				struct lsdn_phys_attachment, a)
+			{
+				struct lsdn_settings *settings = a->net->settings;
+				if (settings->hook)
+					settings->hook(a->net, p, settings->hook_user);
+			}
+		}
+	}
+}
+
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
+	trigger_hooks(ctx);
+
 	lsdn_err_t lerr = lsdn_validate(ctx, cb, user);
 	if(lerr != LSDNE_OK)
 		return lerr;

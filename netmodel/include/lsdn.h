@@ -16,7 +16,13 @@
 	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *obj); \
 	type lsdn_##obj##_get_##name(struct lsdn_##obj *obj)
 
+struct lsdn_virt;
+struct lsdn_net;
+struct lsdn_phys;
+
 typedef void (*lsdn_nomem_cb)(void *user);
+typedef void (*lsdn_hook)(struct lsdn_net *net, struct lsdn_phys *phys, void *user);
+typedef void (*lsdn_virt_hook)(struct lsdn_virt *v, void *user);
 
 /**
  * A top-level object encompassing all network topology. This includes virtual networks
@@ -129,6 +135,27 @@ struct lsdn_settings{
 			};
 		} vxlan;
 	};
+
+	/**
+	 * Callback to be called per lsdn_net and lsdn_phys
+	 * XXX: Split into init + shutdown phase ?
+	 */
+	lsdn_hook hook;
+	void *hook_user;
+
+	// TODO
+	/**
+	 * Callback to be called for each virt in the startup phase
+	 */
+	//lsdn_virt_startup_hook virt_startup_hook;
+	//void *virt_startup_hook_user;
+
+	// TODO
+	/**
+	 * Callback to be called for each virt in the shutdown phase
+	 */
+	//lsdn_virt_shutdown_hook virt_shutdown_hook;
+	//void *virt_shutdown_hook_user;
 };
 
 struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx);
@@ -137,6 +164,16 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(struct lsdn_context *ctx, ls
 struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port);
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port);
 void lsdn_settings_free(struct lsdn_settings *settings);
+void lsdn_settings_register_hook(
+	struct lsdn_settings *settings, lsdn_hook hook, void *user);
+// TODO
+/*
+void lsdn_settings_register_virt_startup_hook(
+	struct lsdn_settings *settings, lsdn_virt_hook virt_startup_hook, void *user);
+void lsdn_settings_register_virt_shutdown_hook(
+	struct lsdn_settings *settings, lsdn_virt_hook virt_shutdown_hook, void *user);
+*/
+
 
 /**
  * Virtual network to which nodes (lsdn_virt) connect through physical host connections (lsdn_phys).

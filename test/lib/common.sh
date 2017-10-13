@@ -129,6 +129,11 @@ cleanup() {
 		echo Deleting namespace "${ns}"
 		ip netns delete "${ns}"
 	done
+
+	for vm in "$(virsh list --all --name)"; do
+		echo Deleting VM "${vm}"
+		virsh undefine "${vm}"
+	done
 }
 
 qping="ping -c 2 -i 0.2 -w 1"

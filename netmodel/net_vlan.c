@@ -35,5 +35,7 @@ struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx)
 	s->ops = &lsdn_net_vlan_ops;
 	s->nettype = LSDN_NET_VLAN;
 	s->switch_type = LSDN_LEARNING;
+	s->hook = NULL;
+	s->hook_user = NULL;
 	return s;
 }
