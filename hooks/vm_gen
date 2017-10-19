@@ -4,7 +4,7 @@
 
 function help
 {
-	echo "usage: vm_gen name bzImage modroot rootfs tapN mac dest init-script"
+	echo "usage: vm_gen name kernel module-dir rootfs tap-interface mac-address dest init-script"
 
 	cat <<EOT
 
@@ -19,7 +19,7 @@ Arguments:
 4) Rootfs
      **** qemu/domain-init needs to reside in the root directory of your rootfs ****
 
-5) Tap interface
+5) Tap interface used on the host
 
 6) Mac address
 
@@ -30,7 +30,7 @@ EOT
 	exit 0
 }
 
-if [ $# -ne 7 ]; then
+if [ $# -ne 8 ]; then
 	echo "Invalid number of required arguments"
 	echo 
 	help
@@ -46,16 +46,16 @@ MAC=$1; shift
 DEST=$1; shift
 INIT_SCRIPT=$1; shift
 QEMU=/usr/bin/qemu-system-x86_64
-#TODO make configurable
-QUIET=quiet
-INIT="/bin/bash /domain-init"
+QUIET="quiet"
+INIT="/bin/bash /domain-init ${NAME}"
+BUILD_DIR=$(dirname $(pwd))
 
 if ! [ -d "$MODROOT/lib/modules" ]; then
 	echo "Can not find modules directory $MODROOT/lib/modules"
 	exit 1
 fi
 
-cat "${INIT_SCRIPT}" > qemu/script
+echo "${INIT_SCRIPT}" > ${BUILD_DIR}/hooks/qemu/script-${NAME}
 
 UUID=$(uuidgen)
 
@@ -108,7 +108,7 @@ read -d '' DOMAIN <<EOF
         <target dir='mods'/>
     </filesystem>
     <filesystem type='mount' accessmode='passthrough'>
-        <source dir='..'/>
+        <source dir='${BUILD_DIR}'/>
         <target dir='build'/>
     </filesystem>
   </devices>

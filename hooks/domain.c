@@ -11,8 +11,11 @@
 #define DOMAIN_DESTINATION "/tmp/DOMAIN.xml"
 #define MAX_SIZE 16384
 
-void create_domain(char **argv)
+void create_domain(char *name, char *kernel, char *modroot,
+		char *rootfs, char *tap, char *mac,
+		char *init_script)
 {
+	int res;
 	pid_t pid;
 	FILE *fp;
 	char xml_desc[MAX_SIZE];
@@ -23,10 +26,10 @@ void create_domain(char **argv)
 	case -1:
 		abort();
 	case 0:
-		execl("../hooks/vm_gen", "vm_gen",
-			argv[0], argv[1], argv[2],
-			argv[3], argv[4], argv[5],
-			argv[6], DOMAIN_DESTINATION, NULL);
+		execl("../hooks/vm_gen", "vm_gen", name,
+			kernel, modroot, rootfs,
+			tap, mac, DOMAIN_DESTINATION,
+			init_script, NULL);
 		abort();
 	default:
 		wait(NULL);
@@ -43,15 +46,17 @@ void create_domain(char **argv)
 	if (!conn)
 		abort();
 
-	domain = virDomainCreateXML(conn, xml_desc, 0);
+	domain = virDomainDefineXML(conn, xml_desc);
 	if (!domain)
 		abort();
+	res = virDomainCreate(domain);
+	if (res)
+		abort();
 
-	virDomainFree(domain);
 	virConnectClose(conn);
 }
 
-void destroy_domain(char **argv)
+void destroy_domain(char *name)
 {
 	virConnectPtr conn;
 	virDomainPtr domain;
@@ -60,7 +65,7 @@ void destroy_domain(char **argv)
 	if (!conn)
 		abort();
 
-	domain = virDomainLookupByName(conn, argv[0]);
+	domain = virDomainLookupByName(conn, name);
 	if (!domain)
 		abort();
 
@@ -68,4 +73,3 @@ void destroy_domain(char **argv)
 	virDomainFree(domain);
 	virConnectClose(conn);
 }
-

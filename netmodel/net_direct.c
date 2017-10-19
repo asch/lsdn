@@ -37,7 +37,6 @@ struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx)
 	s->ops = &lsdn_net_direct_ops;
 	s->nettype = LSDN_NET_DIRECT;
 	s->switch_type = LSDN_LEARNING;
-	s->hook = NULL;
-	s->hook_user = NULL;
+	s->user_hooks = NULL;
 	return s;
 }

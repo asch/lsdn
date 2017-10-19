@@ -1,5 +1,7 @@
 #!/bin/bash
 
+NAME="$1"
+
 echo "Mounting build directory ..."
 
 mkdir -p /lsdn/build/
@@ -25,8 +27,22 @@ cd /lsdn/build/hooks
 
 echo Running custom init script ...
 cat qemu/script
-. qemu/script
 
-agetty --autologin root /dev/ttyS0
+. qemu/script-"${NAME}"
 
-poweroff -f
+# Resize console to current size
+
+tty=ttyS0
+stty="stty -F /dev/$tty"
+
+old=$($stty -g)
+$stty raw -echo min 0 time 5
+
+printf '\0337\033[r\033[999;999H\033[6n\0338' > /dev/$tty
+IFS='[;R' read -r _ rows cols _ < /dev/$tty
+
+$stty "$old"
+
+stty cols "$cols" rows "$rows"
+
+while true; do agetty --autologin root $tty xterm; done

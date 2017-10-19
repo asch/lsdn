@@ -52,8 +52,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 	s->switch_type = LSDN_LEARNING;
 	s->vxlan.mcast.mcast_ip = mcast_ip;
 	s->vxlan.port = port;
-	s->hook = NULL;
-	s->hook_user = NULL;
+	s->user_hooks = NULL;
 	return s;
 }
 
@@ -137,8 +136,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
 	s->nettype = LSDN_NET_VXLAN;
 	s->switch_type = LSDN_LEARNING_E2E;
 	s->vxlan.port = port;
-	s->hook = NULL;
-	s->hook_user = NULL;
+	s->user_hooks = NULL;
 	return s;
 }
 
@@ -193,7 +191,6 @@ struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, u
 	s->ops = &lsdn_net_vxlan_e2e_static_ops;
 	s->vxlan.port = port;
 	s->vxlan.e2e_static.tunnel.refcount = 0;
-	s->hook = NULL;
-	s->hook_user = NULL;
+	s->user_hooks = NULL;
 	return s;
 }
