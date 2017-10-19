@@ -68,6 +68,7 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 		ret_ptr(s->ctx, NULL);
 
 	net->ctx = s->ctx;
+	net->state = LSDN_STATE_NEW;
 	net->settings = s;
 	net->vnet_id = vnet_id;
 
@@ -103,6 +104,7 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 		ret_ptr(ctx, NULL);
 
 	phys->ctx = ctx;
+	phys->state = LSDN_STATE_NEW;
 	phys->attr_iface = NULL;
 	phys->attr_ip = NULL;
 	phys->is_local = false;
@@ -143,10 +145,13 @@ static struct lsdn_phys_attachment* find_or_create_attachement(
 
 	a->phys = phys;
 	a->net = net;
+	a->state = LSDN_STATE_NEW;
 
 	lsdn_list_init_add(&net->attached_list, &a->attached_entry);
 	lsdn_list_init_add(&phys->attached_to_list, &a->attached_to_entry);
 	lsdn_list_init(&a->connected_virt_list);
+	lsdn_list_init(&a->remote_pa_list);
+	lsdn_list_init(&a->pa_view_list);
 	a->explicitely_attached = false;
 	return a;
 }
@@ -207,13 +212,12 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	if(!virt)
 		return NULL;
 	virt->network = net;
+	virt->state = LSDN_STATE_NEW;
 	virt->attr_mac = NULL;
 	virt->connected_through = NULL;
 	lsdn_if_init_empty(&virt->connected_if);
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
-	lsdn_list_init(&virt->owned_rules_list);
-	lsdn_list_init(&virt->owned_actions_list);
-
+	lsdn_list_init(&virt->virt_view_list);
 	return virt;
 }
 
@@ -309,30 +313,100 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	return (ctx->problem_count == 0) ? LSDNE_OK : LSDNE_VALIDATE;
 }
 
+static void ack_state(enum lsdn_state *s) {
+	if (*s == LSDN_STATE_NEW || *s == LSDN_STATE_RENEW)
+		*s = LSDN_STATE_OK;
+}
+
+void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
+{
+	struct lsdn_net_ops *ops = pa->net->settings->ops;
+	if (pa->state == LSDN_STATE_NEW)
+		ops->create_pa(pa);
+
+	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
+		if (v->state == LSDN_STATE_NEW && ops->add_virt)
+			ops->add_virt(v);
+	}
+
+	lsdn_foreach(pa->net->attached_list, attached_entry, struct lsdn_phys_attachment, remote) {
+		if (remote == pa)
+			continue;
+		if (remote->state != LSDN_STATE_NEW)
+			continue;
+
+		struct lsdn_remote_pa *rpa = malloc(sizeof(*rpa));
+		if (!rpa)
+			abort();
+		rpa->local = pa;
+		rpa->remote = remote;
+		lsdn_list_init_add(&remote->pa_view_list, &rpa->pa_view_entry);
+		lsdn_list_init_add(&pa->remote_pa_list, &rpa->remote_pa_entry);
+		lsdn_list_init(&rpa->remote_virt_list);
+		if (ops->add_remote_pa)
+			ops->add_remote_pa(rpa);
+	}
+
+	lsdn_foreach(pa->remote_pa_list, remote_pa_entry, struct lsdn_remote_pa, remote) {
+		lsdn_foreach(remote->remote->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
+			if (v->state != LSDN_STATE_NEW)
+				continue;
+			struct lsdn_remote_virt *rvirt = malloc(sizeof(*rvirt));
+			if(!rvirt)
+				abort();
+			rvirt->pa = remote;
+			rvirt->virt = v;
+			lsdn_list_init_add(&v->virt_view_list, &rvirt->virt_view_entry);
+			lsdn_list_init_add(&remote->remote_virt_list, &rvirt->remote_virt_entry);
+			if (ops->add_remote_virt)
+				ops->add_remote_virt(rvirt);
+		}
+	}
+}
+
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	lsdn_err_t lerr = lsdn_validate(ctx, cb, user);
 	if(lerr != LSDNE_OK)
 		return lerr;
 
-	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p){
-		if(p->is_local){
-			// TODO: Should we do that here? It sort of makes sense, but on the other
-			// hand the user might not expect us to play games with his physical interfaces?
-			// This could e.g. disconnect a user from a network or something.
-			// The IP is probably already setup correctly
-			/*if (p->attr_ip) {
-				int err = lsdn_link_set_ip(ctx->nlsock, p->attr_iface, p->attr_ip);
-				if (err)
-					abort();
-			}*/
+	/* List of objects to process:
+	 *	setting, network, phys, physical attachment, virt
+	 * Settings, networks and attachments do not need to be commited in any way, but we must keep them
+	 * alive until PAs and virts are deleted. */
 
+
+	// TODO: delete the objects
+
+	/* first create physical attachments for local physes and populate
+	 * them with virts, remote PAs and remote virts */
+	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p){
+		if (p->is_local) {
 			lsdn_foreach(
 				p->attached_to_list, attached_to_entry,
-				struct lsdn_phys_attachment, a)
+				struct lsdn_phys_attachment, pa)
 			{
-				a->net->settings->ops->create_pa(a);
+				commit_pa(pa, cb, user);
 			}
+		}
+	}
+
+	// ack all states
+	lsdn_foreach(ctx->settings_list, settings_entry, struct lsdn_settings, s) {
+		ack_state(&s->state);
+	}
+
+	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p){
+		ack_state(&p->state);
+	}
+
+	lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, n){
+		ack_state(&n->state);
+		lsdn_foreach(n->attached_list, attached_entry, struct lsdn_phys_attachment, pa) {
+			ack_state(&pa->state);
+		}
+		lsdn_foreach(n->virt_list, virt_entry, struct lsdn_virt, v) {
+			ack_state(&v->state);
 		}
 	}
 

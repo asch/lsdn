@@ -9,6 +9,7 @@
 #include "../private/names.h"
 #include "../private/nl.h"
 #include "../private/idalloc.h"
+#include "../private/sbridge.h"
 #include "nettypes.h"
 
 #define LSDN_DECLARE_ATTR(obj, name, type) \
@@ -63,6 +64,17 @@ enum lsdn_nettype{
 	LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT
 };
 
+enum lsdn_state {
+	/* Object is being commited for a first time */
+	LSDN_STATE_NEW,
+	/* Object was already commited and needs to be recommited */
+	LSDN_STATE_RENEW,
+	/* Object is already commited and needs to be deleted */
+	LSDN_STATE_DELETE,
+	/* Nothing to be done here. */
+	LSDN_STATE_OK
+};
+
 enum lsdn_switch{
 	/* A learning switch with single tunnel shared from the phys.
 	 *
@@ -93,10 +105,6 @@ struct lsdn_shared_tunnel {
 	int refcount;
 	struct lsdn_idalloc chain_ids;
 	struct lsdn_if tunnel_if;
-	/* Used for redirecting to an appropriate interface handling the switching */
-	struct lsdn_ruleset rules;
-	/* Used for redirecting to an appropriate chain handling the broadcast */
-	struct lsdn_ruleset broadcast_rules;
 };
 
 struct lsdn_tunnel {
@@ -110,6 +118,7 @@ struct lsdn_tunnel {
  * (vlan id, vni ...).
  */
 struct lsdn_settings{
+	enum lsdn_state state;
 	struct lsdn_list_entry settings_entry;
 	struct lsdn_context *ctx;
 	struct lsdn_net_ops *ops;
@@ -147,6 +156,7 @@ void lsdn_settings_free(struct lsdn_settings *settings);
  *  - the switching methods used (visible to end users)
  */
 struct lsdn_net {
+	enum lsdn_state state;
 	struct lsdn_list_entry networks_entry;
 	struct lsdn_context *ctx;
 	struct lsdn_settings *settings;
@@ -156,7 +166,6 @@ struct lsdn_net {
 	struct lsdn_list_entry virt_list;
 	/* List of lsdn_phys_attachement attached to this network */
 	struct lsdn_list_entry attached_list;
-
 };
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
@@ -171,6 +180,7 @@ void lsdn_net_free(struct lsdn_net *net);
  * lsdn_phys_attachement.
  */
 struct lsdn_phys {
+	enum lsdn_state state;
 	struct lsdn_name name;
 	struct lsdn_list_entry phys_entry;
 	struct lsdn_list_entry attached_to_list;
@@ -198,11 +208,16 @@ LSDN_DECLARE_ATTR(phys, iface, const char*);
  * Only single attachment may exist for a pair of a physical connection and network.
  */
 struct lsdn_phys_attachment {
+	enum lsdn_state state;
 	/* list held by net */
 	struct lsdn_list_entry attached_entry;
 	/* list held by phys */
 	struct lsdn_list_entry attached_to_entry;
 	struct lsdn_list_entry connected_virt_list;
+	/* List of remote PAs that correspond to this PA */
+	struct lsdn_list_entry pa_view_list;
+	/* List of remote PAs that this PA can see in the network */
+	struct lsdn_list_entry remote_pa_list;
 
 	struct lsdn_net *net;
 	struct lsdn_phys *phys;
@@ -226,14 +241,10 @@ struct lsdn_phys_attachment {
 	 * functions ignore this field.
 	 */
 	struct lsdn_tunnel tunnel;
-	/* Broadcast rules from shared tunnels to virts, on a seprate chain on the tunnel interface */
-	struct lsdn_broadcast broadcast_actions;
-	/* Rules on the shared tunnel sorting the packets by VNI */
-	struct lsdn_list_entry shared_tunnel_rules_entry;
-	/* The chain allocated for broadcast on rules on the shared tunnel */
-	uint32_t shared_tunnel_br_chain;
-	/* Rules on the virts doing the broadcast to the tunnel */
-	struct lsdn_list_entry owned_broadcast_list;
+
+	struct lsdn_shared_tunnel_user stunnel_user;
+	struct lsdn_sbridge sbridge;
+	struct lsdn_sbridge_if sbridge_if;
 };
 
 
@@ -245,21 +256,21 @@ struct lsdn_phys_attachment {
  * different lsdn_phys.
  */
 struct lsdn_virt {
+	enum lsdn_state state;
 	struct lsdn_list_entry virt_entry;
 	struct lsdn_list_entry connected_virt_entry;
+	struct lsdn_list_entry virt_view_list;
 	struct lsdn_net* network;
-
-	/* List of struct lsdn_flower_rule. They are flower entries used for switching packets. */
-	struct lsdn_list_entry owned_rules_list;
-	/* List of struct lsdn_broadcast_ation. */
-	struct lsdn_list_entry owned_actions_list;
-	struct lsdn_broadcast broadcast_actions;
 
 	struct lsdn_phys_attachment* connected_through;
 	struct lsdn_if connected_if;
 
 	lsdn_mac_t *attr_mac;
 	/*lsdn_ip_t *attr_ip; */
+
+	struct lsdn_sbridge_if sbridge_if;
+	struct lsdn_sbridge_route sbridge_route;
+	struct lsdn_sbridge_mac sbridge_mac;
 };
 
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net);

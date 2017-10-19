@@ -1,74 +1,89 @@
 #include "private/sbridge.h"
 #include "private/net.h"
 
-static void static_bridge_add_rules(
-	struct lsdn_phys_attachment *a, struct lsdn_if *sswitch,
-	struct lsdn_if *tunnel_if)
-{
-	lsdn_ruleset_init(&a->bridge_rules, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY);
+enum {CL_OWNER, CL_DEST};
 
-	// TODO: remember the handles
-	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		/* add rule matching on dst_mac of v that just sends the packet to the virt */
-		struct lsdn_filter *f = lsdn_filter_flower_init(
-			sswitch->ifindex, LSDN_NULL_HANDLE, LSDN_INGRESS_HANDLE,
-			LSDN_DEFAULT_CHAIN, a->bridge_rules.prio);
-		lsdn_flower_set_dst_mac(f, (char *) v->attr_mac->bytes, (char *) lsdn_single_mac_mask.bytes);
-		lsdn_flower_actions_start(f);
-		lsdn_action_redir_egress_add(f, 1, v->connected_if.ifindex);
-		lsdn_filter_actions_end(f);
-		int err = lsdn_filter_create(a->net->ctx->nlsock, f);
-		if (err)
-			abort();
-		lsdn_filter_free(f);
-		lsdn_ruleset_add(&a->bridge_rules, &v->owned_rules_list, 0);
+/* Broadcast rule (well, action) on the sbridge_if. */
+struct if_br_action {
+	struct lsdn_clist_entry clist;
+	struct lsdn_sbridge_route *route;
+	struct lsdn_broadcast_action action;
+};
+
+static void if_br_action_free(void *user)
+{
+	struct if_br_action *action = user;
+	lsdn_broadcast_remove(&action->action);
+	free(action);
+}
+
+static void if_br_mkaction(struct lsdn_filter *f, uint16_t order, void *user)
+{
+	struct if_br_action *action = user;
+	struct lsdn_action_desc *tun_action = &action->route->tunnel_action;
+	if (tun_action->fn) {
+		tun_action->fn(f, order, tun_action->user);
+		order += tun_action->actions_count;
 	}
+	lsdn_action_mirror_egress_add(f, order, action->route->iface->iface->ifindex);
 }
 
-
-static void cb_add_virt_broadcast(
-	struct lsdn_filter *filter,
-	uint16_t order, void *user1, void *user2)
+static void if_br_make(struct lsdn_sbridge_if *from, struct lsdn_sbridge_route *to)
 {
-	struct lsdn_virt *v = user1;
-	lsdn_action_mirror_egress_add(filter, order, v->connected_if.ifindex);
-}
-
-static void cb_add_tunneled_virt_broadcast(
-	struct lsdn_filter *filter,
-	uint16_t order, void *user1, void *user2)
-{
-	struct lsdn_phys_attachment *from = user1;
-	struct lsdn_phys_attachment *to = user2;
-	struct lsdn_shared_tunnel *tunnel = &from->net->settings->vxlan.e2e_static.tunnel;
-	lsdn_action_set_tunnel_key(filter, order,
-		from->net->vnet_id,
-		from->phys->attr_ip,
-		to->phys->attr_ip);
-	lsdn_action_mirror_egress_add(filter, order + 1, tunnel->tunnel_if.ifindex);
-}
-
-void lsdn_sbridge_init_shared_tunnel(struct lsdn_context *ctx, struct lsdn_shared_tunnel* tun)
-{
-	int err = lsdn_qdisc_ingress_create(ctx->nlsock, tun->tunnel_if.ifindex);
-	if (err)
+	struct if_br_action *bra = malloc(sizeof(*bra));
+	if (!bra)
 		abort();
-	err = lsdn_link_set(ctx->nlsock, tun->tunnel_if.ifindex, true);
-	if (err)
-		abort();
-	lsdn_ruleset_init(&tun->rules, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY);
-	lsdn_ruleset_init(&tun->broadcast_rules, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY);
-	lsdn_idalloc_init(&tun->chain_ids, 1, 0xFFFFFFFu);
+	lsdn_clist_init_entry(&bra->clist, if_br_action_free, bra);
+	bra->route = to;
+	struct lsdn_action_desc desc;
+	/* Set tunnel metadata + mirred */
+	desc.actions_count = to->tunnel_action.actions_count + 1;
+	desc.fn = if_br_mkaction;
+	desc.user = bra;
+	lsdn_broadcast_add(&from->broadcast, &bra->action, desc);
+
+	lsdn_clist_add(&to->cl_dest, &bra->clist);
 }
 
-#define LSDN_BROADCAST_PRIORITY LSDN_DEFAULT_PRIORITY
-#define LSDN_SWITCH_PRIORITY (LSDN_DEFAULT_PRIORITY+1)
-#define LSDN_BROADCAST_CHAIN 1
+/* Routing rule on the dummy bridging interface */
+struct br_forward_rule {
+	struct lsdn_clist_entry clist;
+	struct lsdn_sbridge_mac *mac;
+	struct lsdn_rule rule;
+};
 
-void lsdn_sbridge_setup(struct lsdn_phys_attachment *a)
+static void br_forward_rule_free(void *user)
 {
-	struct lsdn_context *ctx = a->net->ctx;
-	// create the static switch
+	struct br_forward_rule *fwdr = user;
+	lsdn_ruleset_remove(&fwdr->rule);
+	free(fwdr);
+}
+
+static void br_forward_make(struct lsdn_sbridge_mac *mac)
+{
+	struct lsdn_sbridge *br = mac->route->iface->bridge;
+	struct br_forward_rule *fwdr = malloc(sizeof(*fwdr));
+	if (!fwdr)
+		abort();
+	lsdn_clist_init_entry(&fwdr->clist, br_forward_rule_free, fwdr);
+	fwdr->mac = mac;
+	struct lsdn_filter *f = lsdn_ruleset_add(&br->bridge_ruleset, &fwdr->rule);
+	if (!f)
+		abort();
+	lsdn_flower_set_dst_mac(f, mac->mac.chr, lsdn_single_mac_mask.chr);
+	lsdn_flower_actions_start(f);
+	uint16_t order = 1;
+	if (mac->route->tunnel_action.fn) {
+		mac->route->tunnel_action.fn(f, order, mac->route->tunnel_action.user);
+		order += mac->route->tunnel_action.actions_count;
+	}
+	lsdn_action_redir_egress_add(f, order, mac->route->iface->iface->ifindex);
+	lsdn_filter_actions_end(f);
+	lsdn_ruleset_add_finish(&fwdr->rule);
+}
+
+void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
+{
 	struct lsdn_if sbridge_if;
 	lsdn_if_init_empty(&sbridge_if);
 	int err = lsdn_link_dummy_create(ctx->nlsock, &sbridge_if, lsdn_mk_ifname(ctx));
@@ -79,141 +94,183 @@ void lsdn_sbridge_setup(struct lsdn_phys_attachment *a)
 	if (err)
 		abort();
 
-	a->bridge_if = sbridge_if;
+	err = lsdn_link_set(ctx->nlsock, sbridge_if.ifindex, true);
+	if (err)
+		abort();
 
-	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		// initialize the broadcast lists
-		lsdn_broadcast_init(&v->broadcast_actions, LSDN_BROADCAST_CHAIN);
-		// prepare qdiscs
-		err = lsdn_qdisc_ingress_create(ctx->nlsock, v->connected_if.ifindex);
-		if (err)
-			abort();
-
-		// if broadcast, redir packet to the broadcast chain
-		struct lsdn_filter *f = lsdn_filter_flower_init(
-			v->connected_if.ifindex, LSDN_NULL_HANDLE, LSDN_INGRESS_HANDLE,
-			LSDN_DEFAULT_CHAIN, LSDN_BROADCAST_PRIORITY);
-		lsdn_flower_set_dst_mac(f, lsdn_broadcast_mac.chr, lsdn_single_mac_mask.chr);
-		lsdn_flower_actions_start(f);
-		lsdn_action_goto_chain(f, 1, LSDN_BROADCAST_CHAIN);
-		lsdn_filter_actions_end(f);
-		err = lsdn_filter_create(a->net->ctx->nlsock, f);
-		if (err)
-			abort();
-		lsdn_filter_free(f);
-
-		// send anything else to the sbridge
-		f = lsdn_filter_flower_init(
-			v->connected_if.ifindex, LSDN_NULL_HANDLE, LSDN_INGRESS_HANDLE,
-			LSDN_DEFAULT_CHAIN, LSDN_SWITCH_PRIORITY);
-		lsdn_flower_actions_start(f);
-		lsdn_action_redir_ingress_add(f, 1, sbridge_if.ifindex);
-		lsdn_filter_actions_end(f);
-		err = lsdn_filter_create(a->net->ctx->nlsock, f);
-		if (err)
-			abort();
-		lsdn_filter_free(f);
-
-		// add local broadcast rules to the broadcast chain
-		lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v2) {
-			if (v2 == v)
-				continue;
-			lsdn_broadcast_add(
-				ctx, &v->broadcast_actions, &v2->owned_actions_list,
-				&v->connected_if, cb_add_virt_broadcast, 1, v2, NULL);
-		}
-	}
-
-	// fill in the actual bridging rules for the sbridge
-	static_bridge_add_rules(a, &sbridge_if, &a->tunnel.tunnel_if);
+	br->bridge_if = sbridge_if;
+	br->ctx = ctx;
+	lsdn_ruleset_init(&br->bridge_ruleset, ctx, &br->bridge_if, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY);
+	lsdn_list_init(&br->if_list);
 }
 
-void lsdn_sbridge_connect_shared_tunnel(
-	struct lsdn_phys_attachment *a,
-	struct lsdn_shared_tunnel *tunnel)
+void lsdn_sbridge_free(struct lsdn_sbridge *br)
 {
-	int err;
-	// TODO: allocate and remember the handles so that we can de-register
+	assert(lsdn_is_list_empty(&br->if_list));
+	// TODO: destroy the interface
+}
 
-	// TODO: check somewhere we are not connecting to the same network twice on the local host,
-	// this would lead to rule conflicts on the shared tunnel
+void lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface)
+{
+	lsdn_list_init(&iface->route_list);
+	lsdn_clist_init(&iface->cl_owner, CL_OWNER);
+	iface->bridge = br;
 
-	// redirect all broadcast packets from tunnel to our broadcast chain
-	if(!lsdn_idalloc_get(&tunnel->chain_ids, &a->shared_tunnel_br_chain))
+	/* setup basic broadcast/non-broadcast classification */
+	struct lsdn_filter *f;
+	f = lsdn_ruleset_add(&iface->rules_match_mac, &iface->rule_match_br);
+	if (!f)
 		abort();
-
-	struct lsdn_filter *f = lsdn_filter_flower_init(
-		tunnel->tunnel_if.ifindex, LSDN_NULL_HANDLE, LSDN_INGRESS_HANDLE,
-		LSDN_DEFAULT_CHAIN, LSDN_BROADCAST_PRIORITY);
-	lsdn_flower_set_enc_key_id(f, a->net->vnet_id);
+	if (iface->rules_filter) {
+		iface->rules_filter(f, iface->rules_filter_user);
+	}
 	lsdn_flower_set_dst_mac(f, lsdn_broadcast_mac.chr, lsdn_single_mac_mask.chr);
 	lsdn_flower_actions_start(f);
-	lsdn_action_goto_chain(f, 1, a->shared_tunnel_br_chain);
+	lsdn_action_goto_chain(f, 1, iface->broadcast.chain);
 	lsdn_filter_actions_end(f);
-	err = lsdn_filter_create(a->net->ctx->nlsock, f);
-	if (err)
+	lsdn_ruleset_add_finish(&iface->rule_match_br);
+
+	f = lsdn_ruleset_add(&iface->rules_fallback, &iface->rule_fallback);
+	if (!f)
 		abort();
-	lsdn_ruleset_add(&tunnel->broadcast_rules, &a->shared_tunnel_rules_entry, 0);
-	lsdn_filter_free(f);
-
-	// initialize the broadcast chain
-	lsdn_broadcast_init(&a->broadcast_actions, a->shared_tunnel_br_chain);
-	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		lsdn_broadcast_add(
-			a->net->ctx, &a->broadcast_actions, &v->owned_actions_list,
-			&tunnel->tunnel_if, cb_add_virt_broadcast, 1, v, NULL);
+	if (iface->rules_filter) {
+		iface->rules_filter(f, iface->rules_filter_user);
 	}
-
-
-	// redirect all remaining packets from tunnel to the switching interface
-	f = lsdn_filter_flower_init(
-		tunnel->tunnel_if.ifindex, LSDN_NULL_HANDLE, LSDN_INGRESS_HANDLE,
-		LSDN_DEFAULT_CHAIN, LSDN_SWITCH_PRIORITY);
-	lsdn_flower_set_enc_key_id(f, a->net->vnet_id);
 	lsdn_flower_actions_start(f);
-	lsdn_action_redir_ingress_add(f, 1, a->bridge_if.ifindex);
+	lsdn_action_redir_ingress_add(f, 1, br->bridge_if.ifindex);
 	lsdn_filter_actions_end(f);
-	err = lsdn_filter_create(a->net->ctx->nlsock, f);
+	lsdn_ruleset_add_finish(&iface->rule_fallback);
+
+	/* pull broadcast rules */
+	lsdn_foreach(br->if_list, if_entry, struct lsdn_sbridge_if, other_if) {
+		lsdn_foreach(other_if->route_list, route_entry, struct lsdn_sbridge_route, route) {
+			if_br_make(iface, route);
+		}
+	}
+
+	lsdn_list_init_add(&br->if_list, &iface->if_entry);
+}
+
+void lsdn_sbridge_remove_if(struct lsdn_sbridge_if *iface)
+{
+	assert(lsdn_is_list_empty(&iface->route_list));
+	lsdn_clist_flush(&iface->cl_owner);
+	lsdn_ruleset_remove(&iface->rule_match_br);
+	lsdn_ruleset_remove(&iface->rule_fallback);
+	lsdn_broadcast_free(&iface->broadcast);
+	lsdn_ruleset_free(&iface->rules_fallback);
+	lsdn_ruleset_free(&iface->rules_match_mac);
+	lsdn_list_remove(&iface->if_entry);
+}
+
+void lsdn_sbridge_add_route(struct lsdn_sbridge_if *iface, struct lsdn_sbridge_route *route)
+{
+	lsdn_list_init(&route->mac_list);
+	lsdn_clist_init(&route->cl_dest, CL_DEST);
+	route->iface = iface;
+
+	/* push broadcast rules */
+	lsdn_foreach(iface->bridge->if_list, if_entry, struct lsdn_sbridge_if, other_if) {
+		if (other_if == iface)
+			continue;
+		if_br_make(other_if, route);
+	}
+
+	lsdn_list_init_add(&iface->route_list, &route->route_entry);
+}
+
+void lsdn_sbridge_add_route_default(struct lsdn_sbridge_if *iface, struct lsdn_sbridge_route *route)
+{
+	route->tunnel_action.fn = NULL;
+	route->tunnel_action.actions_count = 0;
+	route->tunnel_action.user = NULL;
+	lsdn_sbridge_add_route(iface, route);
+}
+
+void lsdn_sbridge_remove_route(struct lsdn_sbridge_route *route)
+{
+	assert(lsdn_is_list_empty(&route->mac_list));
+	lsdn_clist_flush(&route->cl_dest);
+	lsdn_list_remove(&route->route_entry);
+}
+
+void lsdn_sbridge_add_mac(
+	struct lsdn_sbridge_route* route, struct lsdn_sbridge_mac *mac_entry, lsdn_mac_t mac)
+{
+	mac_entry->route = route;
+	mac_entry->mac = mac;
+	lsdn_list_init_add(&route->mac_list, &mac_entry->mac_entry);
+	lsdn_clist_init(&mac_entry->cl_dest, CL_DEST);
+
+	/* push forwarding rule */
+	br_forward_make(mac_entry);
+}
+
+void lsdn_sbridge_remove_mac(struct lsdn_sbridge_mac *mac)
+{
+	lsdn_list_remove(&mac->mac_entry);
+	lsdn_clist_flush(&mac->cl_dest);
+}
+
+/* This are chain and priority numbers for rules on virts and shared tunnels. */
+#define MATCH_PRIORITY LSDN_DEFAULT_PRIORITY
+#define FALLBACK_PRIORITY (LSDN_DEFAULT_PRIORITY+1)
+#define BROADCAST_CHAIN 1
+
+void lsdn_sbridge_add_virt(struct lsdn_sbridge *br, struct lsdn_virt *virt)
+{
+	struct lsdn_context *ctx = virt->network->ctx;
+	struct lsdn_sbridge_if *iface = &virt->sbridge_if;
+	iface->iface = &virt->connected_if;
+	iface->rules_filter = NULL;
+	int err = lsdn_qdisc_ingress_create(ctx->nlsock, virt->connected_if.ifindex);
 	if (err)
 		abort();
-	lsdn_ruleset_add(&tunnel->rules, &a->shared_tunnel_rules_entry, 1);
-	lsdn_filter_free(f);
 
-	// redirect all non-local packets from the switching interface to the tunnel
-	// (and add encapsulation data)
-	lsdn_foreach(
-		a->net->attached_list, attached_entry,
-		struct lsdn_phys_attachment, a_other)
-	{
-		if (&a->phys->phys_entry == &a_other->phys->phys_entry)
-			continue;
-		lsdn_foreach(a_other->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-			struct lsdn_filter *f = lsdn_filter_flower_init(
-				a->bridge_if.ifindex, LSDN_NULL_HANDLE, LSDN_INGRESS_HANDLE,
-				LSDN_DEFAULT_CHAIN, a->bridge_rules.prio);
-			lsdn_flower_set_dst_mac(f, (char *) v->attr_mac->bytes, (char *) lsdn_single_mac_mask.bytes);
-			lsdn_flower_actions_start(f);
-			lsdn_action_set_tunnel_key(f, 1, a->net->vnet_id, a->phys->attr_ip, a_other->phys->attr_ip);
-			lsdn_action_redir_egress_add(f, 2, v->network->settings->vxlan.e2e_static.tunnel.tunnel_if.ifindex);
-			lsdn_filter_actions_end(f);
-			int err = lsdn_filter_create(a->net->ctx->nlsock, f);
-			if (err)
-				abort();
-			lsdn_filter_free(f);
-			lsdn_ruleset_add(&a->bridge_rules, &v->owned_rules_list, 0);
-		}
-	}
+	lsdn_ruleset_init(&iface->rules_match_mac, ctx, iface->iface, LSDN_DEFAULT_CHAIN, MATCH_PRIORITY);
+	lsdn_ruleset_init(&iface->rules_fallback, ctx, iface->iface, LSDN_DEFAULT_CHAIN, FALLBACK_PRIORITY);
+	lsdn_broadcast_init(&iface->broadcast, ctx, iface->iface, BROADCAST_CHAIN);
+	lsdn_sbridge_add_if(br, iface);
 
-	lsdn_list_init(&a->owned_broadcast_list);
-	// add tunnel broadcast rule to virt broadcast rules
-	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		lsdn_foreach(v->network->attached_list, attached_entry, struct lsdn_phys_attachment, a_other) {
-			if (a == a_other)
-				continue;
-			lsdn_broadcast_add(
-				a->net->ctx, &v->broadcast_actions, &a->owned_broadcast_list,
-				&v->connected_if, cb_add_tunneled_virt_broadcast, 2,
-				a, a_other);
-		}
-	}
+	struct lsdn_sbridge_route *route = &virt->sbridge_route;
+	lsdn_sbridge_add_route_default(iface, route);
+
+	lsdn_sbridge_add_mac(route, &virt->sbridge_mac, *virt->attr_mac);
+}
+void lsdn_sbridge_remove_virt(struct lsdn_virt *virt)
+{
+	lsdn_sbridge_remove_mac(&virt->sbridge_mac);
+	lsdn_sbridge_remove_route(&virt->sbridge_route);
+	lsdn_sbridge_remove_if(&virt->sbridge_if);
+}
+
+static void stunnel_filter(struct lsdn_filter *f, void *user)
+{
+	struct lsdn_net *net = user;
+	lsdn_flower_set_enc_key_id(f, net->vnet_id);
+}
+
+void lsdn_sbridge_add_stunnel(
+	struct lsdn_sbridge *br, struct lsdn_sbridge_if* iface, struct lsdn_shared_tunnel *stunnel,
+	struct lsdn_shared_tunnel_user *stunnel_user, struct lsdn_net *net)
+{
+	struct lsdn_context *ctx = br->ctx;
+
+	iface->iface = &stunnel->tunnel_if;
+	iface->rules_filter = stunnel_filter;
+	iface->rules_filter_user = net;
+
+	lsdn_ruleset_init(&iface->rules_match_mac, ctx, iface->iface, LSDN_DEFAULT_CHAIN, MATCH_PRIORITY);
+	lsdn_ruleset_init(&iface->rules_fallback, ctx, iface->iface, LSDN_DEFAULT_CHAIN, FALLBACK_PRIORITY);
+	stunnel_user->stunnel = stunnel;
+	if (!lsdn_idalloc_get(&stunnel->chain_ids, &stunnel_user->br_chain))
+		abort();
+	lsdn_broadcast_init(&iface->broadcast, ctx, iface->iface, stunnel_user->br_chain);
+	lsdn_sbridge_add_if(br, iface);
+}
+
+void lsdn_sbridge_remove_stunnel(struct lsdn_sbridge_if *iface, struct lsdn_shared_tunnel_user *stunnel_user)
+{
+	lsdn_sbridge_remove_if(iface);
+	lsdn_idalloc_return(&stunnel_user->stunnel->chain_ids, stunnel_user->br_chain);
 }
