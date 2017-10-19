@@ -1,6 +1,7 @@
 #include "include/lsdn.h"
 #include "private/nl.h"
 #include "private/net.h"
+#include "private/log.h"
 #include <errno.h>
 
 
@@ -321,12 +322,23 @@ static void ack_state(enum lsdn_state *s) {
 void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 {
 	struct lsdn_net_ops *ops = pa->net->settings->ops;
-	if (pa->state == LSDN_STATE_NEW)
+	if (pa->state == LSDN_STATE_NEW) {
+		lsdn_log(LSDNL_NETOPS, "create_pa(net = %s (%p), phys = %s (%p), pa = %p)\n",
+			 lsdn_nullable(pa->net->name.str), pa->net,
+			 lsdn_nullable(pa->phys->name.str), pa->phys,
+			 pa);
 		ops->create_pa(pa);
+	}
 
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		if (v->state == LSDN_STATE_NEW && ops->add_virt)
+		if (v->state == LSDN_STATE_NEW && ops->add_virt) {
+			lsdn_log(LSDNL_NETOPS, "create_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
+				 lsdn_nullable(pa->net->name.str), pa->net,
+				 lsdn_nullable(pa->phys->name.str), pa->phys,
+				 pa,
+				 v->connected_if.ifname, v);
 			ops->add_virt(v);
+		}
 	}
 
 	lsdn_foreach(pa->net->attached_list, attached_entry, struct lsdn_phys_attachment, remote) {
@@ -343,8 +355,16 @@ void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 		lsdn_list_init_add(&remote->pa_view_list, &rpa->pa_view_entry);
 		lsdn_list_init_add(&pa->remote_pa_list, &rpa->remote_pa_entry);
 		lsdn_list_init(&rpa->remote_virt_list);
-		if (ops->add_remote_pa)
+		if (ops->add_remote_pa) {
+			lsdn_log(LSDNL_NETOPS, "create_remote_pa("
+				 "net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
+				 "local_pa = %p, remote_pa = %p, remote_pa_view = %p)\n",
+				 lsdn_nullable(pa->net->name.str), pa->net,
+				 lsdn_nullable(pa->phys->name.str), pa->phys,
+				 lsdn_nullable(remote->phys->name.str), remote->phys,
+				 pa, remote, rpa);
 			ops->add_remote_pa(rpa);
+		}
 	}
 
 	lsdn_foreach(pa->remote_pa_list, remote_pa_entry, struct lsdn_remote_pa, remote) {
@@ -358,8 +378,16 @@ void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 			rvirt->virt = v;
 			lsdn_list_init_add(&v->virt_view_list, &rvirt->virt_view_entry);
 			lsdn_list_init_add(&remote->remote_virt_list, &rvirt->remote_virt_entry);
-			if (ops->add_remote_virt)
+			if (ops->add_remote_virt) {
+				lsdn_log(LSDNL_NETOPS, "create_remote_virt("
+					 "net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
+					 "local_pa = %p, remote_pa = %p, remote_pa_view = %p, virt = %p)\n",
+					 lsdn_nullable(pa->net->name.str), pa->net,
+					 lsdn_nullable(pa->phys->name.str), pa->phys,
+					 lsdn_nullable(remote->remote->phys->name.str), remote->remote->phys,
+					 pa, remote->remote, remote, v);
 				ops->add_remote_virt(rvirt);
+			}
 		}
 	}
 }
