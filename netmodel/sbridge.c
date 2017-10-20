@@ -43,6 +43,7 @@ static void if_br_make(struct lsdn_sbridge_if *from, struct lsdn_sbridge_route *
 	lsdn_broadcast_add(&from->broadcast, &bra->action, desc);
 
 	lsdn_clist_add(&to->cl_dest, &bra->clist);
+	lsdn_clist_add(&from->cl_owner, &bra->clist);
 }
 
 /* Routing rule on the dummy bridging interface */
@@ -80,6 +81,7 @@ static void br_forward_make(struct lsdn_sbridge_mac *mac)
 	lsdn_action_redir_egress_add(f, order, mac->route->iface->iface->ifindex);
 	lsdn_filter_actions_end(f);
 	lsdn_ruleset_add_finish(&fwdr->rule);
+	lsdn_clist_add(&mac->cl_dest, &fwdr->clist);
 }
 
 void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
@@ -221,9 +223,9 @@ void lsdn_sbridge_add_virt(struct lsdn_sbridge *br, struct lsdn_virt *virt)
 {
 	struct lsdn_context *ctx = virt->network->ctx;
 	struct lsdn_sbridge_if *iface = &virt->sbridge_if;
-	iface->iface = &virt->connected_if;
+	iface->iface = &virt->committed_if;
 	iface->rules_filter = NULL;
-	int err = lsdn_qdisc_ingress_create(ctx->nlsock, virt->connected_if.ifindex);
+	int err = lsdn_qdisc_ingress_create(ctx->nlsock, virt->committed_if.ifindex);
 	if (err)
 		abort();
 

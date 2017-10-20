@@ -189,7 +189,7 @@ static void vxlan_static_destroy_pa(struct lsdn_phys_attachment *pa)
 
 static void vxlan_static_add_virt(struct lsdn_virt *virt)
 {
-	lsdn_sbridge_add_virt(&virt->connected_through->sbridge, virt);
+	lsdn_sbridge_add_virt(&virt->committed_to->sbridge, virt);
 }
 
 static void vxlan_static_remove_virt(struct lsdn_virt *virt)

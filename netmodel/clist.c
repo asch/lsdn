@@ -27,7 +27,8 @@ void lsdn_clist_flush(struct lsdn_clist *clist)
 	lsdn_foreach(clist->cleanup_list, cleanup_entry[clist->clist_index], struct lsdn_clist_entry, ce) {
 		for(size_t i = 0; i<LSDN_CLIST_MAX; i++) {
 			struct lsdn_list_entry *e = &ce->cleanup_entry[i];
-			lsdn_list_remove(e);
+			if (!lsdn_is_list_empty(e))
+				lsdn_list_remove(e);
 		}
 		ce->cb(ce->user);
 	}

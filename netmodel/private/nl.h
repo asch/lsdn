@@ -141,6 +141,9 @@ void lsdn_flower_set_eth_type(struct lsdn_filter *f, uint16_t eth_type);
 
 int lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f);
 
+int lsdn_filter_delete(struct mnl_socket *sock, uint32_t ifindex, uint32_t handle,
+	uint32_t parent, uint32_t chain, uint16_t prio);
+
 // <--
 
 #endif

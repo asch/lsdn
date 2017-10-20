@@ -109,7 +109,7 @@ fi
 
 echo "$CMDLINE" > qemu/work
 
-"$QEMU" -kernel "$KERNEL" \
+"$QEMU" -kernel "$KERNEL" -m 256\
 	-drive if=virtio,file="$ROOTFS" \
 	-virtfs local,mount_tag=build,path=..,security_model=none \
 	-virtfs local,mount_tag=mods,path="$MODROOT/lib/modules",security_model=none \

@@ -166,6 +166,7 @@ struct lsdn_net {
 	struct lsdn_list_entry virt_list;
 	/* List of lsdn_phys_attachement attached to this network */
 	struct lsdn_list_entry attached_list;
+	struct lsdn_names virt_names;
 };
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
@@ -257,13 +258,16 @@ struct lsdn_phys_attachment {
  */
 struct lsdn_virt {
 	enum lsdn_state state;
+	struct lsdn_name name;
 	struct lsdn_list_entry virt_entry;
 	struct lsdn_list_entry connected_virt_entry;
 	struct lsdn_list_entry virt_view_list;
 	struct lsdn_net* network;
 
 	struct lsdn_phys_attachment* connected_through;
+	struct lsdn_phys_attachment* committed_to;
 	struct lsdn_if connected_if;
+	struct lsdn_if committed_if;
 
 	lsdn_mac_t *attr_mac;
 	/*lsdn_ip_t *attr_ip; */
@@ -275,6 +279,9 @@ struct lsdn_virt {
 
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net);
 void lsdn_virt_free(struct lsdn_virt* vsirt);
+lsdn_err_t lsdn_virt_set_name(struct lsdn_virt *virt, const char *name);
+const char* lsdn_virt_get_name(struct lsdn_virt *virt);
+struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name);
 lsdn_err_t lsdn_virt_connect(
 	struct lsdn_virt *virt, struct lsdn_phys *phys, const char *iface);
 void lsdn_virt_disconnect(struct lsdn_virt *virt);

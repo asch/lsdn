@@ -1,0 +1,32 @@
+settings vxlan/static -nets {1}
+
+phys -name a -if out -ip 172.16.0.1 -nets {1}
+phys -name b -if out -ip 172.16.0.2 -nets {1}
+phys -name c -if out -ip 172.16.0.3 -nets {1}
+
+net 1 {
+    virt -if 1 -phys a -mac 00:00:00:00:00:01
+    virt -if 2 -phys a -mac 00:00:00:00:00:02 -name migrator
+}
+
+claimLocal $localPhys
+puts "LSCTL: commit 1a"
+commit
+puts "LSCTL: commit 1b"
+commit
+
+net 1 {
+	virt -name migrator -phys b -if 2
+}
+puts "LSCTL: commit 2a"
+commit
+puts "LSCTL: commit 2b"
+commit
+
+net 1 {
+	virt -name migrator -phys c -if 2
+}
+puts "LSCTL: commit 3a"
+commit
+puts "LSCTL: commit 3b"
+commit

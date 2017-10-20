@@ -77,6 +77,7 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 	lsdn_list_init(&net->attached_list);
 	lsdn_list_init(&net->virt_list);
 	lsdn_name_init(&net->name);
+	lsdn_names_init(&net->virt_names);
 	return net;
 }
 
@@ -216,10 +217,31 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	virt->state = LSDN_STATE_NEW;
 	virt->attr_mac = NULL;
 	virt->connected_through = NULL;
+	virt->committed_to = NULL;
 	lsdn_if_init_empty(&virt->connected_if);
+	lsdn_if_init_empty(&virt->committed_if);
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
 	lsdn_list_init(&virt->virt_view_list);
+	lsdn_name_init(&virt->name);
 	return virt;
+}
+
+
+lsdn_err_t lsdn_virt_set_name(struct lsdn_virt *virt, const char *name)
+{
+	return lsdn_name_set(&virt->name, &virt->network->virt_names, name);
+}
+
+const char* lsdn_virt_get_name(struct lsdn_virt *virt)
+{
+	return virt->name.str;
+}
+struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name)
+{
+	struct lsdn_name *r = lsdn_names_search(&net->virt_names, name);
+	if (!r)
+		return NULL;
+	return lsdn_container_of(r, struct lsdn_virt, name);
 }
 
 lsdn_err_t lsdn_virt_connect(
@@ -237,6 +259,7 @@ lsdn_err_t lsdn_virt_connect(
 	lsdn_virt_disconnect(virt);
 	virt->connected_if = new_if;
 	virt->connected_through = a;
+	virt->state = LSDN_STATE_RENEW;
 	lsdn_list_init_add(&a->connected_virt_list, &virt->connected_virt_entry);
 
 	return LSDNE_OK;
@@ -248,6 +271,7 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt){
 
 	lsdn_list_remove(&virt->connected_virt_entry);
 	virt->connected_through = NULL;
+	virt->state = LSDN_STATE_RENEW;
 }
 
 lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
@@ -314,9 +338,23 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	return (ctx->problem_count == 0) ? LSDNE_OK : LSDNE_VALIDATE;
 }
 
-static void ack_state(enum lsdn_state *s) {
+static void ack_state(enum lsdn_state *s)
+{
 	if (*s == LSDN_STATE_NEW || *s == LSDN_STATE_RENEW)
 		*s = LSDN_STATE_OK;
+}
+
+static bool ack_uncommit(enum lsdn_state *s)
+{
+	switch(*s) {
+	case LSDN_STATE_DELETE:
+		return true;
+	case LSDN_STATE_RENEW:
+		*s = LSDN_STATE_NEW;
+		return true;
+	default:
+		return false;
+	}
 }
 
 void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
@@ -331,13 +369,18 @@ void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 	}
 
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-		if (v->state == LSDN_STATE_NEW && ops->add_virt) {
-			lsdn_log(LSDNL_NETOPS, "create_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
-				 lsdn_nullable(pa->net->name.str), pa->net,
-				 lsdn_nullable(pa->phys->name.str), pa->phys,
-				 pa,
-				 v->connected_if.ifname, v);
-			ops->add_virt(v);
+		if (v->state == LSDN_STATE_NEW) {
+			v->committed_to = pa;
+			v->committed_if = v->connected_if;
+			if (ops->add_virt) {
+				lsdn_log(LSDNL_NETOPS, "create_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
+					 lsdn_nullable(pa->net->name.str), pa->net,
+					 lsdn_nullable(pa->phys->name.str), pa->phys,
+					 pa,
+					 v->connected_if.ifname, v);
+				ops->add_virt(v);
+			}
+
 		}
 	}
 
@@ -392,6 +435,41 @@ void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 	}
 }
 
+void decommit_virt(struct lsdn_virt *v)
+{
+	struct lsdn_net_ops *ops = v->network->settings->ops;
+	struct lsdn_phys_attachment *pa = v->connected_through;
+
+	if (v->committed_to) {
+		if (ops->remove_virt) {
+			lsdn_log(LSDNL_NETOPS, "remove_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
+				 lsdn_nullable(pa->net->name.str), pa->net,
+				 lsdn_nullable(pa->phys->name.str), pa->phys,
+				 pa,
+				 v->connected_if.ifname, v);
+			ops->remove_virt(v);
+		}
+		v->committed_to = NULL;
+		lsdn_if_init_empty(&v->committed_if);
+	}
+
+	lsdn_foreach(v->virt_view_list, virt_view_entry, struct lsdn_remote_virt, rv) {
+		if (ops->remove_remote_virt) {
+			lsdn_log(LSDNL_NETOPS, "remove_remote_virt("
+				 "net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
+				 "local_pa = %p, remote_pa = %p, remote_pa_view = %p, virt = %p)\n",
+				 lsdn_nullable(rv->virt->network->name.str), rv->virt->network,
+				 lsdn_nullable(rv->pa->local->phys->name.str), rv->pa->local->phys,
+				 lsdn_nullable(rv->pa->remote->phys->name.str), rv->pa->remote->phys,
+				 rv->pa->local, rv->pa->local, rv->pa, rv->virt);
+			ops->remove_remote_virt(rv);
+		}
+		lsdn_list_remove(&rv->remote_virt_entry);
+		lsdn_list_remove(&rv->virt_view_entry);
+		free(rv);
+	}
+}
+
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	lsdn_err_t lerr = lsdn_validate(ctx, cb, user);
@@ -405,6 +483,14 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 
 
 	// TODO: delete the objects
+	// TODO: propagate renewals to subordinate objects
+	lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, n){
+		lsdn_foreach(n->virt_list, virt_entry, struct lsdn_virt, v) {
+			if (ack_uncommit(&v->state)) {
+				decommit_virt(v);
+			}
+		}
+	}
 
 	/* first create physical attachments for local physes and populate
 	 * them with virts, remote PAs and remote virts */

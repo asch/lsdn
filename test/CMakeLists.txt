@@ -48,5 +48,6 @@ test_in_ns_lsctl(vxlan_mcast)
 test_in_ns(vxlan_e2e_learning)
 test_in_ns(vxlan_static)
 test_in_ns_lsctl(vxlan_static_large)
+test_in_ns_lsctl(vxlan_static_migrate)
 
 test_in_ns(dhcp_in_vlan)

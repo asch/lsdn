@@ -191,16 +191,23 @@ CMD(virt)
 	const char *phys = NULL;
 	struct lsdn_phys *phys_parsed = NULL;
 	const char *iface = NULL;
+	const char *name = NULL;
+	struct lsdn_virt *virt = NULL;
 
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_STRING, "-mac", NULL, &mac},
 		{TCL_ARGV_STRING, "-phys", NULL, &phys},
 		{TCL_ARGV_STRING, "-if", NULL, &iface},
+		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_END}
 	};
 
 	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
 		return TCL_ERROR;
+
+	if(name) {
+		virt = lsdn_virt_by_name(ctx->net, name);
+	}
 
 	if(mac) {
 		if(lsdn_parse_mac(&mac_parsed, mac) != LSDNE_OK)
@@ -211,7 +218,10 @@ CMD(virt)
 		if(!phys_parsed)
 			return tcl_error(interp, "phys was not found");
 	}
-	struct lsdn_virt *virt = lsdn_virt_new(ctx->net);
+	if (!virt)
+		virt = lsdn_virt_new(ctx->net);
+	if(name)
+		lsdn_virt_set_name(virt, name);
 	if(mac)
 		lsdn_virt_set_mac(virt, mac_parsed);
 	if(phys)

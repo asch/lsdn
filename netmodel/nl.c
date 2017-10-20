@@ -799,4 +799,50 @@ int lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f)
 	}
 }
 
+int lsdn_filter_delete(
+	struct mnl_socket *sock, uint32_t ifindex, uint32_t handle,
+	uint32_t parent, uint32_t chain, uint16_t prio)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
+	int ret;
+	unsigned int seq = 0;
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type	= RTM_DELTFILTER;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(nlh, sizeof(*tcm));
+	tcm->tcm_family = AF_UNSPEC;
+	tcm->tcm_ifindex = ifindex;
+	tcm->tcm_handle = handle;
+	tcm->tcm_parent = parent;
+	tcm->tcm_info = TC_H_MAKE(prio << 16, ETH_P_ALL << 8);
+
+	mnl_attr_put_u32(nlh, TCA_CHAIN, chain);
+
+	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
+	}
+
+	ret = mnl_socket_recvfrom(sock, buf, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+
+
+	nlh = (struct nlmsghdr *)buf;
+	if (nlh->nlmsg_type == NLMSG_ERROR) {
+		int *err_code = mnl_nlmsg_get_payload(nlh);
+		return *err_code;
+	} else {
+		return -1;
+	}
+}
+
+
 // <--
