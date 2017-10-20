@@ -33,6 +33,16 @@ function(test_in_ns_lsctl testname)
 	)
 endfunction(test_in_ns_lsctl)
 
+function(test_in_vm testname)
+	add_executable(test_${testname} test_${testname}.c test_${testname}.sh)
+	target_include_directories(test_${testname} PRIVATE ../netmodel/include ../hooks)
+	target_link_libraries(test_${testname} lsdn hooks)
+	add_test(
+		NAME ${testname}
+		COMMAND ./run run ${testname}
+	)
+endfunction(test_in_vm)
+
 function(test test)
 	add_executable(test_${test} test_${test}.c)
 	target_include_directories(test_${test} PRIVATE ${MNL_INCLUDE_DIRS} ../netmodel/include)
@@ -51,3 +61,4 @@ test_in_ns_lsctl(vxlan_static_large)
 test_in_ns_lsctl(vxlan_static_migrate)
 
 test_in_ns(dhcp_in_vlan)
+test_in_vm(dhcp_in_vms)

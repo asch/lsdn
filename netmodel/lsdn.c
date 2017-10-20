@@ -60,6 +60,15 @@ void lsdn_context_abort_on_nomem(struct lsdn_context *ctx)
 void lsdn_context_free(struct lsdn_context *ctx)
 {
 	// TODO: cleanup the name, context, socket and all children (nets and physes)
+	// TODO: call shutdown hooks
+}
+
+void lsdn_settings_register_user_hooks(
+        struct lsdn_settings *settings, struct lsdn_user_hooks *user_hooks)
+{
+	if (!settings)
+		return;
+	settings->user_hooks = user_hooks;
 }
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
@@ -470,8 +479,28 @@ void decommit_virt(struct lsdn_virt *v)
 	}
 }
 
+static void trigger_startup_hooks(struct lsdn_context *ctx)
+{
+	// TODO: only do for new PAs
+	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p) {
+		if (p->is_local) {
+			lsdn_foreach(
+				p->attached_to_list, attached_to_entry,
+				struct lsdn_phys_attachment, a)
+			{
+				struct lsdn_settings *s = a->net->settings;
+				if (s->user_hooks && s->user_hooks->lsdn_startup_hook)
+					s->user_hooks->lsdn_startup_hook(
+						a->net, p, s->user_hooks->lsdn_startup_hook_user);
+			}
+		}
+	}
+}
+
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
+	trigger_startup_hooks(ctx);
+
 	lsdn_err_t lerr = lsdn_validate(ctx, cb, user);
 	if(lerr != LSDNE_OK)
 		return lerr;

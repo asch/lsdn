@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# XXX: Parameters are likely to be added/removed
+
+function help
+{
+	echo "usage: vm_gen name kernel module-dir rootfs tap-interface mac-address dest init-script"
+
+	cat <<EOT
+
+Arguments:
+
+1) VM name
+
+2) Kernel
+
+3) Module-dir
+
+4) Rootfs
+     **** qemu/domain-init needs to reside in the root directory of your rootfs ****
+
+5) Tap interface used on the host
+
+6) Mac address
+
+7) Domain description (output file)
+
+8) Init script to be run in guest
+EOT
+	exit 0
+}
+
+if [ $# -ne 8 ]; then
+	echo "Invalid number of required arguments"
+	echo 
+	help
+	exit 1
+fi
+
+NAME=$1; shift
+KERNEL=$1; shift
+MODROOT=$1; shift
+ROOTFS=$1; shift
+TAP=$1; shift
+MAC=$1; shift
+DEST=$1; shift
+INIT_SCRIPT=$1; shift
+QEMU=/usr/bin/qemu-system-x86_64
+QUIET="quiet"
+INIT="/bin/bash /domain-init ${NAME}"
+BUILD_DIR=$(dirname $(pwd))
+
+if ! [ -d "$MODROOT/lib/modules" ]; then
+	echo "Can not find modules directory $MODROOT/lib/modules"
+	exit 1
+fi
+
+echo "${INIT_SCRIPT}" > ${BUILD_DIR}/hooks/qemu/script-${NAME}
+
+UUID=$(uuidgen)
+
+read -d '' DOMAIN <<EOF
+<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+  <name>${NAME}</name>
+  <uuid>${UUID}</uuid>
+  <memory unit='KiB'>65536</memory>
+  <currentMemory unit='KiB'>65536</currentMemory>
+  <vcpu placement='static'>1</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc'>hvm</type>
+    <kernel>${KERNEL}</kernel>
+    <cmdline>root=/dev/vda1 rw ${QUIET} console=ttyS0 init=${INIT}</cmdline>
+  </os>
+  <features>
+    <acpi/>
+  </features>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>${QEMU}</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='${ROOTFS}'/>
+      <target dev='vda' bus='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+    </disk>
+    <controller type='usb' index='0' model='piix3-uhci'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+    </controller>
+    <controller type='pci' index='0' model='pci-root'/>
+    <serial type='pty'>
+        <source path='/dev/pts/3'/>
+        <target port='0'/>
+    </serial>
+    <console type='stdio'>
+      <target type='serial' port='0'/>
+    </console>
+    <interface type='ethernet'>
+      <mac address='${MAC}'/>
+      <target dev='${TAP}'/>
+      <model type='e1000'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+    </interface>
+    <filesystem type='mount' accessmode='passthrough'>
+        <source dir='${MODROOT}/lib/modules'/>
+        <target dir='mods'/>
+    </filesystem>
+    <filesystem type='mount' accessmode='passthrough'>
+        <source dir='${BUILD_DIR}'/>
+        <target dir='build'/>
+    </filesystem>
+  </devices>
+</domain>
+EOF
+
+echo "${DOMAIN}" > "${DEST}"

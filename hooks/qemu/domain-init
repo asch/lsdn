@@ -1,0 +1,48 @@
+#!/bin/bash
+
+NAME="$1"
+
+echo "Mounting build directory ..."
+
+mkdir -p /lsdn/build/
+mount -t 9p -o trans=virtio build /lsdn/build -oversion=9p2000.L
+
+echo OK
+
+echo Preparing environment ...
+mount -t proc none /proc
+mount -t sysfs none /sys
+mkdir -p /run/netns
+mount -t tmpfs none /run/netns
+echo OK
+
+echo Mounting kernel modules ...
+mount -t 9p -o trans=virtio mods /lib/modules -oversion=9p2000.L
+modprobe dummy
+modprobe veth
+
+echo OK
+
+cd /lsdn/build/hooks
+
+echo Running custom init script ...
+cat qemu/script
+
+. qemu/script-"${NAME}"
+
+# Resize console to current size
+
+tty=ttyS0
+stty="stty -F /dev/$tty"
+
+old=$($stty -g)
+$stty raw -echo min 0 time 5
+
+printf '\0337\033[r\033[999;999H\033[6n\0338' > /dev/$tty
+IFS='[;R' read -r _ rows cols _ < /dev/$tty
+
+$stty "$old"
+
+stty cols "$cols" rows "$rows"
+
+while true; do agetty --autologin root $tty xterm; done
