@@ -61,17 +61,17 @@ struct lsdn_action_desc {
 };
 
 struct lsdn_broadcast_action {
-	struct lsdn_list_entry owned_actions_entry;
 	struct lsdn_broadcast_filter *filter;
-	bool used;
+	size_t filter_entry_index;
 	struct lsdn_action_desc action;
 };
 
 struct lsdn_broadcast_filter {
+	struct lsdn_broadcast *broadcast;
 	struct lsdn_list_entry filters_entry;
 	int prio;
 	size_t free_actions;
-	struct lsdn_broadcast_action actions[LSDN_MAX_PRIO - 1];
+	struct lsdn_broadcast_action *actions[LSDN_MAX_PRIO - 1];
 };
 
 void lsdn_broadcast_init(struct lsdn_broadcast *br, struct lsdn_context *ctx, struct lsdn_if *iface, int chain);
