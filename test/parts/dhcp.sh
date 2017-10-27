@@ -1,4 +1,5 @@
 function dhcp_server(){
+	in_virt $1 $2 tcpdump -i out -w dump.pcap&
 	cat << EOF > /tmp/dhcpd.conf
 default-lease-time 600;
 max-lease-time 7200;
@@ -7,14 +8,21 @@ subnet 192.168.99.0 netmask 255.255.255.0 {
 	option subnet-mask 255.255.255.0;
 	range 192.168.99.2 192.168.99.250;
 }
+# Having a statically assigned addresses prevent the DHCP server from doing ARP probes
+# and speeds up the whole process
+host b1 { hardware ethernet 00:00:00:00:00:b1; fixed-address 192.168.99.2; }
+host b2 { hardware ethernet 00:00:00:00:00:b2; fixed-address 192.168.99.3; }
+host b3 { hardware ethernet 00:00:00:00:00:b3; fixed-address 192.168.99.5; }
+host c1 { hardware ethernet 00:00:00:00:00:c1; fixed-address 192.168.99.4; }
 EOF
 	echo > /tmp/dhcpd.leases
-	in_virt $1 $2 dhcpd -cf /tmp/dhcpd.conf -lf /tmp/dhcpd.leases --no-pid $3
+	in_virt $1 $2 dhcpd -4 -cf /tmp/dhcpd.conf -lf /tmp/dhcpd.leases --no-pid $3
 }
 
 function dhcp_client(){
 	rm /var/lib/dhcpcd/dhcpcd-*.lease || true
-	in_virt $1 $2 dhcpcd -4 --oneshot -t 10 $3
+	# -A disables ARP probes and makes the lease quicker
+	in_virt $1 $2 dhcpcd -A -4 --oneshot -t 5 $3
 }
 
 function prepare(){
@@ -41,6 +49,7 @@ function connect(){
 	pass dhcp_client b 2 out
 	fail dhcp_client b 3 out
 	pass dhcp_client c 1 out
+
 }
 
 function test(){

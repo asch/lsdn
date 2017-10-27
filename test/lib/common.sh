@@ -36,6 +36,8 @@ mk_phys(){
 	shift 2
 
 	mk_netns "$phys"
+	# cleanup the air by disabling IPv6 (and associated advertisements)
+	in_ns "$phys" sysctl net.ipv6.conf.all.disable_ipv6=1 > /dev/null
 	mk_veth_pair "$phys" out "$net" "$phys"
 	set_ifattr "$phys" out "$@"
 }
@@ -51,6 +53,8 @@ mk_virt(){
 	shift 2
 
 	mk_netns "$phys-$virt"
+	# cleanup the air by disabling IPv6 (and associated advertisements)
+	in_ns "$phys-$virt" sysctl net.ipv6.conf.all.disable_ipv6=1  > /dev/null
 	mk_veth_pair "$phys" "$virt" "$phys-$virt" out
 	set_ifattr "$phys-$virt" out "$@"
 	in_ns "$phys-$virt" ip link set dev lo up
