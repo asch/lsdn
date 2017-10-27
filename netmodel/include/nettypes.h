@@ -59,29 +59,6 @@ bool lsdn_ipv6_eq(lsdn_ipv6_t a, lsdn_ipv6_t b);
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf);
 void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf);
 
-/* These definitions are useful for the u32 TC classifier, where only
- * 32-bit values are accepted.
- */
-static inline uint16_t lsdn_mac_low16(const lsdn_mac_t *mac)
-{
-	const uint8_t *b = mac->bytes;
-	return (b[4] << 8) | b[5];
-}
-static inline uint32_t lsdn_mac_low32(const lsdn_mac_t *mac)
-{
-	const uint8_t *b = mac->bytes;
-	return (b[2] << 24) | (b[3] << 16) | (b[4] << 8) | b[5];
-}
-static inline uint32_t lsdn_mac_high32(const lsdn_mac_t *mac)
-{
-	const uint8_t *b = mac->bytes;
-	return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
-}
-static inline uint16_t lsdn_mac_high16(const lsdn_mac_t *mac)
-{
-	const uint8_t *b = mac->bytes;
-	return (b[0] << 8) | b[1];
-}
 static inline uint32_t lsdn_ip4_u32(const lsdn_ipv4_t *v4)
 {
 	const uint8_t *b = v4->bytes;
