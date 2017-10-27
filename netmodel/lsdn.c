@@ -177,8 +177,6 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 		return LSDNE_OK;
 
 	a->explicitely_attached = true;
-	lsdn_if_init_empty(&a->bridge_if);
-	lsdn_list_init(&a->tunnel_list);
 
 	return LSDNE_OK;
 }

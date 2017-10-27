@@ -12,7 +12,7 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 	struct lsdn_settings *s = a->net->settings;
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
-		&a->tunnel.tunnel_if,
+		&a->tunnel_if,
 		a->phys->attr_iface,
 		lsdn_mk_ifname(a->net->ctx),
 		&s->vxlan.mcast.mcast_ip,
@@ -23,15 +23,21 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 	if (err)
 		abort();
 
-	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
+	lsdn_lbridge_init(a->net->ctx ,&a->lbridge);
+	lsdn_lbridge_add(&a->lbridge, &a->lbridge_if, &a->tunnel_if);
+}
 
-	lsdn_lbridge_make(a);
-	lsdn_lbridge_connect(a);
-	lsdn_net_set_up(a);
+static void vxlan_mcast_destroy_pa(struct lsdn_phys_attachment *a)
+{
+	lsdn_lbridge_remove(&a->lbridge_if);
+	lsdn_lbridge_free(&a->lbridge);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
-	.create_pa = vxlan_mcast_create_pa
+	.create_pa = vxlan_mcast_create_pa,
+	.destroy_pa = vxlan_mcast_destroy_pa,
+	.add_virt = lsdn_lbridge_add_virt,
+	.remove_virt = lsdn_lbridge_remove_virt
 };
 
 struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
@@ -57,71 +63,63 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 	return s;
 }
 
-static void fdb_fill_virts(struct lsdn_phys_attachment *a, struct lsdn_phys_attachment *a_other)
-{
-	int err;
-	// TODO: use a similar approach we use in flower.h for the fdb
-	lsdn_foreach(
-		a_other->connected_virt_list, connected_virt_entry,
-		struct lsdn_virt, v)
-	{
-		if(!v->attr_mac)
-			continue;
-
-		// TODO: add validation to check that the mac is known and report errors
-		err = lsdn_fdb_add_entry(
-			a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
-			*v->attr_mac, *a_other->phys->attr_ip);
-		if (err)
-			abort();
-	}
-}
-
 static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 {
-	// TODO: maybe it is usefull to have e2e using FDB without learning?
-	// provide a settings constructor to do that
-	bool learning = a->net->settings->switch_type == LSDN_LEARNING_E2E;
 	int err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
-		&a->tunnel.tunnel_if,
+		&a->tunnel_if,
 		a->phys->attr_iface,
 		lsdn_mk_ifname(a->net->ctx),
 		NULL,
 		a->net->vnet_id,
 		a->net->settings->vxlan.port,
-		false,
+		true,
 		false);
 	if (err)
 		abort();
 
-	lsdn_list_init_add(&a->tunnel_list, &a->tunnel.tunnel_entry);
+	lsdn_lbridge_init(a->net->ctx ,&a->lbridge);
+	lsdn_lbridge_add(&a->lbridge, &a->lbridge_if, &a->tunnel_if);
+}
+
+static void vxlan_e2e_destroy_pa(struct lsdn_phys_attachment *a)
+{
+	lsdn_lbridge_remove(&a->lbridge_if);
+	lsdn_lbridge_free(&a->lbridge);
+}
+
+static void vxlan_e2e_add_remote_pa(struct lsdn_remote_pa *remote)
+{
+	/* Redirect broadcast packets to all remote PAs */
+	struct lsdn_phys_attachment *local = remote->local;
+	int err = lsdn_fdb_add_entry(
+		local->net->ctx->nlsock, local->tunnel_if.ifindex,
+		lsdn_broadcast_mac,
+		*remote->remote->phys->attr_ip);
+	if (err)
+		abort();
 
 
-	lsdn_foreach(
-		a->net->attached_list, attached_entry,
-		struct lsdn_phys_attachment, a_other)
-	{
-		if (&a_other->phys == &a->phys)
-			continue;
-		if(!learning)
-			fdb_fill_virts(a, a_other);
+}
 
-		err = lsdn_fdb_add_entry(
-			a->net->ctx->nlsock, a->tunnel.tunnel_if.ifindex,
-			!learning ? lsdn_broadcast_mac : lsdn_all_zeroes_mac,
-			*a_other->phys->attr_ip);
-		if (err)
-			abort();
-	}
-
-	lsdn_lbridge_make(a);
-	lsdn_lbridge_connect(a);
-	lsdn_net_set_up(a);
+static void vxlan_e2e_remove_remote_pa(struct lsdn_remote_pa *remote)
+{
+	struct lsdn_phys_attachment *local = remote->local;
+	int err = lsdn_fdb_remove_entry(
+		local->net->ctx->nlsock, local->tunnel_if.ifindex,
+		lsdn_all_zeroes_mac,
+		*remote->remote->phys->attr_ip);
+	if (err)
+		abort();
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
-	.create_pa = vxlan_e2e_create_pa
+	.create_pa = vxlan_e2e_create_pa,
+	.destroy_pa = vxlan_e2e_destroy_pa,
+	.add_virt = lsdn_lbridge_add_virt,
+	.remove_virt = lsdn_lbridge_remove_virt,
+	.add_remote_pa = vxlan_e2e_add_remote_pa,
+	.remove_remote_pa = vxlan_e2e_remove_remote_pa
 };
 
 

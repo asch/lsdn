@@ -92,6 +92,9 @@ int lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex);
 int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 		lsdn_mac_t mac, lsdn_ip_t ip);
 
+int lsdn_fdb_remove_entry(struct mnl_socket *sock, unsigned int ifindex,
+			  lsdn_mac_t mac, lsdn_ip_t ip);
+
 // filters -->
 struct lsdn_filter{
 	struct nlmsghdr *nlh;

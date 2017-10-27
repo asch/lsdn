@@ -60,7 +60,4 @@ struct lsdn_net_ops {
 	void (*validate_virt) (struct lsdn_virt *virt);
 };
 
-/** Activate the linux bridge and tunnel interfaces */
-void lsdn_net_set_up(struct lsdn_phys_attachment *a);
-
 #endif

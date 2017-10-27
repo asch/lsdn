@@ -1,40 +1,57 @@
 #include "private/lbridge.h"
-static void add_virt_to_bridge(
-	struct lsdn_phys_attachment *a,
-	struct lsdn_if *br, struct lsdn_virt *v)
-{
-	int err = lsdn_link_set_master(a->net->ctx->nlsock, br->ifindex, v->connected_if.ifindex);
-	if(err)
-		abort();
-}
+#include "private/net.h"
+#include "include/lsdn.h"
 
-void lsdn_lbridge_make(struct lsdn_phys_attachment *a)
+void lsdn_lbridge_init(struct lsdn_context *ctx, struct lsdn_lbridge *br)
 {
-	struct lsdn_context *ctx = a->net->ctx;
-	// create bridge and connect all virt interfaces to it
 	struct lsdn_if bridge_if;
 	lsdn_if_init_empty(&bridge_if);
 
 	int err = lsdn_link_bridge_create(ctx->nlsock, &bridge_if, lsdn_mk_ifname(ctx));
-	if(err){
+	if(err)
 		abort();
-	}
 
-	lsdn_foreach(a->connected_virt_list, connected_virt_entry, struct lsdn_virt, v){
-		add_virt_to_bridge(a, &bridge_if, v);
-	}
-	a->bridge_if = bridge_if;
+	err = lsdn_link_set(ctx->nlsock, bridge_if.ifindex, true);
+	if(err)
+		abort();
+
+	br->ctx = ctx;
+	br->bridge_if = bridge_if;
 }
 
-void lsdn_lbridge_connect(struct lsdn_phys_attachment *a)
+void lsdn_lbridge_free(struct lsdn_lbridge *br)
 {
-	int err;
-	struct lsdn_context *ctx = a->net->ctx;
+	// TODO: delete link
+}
 
-	lsdn_foreach(a->tunnel_list, tunnel_entry, struct lsdn_tunnel, t) {
-		err = lsdn_link_set_master(
-			ctx->nlsock, a->bridge_if.ifindex, t->tunnel_if.ifindex);
-		if(err)
-			abort();
-	}
+void lsdn_lbridge_add(struct lsdn_lbridge *br, struct lsdn_lbridge_if *br_if, struct lsdn_if *iface)
+{
+	int err = lsdn_link_set_master(br->ctx->nlsock, br->bridge_if.ifindex, iface->ifindex);
+	if(err)
+		abort();
+
+	err = lsdn_link_set(br->ctx->nlsock, iface->ifindex, true);
+	if(err)
+		abort();
+
+	br_if->br = br;
+	br_if->iface = iface;
+}
+
+void lsdn_lbridge_remove(struct lsdn_lbridge_if *iface)
+{
+	int err = lsdn_link_set_master(iface->br->ctx->nlsock, 0, iface->iface->ifindex);
+	if (err)
+		abort();
+}
+
+void lsdn_lbridge_add_virt(struct lsdn_virt *v)
+{
+	struct lsdn_phys_attachment *a = v->connected_through;
+	lsdn_lbridge_add(&a->lbridge, &v->lbridge_if, &v->connected_if);
+}
+
+void lsdn_lbridge_remove_virt(struct lsdn_virt *v)
+{
+	lsdn_lbridge_remove(&v->lbridge_if);
 }

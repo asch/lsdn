@@ -273,6 +273,17 @@ int lsdn_link_set_master(struct mnl_socket *sock,
 	}
 }
 
+static void fdb_set_keys(struct nlmsghdr *nlh, lsdn_mac_t mac, lsdn_ip_t ip)
+{
+	mnl_attr_put(nlh, NDA_LLADDR, sizeof(mac.bytes), mac.bytes);
+
+	if (ip.v == LSDN_IPv4) {
+		mnl_attr_put(nlh, NDA_DST, sizeof(ip.v4.bytes), ip.v4.bytes);
+	} else {
+		// TODO
+	}
+}
+
 int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 		lsdn_mac_t mac, lsdn_ip_t ip)
 {
@@ -293,13 +304,50 @@ int lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 	nd->ndm_ifindex = ifindex;
 	nd->ndm_flags = NTF_SELF;
 
-	mnl_attr_put(nlh, NDA_LLADDR, sizeof(mac.bytes), mac.bytes);
+	fdb_set_keys(nlh, mac, ip);
 
-	if (ip.v == LSDN_IPv4) {
-		mnl_attr_put(nlh, NDA_DST, sizeof(ip.v4.bytes), ip.v4.bytes);
-	} else {
-		// TODO
+	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
 	}
+
+	ret = mnl_socket_recvfrom(sock, buf, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+
+	nlh = (struct nlmsghdr *)buf;
+	if (nlh->nlmsg_type == NLMSG_ERROR) {
+		int *err_code = mnl_nlmsg_get_payload(nlh);
+		return *err_code;
+	} else {
+		return -1;
+	}
+}
+
+int lsdn_fdb_remove_entry(struct mnl_socket *sock, unsigned int ifindex,
+			  lsdn_mac_t mac, lsdn_ip_t ip)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
+	int ret;
+
+	unsigned int seq = time(NULL);
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type = RTM_DELNEIGH;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ndmsg *nd = mnl_nlmsg_put_extra_header(nlh, sizeof(*nd));
+	nd->ndm_family = PF_BRIDGE;
+	nd->ndm_state = NUD_NOARP | NUD_PERMANENT;
+	nd->ndm_ifindex = ifindex;
+	nd->ndm_flags = NTF_SELF;
+
+	fdb_set_keys(nlh, mac, ip);
 
 	ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
 	if (ret == -1) {

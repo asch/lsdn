@@ -10,6 +10,7 @@
 #include "../private/nl.h"
 #include "../private/idalloc.h"
 #include "../private/sbridge.h"
+#include "../private/lbridge.h"
 #include "nettypes.h"
 
 #define LSDN_DECLARE_ATTR(obj, name, type) \
@@ -116,11 +117,6 @@ struct lsdn_shared_tunnel {
 	int refcount;
 	struct lsdn_idalloc chain_ids;
 	struct lsdn_if tunnel_if;
-};
-
-struct lsdn_tunnel {
-	struct lsdn_if tunnel_if;
-	struct lsdn_list_entry tunnel_entry;
 };
 
 /**
@@ -244,19 +240,9 @@ struct lsdn_phys_attachment {
 	 */
 	bool explicitely_attached;
 
-	/* Either a dummy interface for static switch or linux bridge for learning networks */
-	struct lsdn_if bridge_if;
-	struct lsdn_ruleset bridge_rules;
-
-	/* List of tunnels connected to the bridge interface. Used by the generic functions such
-	 * as lsdn_net_connect_bridge.
-	 */
-	struct lsdn_list_entry tunnel_list;
-	/* For free internal use by the network. It can store it's tunnel here if it uses one.
-	 * If it uses multiple tunnels, it will probably allocate them somwhere else. Generic
-	 * functions ignore this field.
-	 */
-	struct lsdn_tunnel tunnel;
+	struct lsdn_if tunnel_if;
+	struct lsdn_lbridge lbridge;
+	struct lsdn_lbridge_if lbridge_if;
 
 	struct lsdn_shared_tunnel_user stunnel_user;
 	struct lsdn_sbridge sbridge;
@@ -286,6 +272,8 @@ struct lsdn_virt {
 
 	lsdn_mac_t *attr_mac;
 	/*lsdn_ip_t *attr_ip; */
+
+	struct lsdn_lbridge_if lbridge_if;
 
 	struct lsdn_sbridge_if sbridge_if;
 	struct lsdn_sbridge_route sbridge_route;
