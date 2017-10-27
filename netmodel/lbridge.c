@@ -5,7 +5,7 @@
 void lsdn_lbridge_init(struct lsdn_context *ctx, struct lsdn_lbridge *br)
 {
 	struct lsdn_if bridge_if;
-	lsdn_if_init_empty(&bridge_if);
+	lsdn_if_init(&bridge_if);
 
 	int err = lsdn_link_bridge_create(ctx->nlsock, &bridge_if, lsdn_mk_ifname(ctx));
 	if(err)

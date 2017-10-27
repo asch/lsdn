@@ -31,22 +31,50 @@
 /* Our egress handle (major 1, minor 0)*/
 #define LSDN_DEFAULT_EGRESS_HANDLE 0x00010000U
 
-/*
- * A handle used to identify a linux interface.
+/**
+ * A handle used to identify a linux interface, stores both name and ifindex.
+ *
+ * An allocated lsdn_if can be in tree states:
+ *  - *empty*, no name or ifindex is associated
+ *  - *name*, reference an interface by name, but the interface migh not exist and ifindex is not resolved
+ *  - *resolved*, references an existing interface, both name and ifindex are valid
  */
 struct lsdn_if{
 	unsigned int ifindex;
 	char* ifname;
 };
 
-void lsdn_if_init_empty(struct lsdn_if *lsdn_if);
-void lsdn_if_init_known(struct lsdn_if *lsdn_if, const char* ifname, unsigned int ifindex);
-lsdn_err_t lsdn_if_init_name(struct lsdn_if *lsdn_if, const char* ifname);
+/**
+ * Initialize lsdn_if in *empty* state.
+ */
+void lsdn_if_init(struct lsdn_if *lsdn_if);
+/**
+ * Free the underlaying memory for storing the name.
+ */
+void lsdn_if_free(struct lsdn_if *lsdn_if);
+/**
+ * Clear the name and ifindex, the handle will be in *empty* state.
+ */
+void lsdn_if_reset(struct lsdn_if *lsdn_if);
+/**
+ * Set the lsdn_if to reference a given ifname, the lsdn_if will be in *name* state.
+ *
+ * The ifindex may be resolved later using lsdn_if_resolve
+ */
+lsdn_err_t lsdn_if_set_name(struct lsdn_if *lsdn_if, const char* ifname);
+/**
+ * Check if the lsdn_if is in *name* or *resolved* state..
+ */
 static inline bool lsdn_if_is_set(const struct lsdn_if *lsdn_if)
 {
 	return lsdn_if->ifname;
 }
-lsdn_err_t lsdn_if_prepare(struct lsdn_if *lsdn_if);
+/**
+ * Make sure the ifindex is valid, if possible.
+ *
+ * If sucesfull, fills in the ifindex and moves the lsdn_if into *resolved* state.
+ */
+lsdn_err_t lsdn_if_resolve(struct lsdn_if *lsdn_if);
 
 struct mnl_socket *lsdn_socket_init();
 

@@ -87,7 +87,7 @@ static void br_forward_make(struct lsdn_sbridge_mac *mac)
 void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
 {
 	struct lsdn_if sbridge_if;
-	lsdn_if_init_empty(&sbridge_if);
+	lsdn_if_init(&sbridge_if);
 	int err = lsdn_link_dummy_create(ctx->nlsock, &sbridge_if, lsdn_mk_ifname(ctx));
 	if (err)
 		abort();

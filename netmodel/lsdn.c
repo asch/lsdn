@@ -225,8 +225,8 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	virt->attr_mac = NULL;
 	virt->connected_through = NULL;
 	virt->committed_to = NULL;
-	lsdn_if_init_empty(&virt->connected_if);
-	lsdn_if_init_empty(&virt->committed_if);
+	lsdn_if_init(&virt->connected_if);
+	lsdn_if_init(&virt->committed_if);
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
 	lsdn_list_init(&virt->virt_view_list);
 	lsdn_name_init(&virt->name);
@@ -259,7 +259,8 @@ lsdn_err_t lsdn_virt_connect(
 		ret_err(phys->ctx, LSDNE_NOMEM);
 
 	struct lsdn_if new_if;
-	lsdn_err_t err = lsdn_if_init_name(&new_if, iface);
+	lsdn_if_init(&new_if);
+	lsdn_err_t err = lsdn_if_set_name(&new_if, iface);
 	if(err != LSDNE_OK)
 		ret_err(phys->ctx, err);
 
@@ -311,7 +312,7 @@ static void validate_virts(struct lsdn_phys_attachment *pa)
 		if(v->connected_through && pa->explicitely_attached
 		   && v->connected_through->phys->is_local)
 		{
-			lsdn_err_t err = lsdn_if_prepare(&v->connected_if);
+			lsdn_err_t err = lsdn_if_resolve(&v->connected_if);
 			if(err != LSDNE_OK)
 				lsdn_problem_report(
 					v->network->ctx, LSDNP_VIRT_NOIF,
@@ -457,7 +458,7 @@ void decommit_virt(struct lsdn_virt *v)
 			ops->remove_virt(v);
 		}
 		v->committed_to = NULL;
-		lsdn_if_init_empty(&v->committed_if);
+		lsdn_if_init(&v->committed_if);
 	}
 
 	lsdn_foreach(v->virt_view_list, virt_view_entry, struct lsdn_remote_virt, rv) {

@@ -9,14 +9,27 @@
 #include <assert.h>
 #include <errno.h>
 
-void lsdn_if_init_empty(struct lsdn_if *lsdn_if)
+void lsdn_if_init(struct lsdn_if *lsdn_if)
 {
 	lsdn_if->ifindex = 0;
 	lsdn_if->ifname = NULL;
 }
 
-lsdn_err_t lsdn_if_init_name(struct lsdn_if *lsdn_if, const char* ifname)
+void lsdn_if_free(struct lsdn_if *lsdn_if)
 {
+	free(lsdn_if->ifname);
+}
+
+void lsdn_if_reset(struct lsdn_if *lsdn_if)
+{
+	lsdn_if_free(lsdn_if);
+	lsdn_if_init(lsdn_if);
+}
+
+lsdn_err_t lsdn_if_set_name(struct lsdn_if *lsdn_if, const char* ifname)
+{
+	lsdn_if_free(lsdn_if);
+
 	lsdn_if->ifindex = 0;
 	lsdn_if->ifname = strdup(ifname);
 	if(lsdn_if->ifname == NULL)
@@ -24,8 +37,11 @@ lsdn_err_t lsdn_if_init_name(struct lsdn_if *lsdn_if, const char* ifname)
 	return LSDNE_OK;
 }
 
-lsdn_err_t lsdn_if_prepare(struct lsdn_if *lsdn_if)
+lsdn_err_t lsdn_if_resolve(struct lsdn_if *lsdn_if)
 {
+	if (lsdn_if->ifindex != 0)
+		return LSDNE_OK;
+
 	int ifindex = if_nametoindex(lsdn_if->ifname);
 	if(ifindex == 0){
 		assert(errno == ENXIO || errno == ENODEV);
@@ -111,9 +127,10 @@ static int link_create_send(
 	if(*err_code != 0)
 		return *err_code;
 
-	lsdn_err_t lerr = lsdn_if_init_name(dst_if, if_name);
+	lsdn_if_init(dst_if);
+	lsdn_err_t lerr = lsdn_if_set_name(dst_if, if_name);
 	assert(lerr == LSDNE_OK);
-	lerr = lsdn_if_prepare(dst_if);
+	lerr = lsdn_if_resolve(dst_if);
 	assert(lerr == LSDNE_OK);
 	return 0;
 }
@@ -454,9 +471,9 @@ int lsdn_link_veth_create(
 
 	int ret = link_create_send(sock, buf, nlh, linkinfo, if_name1, if1);
 	if(ret == 0) {
-		lsdn_err_t lerr = lsdn_if_init_name(if2, if_name2);
+		lsdn_err_t lerr = lsdn_if_set_name(if2, if_name2);
 		assert(lerr == LSDNE_OK);
-		lerr = lsdn_if_prepare(if2);
+		lerr = lsdn_if_resolve(if2);
 		assert(lerr == LSDNE_OK);
 	}
 	return ret;

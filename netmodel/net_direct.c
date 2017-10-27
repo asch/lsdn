@@ -7,10 +7,11 @@
 static void direct_create_pa(struct lsdn_phys_attachment *a)
 {
 	lsdn_err_t err;
-	err = lsdn_if_init_name(&a->tunnel_if, a->phys->attr_iface);
+	lsdn_if_init(&a->tunnel_if);
+	err = lsdn_if_set_name(&a->tunnel_if, a->phys->attr_iface);
 	if (err != LSDNE_OK)
 		abort();
-	err = lsdn_if_prepare(&a->tunnel_if);
+	err = lsdn_if_resolve(&a->tunnel_if);
 	if (err != LSDNE_OK)
 		abort();
 
