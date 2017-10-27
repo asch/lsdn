@@ -182,7 +182,7 @@ CMD(settings)
 CMD(net)
 {
 	if(argc != 3) {
-		Tcl_WrongNumArgs(interp, argc, argv, "net-id contents");
+		Tcl_WrongNumArgs(interp, 1, argv, "net-id contents");
 		return TCL_ERROR;
 	}
 	if(ctx->level != L_ROOT)
@@ -340,7 +340,8 @@ CMD(claimLocal)
 static struct tcl_ctx default_ctx;
 
 #define REGISTER(name) Tcl_CreateObjCommand(interp, #name, (Tcl_ObjCmdProc*) tcl_##name, ctx, NULL)
-void register_lsdn_tcl(Tcl_Interp *interp)
+
+int register_lsdn_tcl(Tcl_Interp *interp)
 {
 	struct tcl_ctx *ctx = &default_ctx;
 	ctx->lsctx = lsdn_context_new("lsdn");
@@ -353,4 +354,6 @@ void register_lsdn_tcl(Tcl_Interp *interp)
 	REGISTER(commit);
 	REGISTER(validate);
 	REGISTER(claimLocal);
+
+	return TCL_OK;
 }

@@ -12,9 +12,7 @@ function prepare(){
 }
 
 function connect(){
-	for p in $phys_seq; do
-		in_phys p$p $lsctl -d localPhys=$p $config
-	done
+	lsctl_in_all_phys parts/large.lsctl $phys_names
 }
 
 function test(){

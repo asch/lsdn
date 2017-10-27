@@ -53,6 +53,7 @@ mk_virt(){
 	mk_netns "$phys-$virt"
 	mk_veth_pair "$phys" "$virt" "$phys-$virt" out
 	set_ifattr "$phys-$virt" out "$@"
+	in_ns "$phys-$virt" ip link set dev lo up
 	in_ns "$phys" ip link set dev "$virt" up
 }
 
@@ -66,6 +67,14 @@ mk_bridge(){
 	for p in $@; do
 		in_ns "$ns" ip link set dev "$p" master "$if"
 		in_ns "$ns" ip link set dev "$p" up
+	done
+}
+
+lsctl_in_all_phys(){
+	local config="$1"
+	shift
+	for p in $@; do
+		in_phys $p $lsctl $config $p
 	done
 }
 

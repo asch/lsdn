@@ -1,5 +1,4 @@
-phys_seq=`seq 40`
-phys_names=
+NETCONF="migrate"
 
 function prepare(){
 	mk_testnet net
@@ -16,12 +15,10 @@ function prepare(){
 	mk_bridge net switch a b c
 }
 
-function connect(){
-	in_phys a $lsctl -d localPhys=a $config
-	in_phys b $lsctl -d localPhys=b $config
-	in_phys c $lsctl -d localPhys=c $config
+function connect() {
+	lsctl_in_all_phys parts/migrate.lsctl a b c
 }
 
-function test(){
+function test_ping() {
 	pass in_virt a 1 $qping 192.168.99.2
 }

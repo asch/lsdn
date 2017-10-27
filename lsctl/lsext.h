@@ -3,6 +3,6 @@
 
 #include <tcl.h>
 
-void register_lsdn_tcl(Tcl_Interp *interp);
+int register_lsdn_tcl(Tcl_Interp *interp);
 
 #endif
