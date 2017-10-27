@@ -48,7 +48,7 @@ void lsdn_lbridge_remove(struct lsdn_lbridge_if *iface)
 void lsdn_lbridge_add_virt(struct lsdn_virt *v)
 {
 	struct lsdn_phys_attachment *a = v->connected_through;
-	lsdn_lbridge_add(&a->lbridge, &v->lbridge_if, &v->connected_if);
+	lsdn_lbridge_add(&a->lbridge, &v->lbridge_if, &v->committed_if);
 }
 
 void lsdn_lbridge_remove_virt(struct lsdn_virt *v)
