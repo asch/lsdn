@@ -19,6 +19,21 @@ void format_subject(FILE* out, const struct lsdn_problem_ref *subj)
 	case LSDNS_IF:
 		fputs(CAST(struct lsdn_if*)->ifname, out);
 		break;
+	case LSDNS_NET:
+		if (CAST(struct lsdn_net*)->name.str) {
+			fputs(CAST(struct lsdn_net*)->name.str, out);
+			break;
+		}
+	case LSDNS_VIRT:
+		if (CAST(struct lsdn_virt*)->name.str) {
+			fputs(CAST(struct lsdn_virt*)->name.str, out);
+			break;
+		}
+	case LSDNS_PHYS:
+		if (CAST(struct lsdn_phys*)->name.str) {
+			fputs(CAST(struct lsdn_phys*)->name.str, out);
+			break;
+		}
 	default:
 		fprintf(out, "0x%p", subj);
 	}
