@@ -640,6 +640,7 @@ static struct lsdn_filter *filter_init(const char *kind, uint32_t if_index, uint
 	struct lsdn_filter *f = malloc(sizeof(*f));
 	if (!f)
 		return NULL;
+	f->update = false;
 	char *buf = calloc(MNL_SOCKET_BUFFER_SIZE, sizeof(char));
 	if (!buf) {
 		free(f);
@@ -840,6 +841,8 @@ int lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f)
 	unsigned seq = 0;
 	f->nlh->nlmsg_type = RTM_NEWTFILTER;
 	f->nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK;
+	if (!f->update)
+		f->nlh->nlmsg_flags |= NLM_F_EXCL;
 	f->nlh->nlmsg_seq = seq;
 
 	mnl_attr_nest_end(f->nlh, f->nested_opts);
@@ -862,6 +865,11 @@ int lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f)
 	} else {
 		return -1;
 	}
+}
+
+void lsdn_filter_set_update(struct lsdn_filter *f)
+{
+	f->update = true;
 }
 
 int lsdn_filter_delete(

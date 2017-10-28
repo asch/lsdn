@@ -145,12 +145,11 @@ static void vxlan_init_static_tunnel(struct lsdn_settings *s)
 {
 	int err;
 	struct lsdn_context *ctx = s->ctx;
-	struct lsdn_shared_tunnel *tun = &s->vxlan.e2e_static.tunnel;
-	if (tun->refcount == 0) {
-		lsdn_idalloc_init(&tun->chain_ids, 1, 0xFFFF);
+	struct lsdn_if *tunnel = &s->vxlan.e2e_static.tunnel;
+	if (s->vxlan.e2e_static.refcount++ == 0) {
 		err = lsdn_link_vxlan_create(
 			ctx->nlsock,
-			&tun->tunnel_if,
+			tunnel,
 			NULL,
 			lsdn_mk_ifname(ctx),
 			NULL,
@@ -161,15 +160,12 @@ static void vxlan_init_static_tunnel(struct lsdn_settings *s)
 		if (err)
 			abort();
 
-		err = lsdn_qdisc_ingress_create(ctx->nlsock, tun->tunnel_if.ifindex);
+		err = lsdn_link_set(ctx->nlsock, tunnel->ifindex, true);
 		if (err)
 			abort();
 
-		err = lsdn_link_set(ctx->nlsock, tun->tunnel_if.ifindex, true);
-		if (err)
-			abort();
+		lsdn_sbridge_phys_if_init(ctx, &s->vxlan.e2e_static.tunnel_sbridge, tunnel);
 	}
-	tun->refcount++;
 }
 
 static void vxlan_static_create_pa(struct lsdn_phys_attachment *pa)
@@ -177,13 +173,13 @@ static void vxlan_static_create_pa(struct lsdn_phys_attachment *pa)
 	vxlan_init_static_tunnel(pa->net->settings);
 	lsdn_sbridge_init(pa->net->ctx, &pa->sbridge);
 	lsdn_sbridge_add_stunnel(
-		&pa->sbridge, &pa->sbridge_if, &pa->net->settings->vxlan.e2e_static.tunnel,
-		&pa->stunnel_user, pa->net);
+		&pa->sbridge, &pa->sbridge_if,
+		&pa->net->settings->vxlan.e2e_static.tunnel_sbridge, pa->net);
 }
 
 static void vxlan_static_destroy_pa(struct lsdn_phys_attachment *pa)
 {
-	lsdn_sbridge_remove_stunnel(&pa->sbridge_if, &pa->stunnel_user);
+	lsdn_sbridge_remove_stunnel(&pa->sbridge_if);
 	lsdn_sbridge_free(&pa->sbridge);
 }
 
@@ -253,7 +249,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, u
 	s->nettype = LSDN_NET_VXLAN;
 	s->ops = &lsdn_net_vxlan_static_ops;
 	s->vxlan.port = port;
-	s->vxlan.e2e_static.tunnel.refcount = 0;
+	s->vxlan.e2e_static.refcount = 0;
 	s->state = LSDN_STATE_NEW;
 	s->user_hooks = NULL;
 	return s;

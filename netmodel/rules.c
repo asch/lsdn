@@ -114,6 +114,7 @@ static void lsdn_flush_action_list(struct lsdn_broadcast_filter* br_filter)
 	struct lsdn_filter *filter = lsdn_filter_flower_init(
 		br->iface->ifindex,
 		MAIN_RULE_HANDLE, LSDN_INGRESS_HANDLE, br->chain, br_filter->prio);
+	lsdn_filter_set_update(filter);
 	size_t order = 1;
 	int err;
 

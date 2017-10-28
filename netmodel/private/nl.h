@@ -125,6 +125,7 @@ int lsdn_fdb_remove_entry(struct mnl_socket *sock, unsigned int ifindex,
 
 // filters -->
 struct lsdn_filter{
+	bool update;
 	struct nlmsghdr *nlh;
 	struct nlattr *nested_opts;
 	struct nlattr *nested_acts;
@@ -132,6 +133,7 @@ struct lsdn_filter{
 
 struct lsdn_filter *lsdn_filter_flower_init(
 		uint32_t if_index, uint32_t handle, uint32_t parent, uint32_t chain, uint16_t prio);
+void lsdn_filter_set_update(struct lsdn_filter *f);
 
 void lsdn_filter_free(struct lsdn_filter *f);
 

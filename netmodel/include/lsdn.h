@@ -113,12 +113,6 @@ enum lsdn_switch{
 	 */
 };
 
-struct lsdn_shared_tunnel {
-	int refcount;
-	struct lsdn_idalloc chain_ids;
-	struct lsdn_if tunnel_if;
-};
-
 /**
  * Defines the type of a lsdn_net. Multiple networks can share the same settings
  * (e.g. vxlan with static routing on port 1234) and only differ by their identifier
@@ -140,7 +134,9 @@ struct lsdn_settings{
 					lsdn_ip_t mcast_ip;
 				} mcast;
 				struct {
-					struct lsdn_shared_tunnel tunnel;
+					size_t refcount;
+					struct lsdn_if tunnel;
+					struct lsdn_sbridge_phys_if tunnel_sbridge;
 				} e2e_static;
 			};
 		} vxlan;
@@ -244,7 +240,6 @@ struct lsdn_phys_attachment {
 	struct lsdn_lbridge lbridge;
 	struct lsdn_lbridge_if lbridge_if;
 
-	struct lsdn_shared_tunnel_user stunnel_user;
 	struct lsdn_sbridge sbridge;
 	struct lsdn_sbridge_if sbridge_if;
 };
@@ -276,6 +271,7 @@ struct lsdn_virt {
 	struct lsdn_lbridge_if lbridge_if;
 
 	struct lsdn_sbridge_if sbridge_if;
+	struct lsdn_sbridge_phys_if sbridge_phys_if;
 	struct lsdn_sbridge_route sbridge_route;
 	struct lsdn_sbridge_mac sbridge_mac;
 };
