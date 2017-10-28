@@ -4,6 +4,10 @@
 #include "private/log.h"
 #include <errno.h>
 
+static void renew(enum lsdn_state *state) {
+	if (*state == LSDN_STATE_OK)
+		*state = LSDN_STATE_RENEW;
+}
 
 struct lsdn_context *lsdn_context_new(const char* name)
 {
@@ -267,7 +271,7 @@ lsdn_err_t lsdn_virt_connect(
 	lsdn_virt_disconnect(virt);
 	virt->connected_if = new_if;
 	virt->connected_through = a;
-	virt->state = LSDN_STATE_RENEW;
+	renew(&virt->state);
 	lsdn_list_init_add(&a->connected_virt_list, &virt->connected_virt_entry);
 
 	return LSDNE_OK;
@@ -279,7 +283,7 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt){
 
 	lsdn_list_remove(&virt->connected_virt_entry);
 	virt->connected_through = NULL;
-	virt->state = LSDN_STATE_RENEW;
+	renew(&virt->state);
 }
 
 lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
