@@ -297,7 +297,8 @@ static void pa_do_free(struct lsdn_phys_attachment *a)
 
 static void free_pa_if_possible(struct lsdn_phys_attachment *a)
 {
-	/* If not empty, we will wait for the user to remove the virts.
+	/* If not empty, we will wait for the user to remove the virts (or wait for them to be
+	 * removed at commit).
 	 * Validation will catch the user if he tries to commit a virt connected throught
 	 * the phys if the PA is not explicitely attached.
 	 */
@@ -679,25 +680,37 @@ void decommit_virt(struct lsdn_virt *v)
 	}
 }
 
+void decommit_remote_pa(struct lsdn_remote_pa *rpa)
+{
+	struct lsdn_phys_attachment *local = rpa->local;
+	struct lsdn_phys_attachment *remote = rpa->remote;
+	struct lsdn_net_ops *ops = local->net->settings->ops;
+	if (ops->remove_remote_pa) {
+		lsdn_log(LSDNL_NETOPS, "remove_remote_pa("
+			 "net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
+			 "local_pa = %p, remote_pa = %p, remote_pa_view = %p)\n",
+			 lsdn_nullable(local->net->name.str), local->net,
+			 lsdn_nullable(local->phys->name.str), local->phys,
+			 lsdn_nullable(remote->phys->name.str), remote->phys,
+			 local, remote, rpa);
+		ops->remove_remote_pa(rpa);
+	}
+	lsdn_list_remove(&rpa->pa_view_entry);
+	lsdn_list_remove(&rpa->remote_pa_entry);
+	assert(lsdn_is_list_empty(&rpa->remote_virt_list));
+	free(rpa);
+}
+
 void decommit_pa(struct lsdn_phys_attachment *pa)
 {
 	struct lsdn_net_ops *ops = pa->net->settings->ops;
+
+	lsdn_foreach(pa->pa_view_list, pa_view_entry, struct lsdn_remote_pa, rpa) {
+		decommit_remote_pa(rpa);
+	}
+
 	lsdn_foreach(pa->remote_pa_list, remote_pa_entry, struct lsdn_remote_pa, rpa) {
-		if (ops->remove_remote_pa) {
-			struct lsdn_phys_attachment *remote = rpa->remote;
-			lsdn_log(LSDNL_NETOPS, "remove_remote_pa("
-				 "net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
-				 "local_pa = %p, remote_pa = %p, remote_pa_view = %p)\n",
-				 lsdn_nullable(pa->net->name.str), pa->net,
-				 lsdn_nullable(pa->phys->name.str), pa->phys,
-				 lsdn_nullable(remote->phys->name.str), remote->phys,
-				 pa, remote, rpa);
-			ops->remove_remote_pa(rpa);
-		}
-		lsdn_list_remove(&rpa->pa_view_entry);
-		lsdn_list_remove(&rpa->remote_pa_entry);
-		assert(lsdn_is_list_empty(&rpa->remote_virt_list));
-		free(rpa);
+		decommit_remote_pa(rpa);
 	}
 
 	if (pa->phys->commited_as_local) {
@@ -708,7 +721,6 @@ void decommit_pa(struct lsdn_phys_attachment *pa)
 				 pa);
 			ops->destroy_pa(pa);
 		}
-		free_pa_if_possible(pa);
 	}
 }
 
