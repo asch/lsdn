@@ -104,6 +104,8 @@ int lsdn_link_bridge_create(
 		struct lsdn_if *dst_id,
 		const char *if_name);
 
+int lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface);
+
 int lsdn_link_set_master(struct mnl_socket *sock,
 		unsigned int master, unsigned int slave);
 

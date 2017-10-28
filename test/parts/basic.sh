@@ -16,7 +16,7 @@ function prepare(){
 }
 
 function connect(){
-	lsctl_in_all_phys parts/basic.lsctl a b c
+	lsctl_in_all_phys parts/basic.lsctl
 }
 
 function test_ping() {

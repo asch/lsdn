@@ -17,3 +17,4 @@ net 1 {
 
 common::claimLocal
 commit
+common::free

@@ -60,6 +60,7 @@ struct lsdn_context{
 	lsdn_problem_cb problem_cb;
 	void *problem_cb_user;
 	size_t problem_count;
+	bool disable_decommit;
 
 	int ifcount;
 	char namebuf[IF_NAMESIZE + 1];
@@ -71,6 +72,8 @@ struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user);
 void lsdn_context_abort_on_nomem(struct lsdn_context *ctx);
 void lsdn_context_free(struct lsdn_context *ctx);
+/* Will automatically delete all child objects */
+void lsdn_context_cleanup(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 
 enum lsdn_nettype{
 	LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT
@@ -121,6 +124,7 @@ enum lsdn_switch{
 struct lsdn_settings{
 	enum lsdn_state state;
 	struct lsdn_list_entry settings_entry;
+	struct lsdn_list_entry setting_users_list;
 	struct lsdn_context *ctx;
 	struct lsdn_net_ops *ops;
 
@@ -165,6 +169,7 @@ void lsdn_settings_register_user_hooks(struct lsdn_settings *settings, struct ls
 struct lsdn_net {
 	enum lsdn_state state;
 	struct lsdn_list_entry networks_entry;
+	struct lsdn_list_entry settings_users_entry;
 	struct lsdn_context *ctx;
 	struct lsdn_settings *settings;
 	struct lsdn_name name;
@@ -180,6 +185,7 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
 lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name);
 const char* lsdn_net_get_name(struct lsdn_net *net);
 struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name);
+/* Will automatically delete all child objects */
 void lsdn_net_free(struct lsdn_net *net);
 
 /**
@@ -195,6 +201,7 @@ struct lsdn_phys {
 
 	struct lsdn_context* ctx;
 	bool is_local;
+	bool commited_as_local;
 	char *attr_iface;
 	lsdn_ip_t *attr_ip;
 };
@@ -203,10 +210,12 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx);
 lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name);
 const char* lsdn_phys_get_name(struct lsdn_phys *phys);
 struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name);
+/* Will detach all virts */
 void lsdn_phys_free(struct lsdn_phys *phys);
-/* TODO: provide a way to get missing attributes */
 lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net);
+void lsdn_phys_detach(struct lsdn_phys *phys, struct lsdn_net* net);
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
+lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys);
 
 LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
 LSDN_DECLARE_ATTR(phys, iface, const char*);
@@ -253,6 +262,7 @@ struct lsdn_phys_attachment {
  * different lsdn_phys.
  */
 struct lsdn_virt {
+	/* Tracks the state of local virts */
 	enum lsdn_state state;
 	struct lsdn_name name;
 	struct lsdn_list_entry virt_entry;

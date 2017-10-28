@@ -21,7 +21,11 @@ void lsdn_lbridge_init(struct lsdn_context *ctx, struct lsdn_lbridge *br)
 
 void lsdn_lbridge_free(struct lsdn_lbridge *br)
 {
-	// TODO: delete link
+	if (!br->ctx->disable_decommit) {
+		int err = lsdn_link_delete(br->ctx->nlsock, &br->bridge_if);
+		if (err)
+			abort();
+	}
 }
 
 void lsdn_lbridge_add(struct lsdn_lbridge *br, struct lsdn_lbridge_if *br_if, struct lsdn_if *iface)
@@ -40,9 +44,11 @@ void lsdn_lbridge_add(struct lsdn_lbridge *br, struct lsdn_lbridge_if *br_if, st
 
 void lsdn_lbridge_remove(struct lsdn_lbridge_if *iface)
 {
-	int err = lsdn_link_set_master(iface->br->ctx->nlsock, 0, iface->iface->ifindex);
-	if (err)
-		abort();
+	if (!iface->br->ctx->disable_decommit) {
+		int err = lsdn_link_set_master(iface->br->ctx->nlsock, 0, iface->iface->ifindex);
+		if (err)
+			abort();
+	}
 }
 
 void lsdn_lbridge_add_virt(struct lsdn_virt *v)

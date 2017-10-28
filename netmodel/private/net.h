@@ -4,6 +4,7 @@
 #include "../include/lsdn.h"
 
 const char *lsdn_mk_ifname(struct lsdn_context* ctx);
+void lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx);
 
 /*
  * A per-local PA view of a remote PA. This structure exists for each combination
@@ -54,7 +55,6 @@ struct lsdn_net_ops {
 	void (*remove_remote_pa) (struct lsdn_remote_pa *pa);
 	/* Clean up after a remote virt/*/
 	void (*remove_remote_virt) (struct lsdn_remote_virt *virt);
-
 
 	void (*validate_pa) (struct lsdn_phys_attachment *pa);
 	void (*validate_virt) (struct lsdn_virt *virt);

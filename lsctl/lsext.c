@@ -326,7 +326,7 @@ CMD(claimLocal)
 	if(ctx->level != L_ROOT)
 		tcl_error(interp, "claimLocal command can not be nested");
 	if(argc != 2) {
-		Tcl_WrongNumArgs(interp, argc, argv, "phys");
+		Tcl_WrongNumArgs(interp, 1, argv, "phys");
 		return TCL_ERROR;
 	}
 
@@ -334,6 +334,32 @@ CMD(claimLocal)
 	if(!phys)
 		return tcl_error(interp, "phys not found");
 	lsdn_phys_claim_local(phys);
+	return TCL_OK;
+}
+
+CMD(cleanup)
+{
+	if(ctx->level != L_ROOT)
+		tcl_error(interp, "claimLocal command can not be nested");
+	if(argc != 1) {
+		Tcl_WrongNumArgs(interp, 1, argv, "");
+		return TCL_ERROR;
+	}
+	lsdn_context_cleanup(ctx->lsctx, lsdn_problem_stderr_handler, NULL);
+	ctx->lsctx = lsdn_context_new("lsdn");
+	return TCL_OK;
+}
+
+CMD(free)
+{
+	if(ctx->level != L_ROOT)
+		tcl_error(interp, "claimLocal command can not be nested");
+	if(argc != 1) {
+		Tcl_WrongNumArgs(interp, 1, argv, "");
+		return TCL_ERROR;
+	}
+	lsdn_context_free(ctx->lsctx);
+	ctx->lsctx = lsdn_context_new("lsdn");
 	return TCL_OK;
 }
 
@@ -354,6 +380,8 @@ int register_lsdn_tcl(Tcl_Interp *interp)
 	REGISTER(commit);
 	REGISTER(validate);
 	REGISTER(claimLocal);
+	REGISTER(cleanup);
+	REGISTER(free);
 
 	return TCL_OK;
 }

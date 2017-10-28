@@ -1,5 +1,6 @@
 #include "private/rules.h"
 #include "include/lsdn.h"
+#include "private/log.h"
 
 void lsdn_ruleset_init(
 	struct lsdn_ruleset *ruleset, struct lsdn_context *ctx,
@@ -20,11 +21,15 @@ void lsdn_ruleset_free(struct lsdn_ruleset *ruleset)
 
 void lsdn_ruleset_remove(struct lsdn_rule *rule)
 {
-	int err = lsdn_filter_delete(
-		rule->ruleset->ctx->nlsock, rule->ruleset->iface->ifindex, rule->handle,
-		LSDN_INGRESS_HANDLE, rule->ruleset->chain, rule->ruleset->prio);
-	if (err)
-		abort();
+	if(!rule->ruleset->ctx->disable_decommit) {
+		lsdn_log(LSDNL_RULES, "ruleset_remove(iface=%s,chain=%d, prio=%d, handle=0x%x)\n",
+			 rule->ruleset->iface->ifname, rule->ruleset->chain, rule->ruleset->chain, rule->handle);
+		int err = lsdn_filter_delete(
+			rule->ruleset->ctx->nlsock, rule->ruleset->iface->ifindex, rule->handle,
+			LSDN_INGRESS_HANDLE, rule->ruleset->chain, rule->ruleset->prio);
+		if (err)
+			abort();
+	}
 	lsdn_list_remove(&rule->rules_entry);
 }
 
@@ -50,6 +55,8 @@ struct lsdn_filter* lsdn_ruleset_add(struct lsdn_ruleset *ruleset, struct lsdn_r
 
 void lsdn_ruleset_add_finish(struct lsdn_rule *rule)
 {
+	lsdn_log(LSDNL_RULES, "ruleset_add(iface=%s,chain=%d, prio=%d, handle=0x%x)\n",
+		 rule->ruleset->iface->ifname, rule->ruleset->chain, rule->ruleset->chain, rule->handle);
 	int err = lsdn_filter_create(rule->ruleset->ctx->nlsock, rule->filter);
 	if (err)
 		abort();
@@ -153,17 +160,21 @@ void lsdn_broadcast_remove(struct lsdn_broadcast_action *action)
 {
 	action->filter->free_actions += action->action.actions_count;
 	action->filter->actions[action->filter_entry_index] = NULL;
-	lsdn_flush_action_list(action->filter);
+	if(!action->filter->broadcast->ctx->disable_decommit)
+		lsdn_flush_action_list(action->filter);
 }
 
 void lsdn_broadcast_free(struct lsdn_broadcast *br)
 {
 	lsdn_foreach(br->filters_list, filters_entry, struct lsdn_broadcast_filter, f)
 	{
-		int err = lsdn_filter_delete(
-			br->ctx->nlsock, br->iface->ifindex,
-			MAIN_RULE_HANDLE, LSDN_INGRESS_HANDLE, br->chain, f->prio);
-		if (err)
-			abort();
+		if(!br->ctx->disable_decommit) {
+			int err = lsdn_filter_delete(
+				br->ctx->nlsock, br->iface->ifindex,
+				MAIN_RULE_HANDLE, LSDN_INGRESS_HANDLE, br->chain, f->prio);
+			if (err)
+				abort();
+		}
+		free(f);
 	}
 }

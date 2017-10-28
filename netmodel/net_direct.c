@@ -24,6 +24,11 @@ static void direct_destroy_pa(struct lsdn_phys_attachment *a)
 {
 	lsdn_lbridge_remove(&a->lbridge_if);
 	lsdn_lbridge_free(&a->lbridge);
+	if(!a->net->ctx->disable_decommit) {
+		int err = lsdn_link_delete(a->net->ctx->nlsock, &a->tunnel_if);
+		if (err)
+			abort();
+	}
 }
 
 static struct lsdn_net_ops lsdn_net_direct_ops = {
@@ -38,13 +43,9 @@ struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx)
 	struct lsdn_settings *s = malloc(sizeof(*s));
 	if(!s)
 		ret_ptr(ctx, NULL);
-
-	lsdn_list_init_add(&ctx->settings_list, &s->settings_entry);
-	s->ctx = ctx;
+	lsdn_settings_init_common(s, ctx);
 	s->ops = &lsdn_net_direct_ops;
 	s->nettype = LSDN_NET_DIRECT;
 	s->switch_type = LSDN_LEARNING;
-	s->state = LSDN_STATE_NEW;
-	s->user_hooks = NULL;
 	return s;
 }

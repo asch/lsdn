@@ -41,7 +41,7 @@ function prepare(){
 }
 
 function connect(){
-	lsctl_in_all_phys parts/dhcp.lsctl a b c
+	lsctl_in_all_phys parts/dhcp.lsctl
 
 	dhcp_server a 1 out
 

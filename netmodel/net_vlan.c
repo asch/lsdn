@@ -21,6 +21,11 @@ static void vlan_destroy_pa(struct lsdn_phys_attachment *p)
 {
 	lsdn_lbridge_remove(&p->lbridge_if);
 	lsdn_lbridge_free(&p->lbridge);
+	if(!p->net->ctx->disable_decommit) {
+		int err = lsdn_link_delete(p->net->ctx->nlsock, &p->tunnel_if);
+		if (err)
+			abort();
+	}
 }
 
 static struct lsdn_net_ops lsdn_net_vlan_ops = {
@@ -36,12 +41,9 @@ struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx)
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_list_init_add(&ctx->settings_list, &s->settings_entry);
-	s->ctx = ctx;
+	lsdn_settings_init_common(s, ctx);
 	s->ops = &lsdn_net_vlan_ops;
 	s->nettype = LSDN_NET_VLAN;
 	s->switch_type = LSDN_LEARNING;
-	s->state = LSDN_STATE_NEW;
-	s->user_hooks = NULL;
 	return s;
 }

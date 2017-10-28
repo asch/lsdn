@@ -12,10 +12,10 @@ function prepare(){
 }
 
 function connect(){
-	lsctl_in_all_phys parts/large.lsctl $phys_names
+	lsctl_in_all_phys parts/large.lsctl
 }
 
-function test(){
+function test_ping(){
 	# We need significantly longer ping time here to allow for warmup of the infrastructure.
 	# For a simple ping, there are two levels of ARP broadcasts which need to be resolved,
 	# and there is 40 of them on the physical level.

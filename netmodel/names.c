@@ -7,6 +7,11 @@ void lsdn_names_init(struct lsdn_names *tab)
 	lsdn_list_init(&tab->head);
 }
 
+void lsdn_names_free(struct lsdn_names *tab)
+{
+
+}
+
 lsdn_err_t lsdn_name_set(struct lsdn_name *name, struct lsdn_names *table, const char* str)
 {
 	if(name->str == str)

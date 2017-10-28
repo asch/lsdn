@@ -15,7 +15,7 @@ enum lsdn_err {
 	LSDNE_NOIF,
 	LSDNE_OS,
 	LSDNE_VALIDATE,
-	LSDNE_COMMIT
+	LSDNE_COMMIT,
 };
 typedef enum lsdn_err lsdn_err_t;
 

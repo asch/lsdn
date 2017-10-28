@@ -5,6 +5,7 @@
 
 #define lsdn_foreach_log_category(x) \
 	x(NETOPS, "netops") \
+	x(RULES, "rules") \
 	x(MAX, NULL)
 
 #define lsdn_netops_enum(id, string) LSDNL_##id ,

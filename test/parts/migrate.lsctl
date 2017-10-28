@@ -32,3 +32,4 @@ puts "LSCTL: commit 3a"
 commit
 puts "LSCTL: commit 3b"
 commit
+common::free

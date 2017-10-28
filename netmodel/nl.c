@@ -479,6 +479,45 @@ int lsdn_link_veth_create(
 	return ret;
 }
 
+int lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface)
+{
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	bzero(buf, sizeof(buf));
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	unsigned int seq = time(NULL);
+
+	nlh->nlmsg_type	= RTM_DELLINK;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifi_family = AF_UNSPEC;
+	ifm->ifi_change = 0;
+	ifm->ifi_flags = 0;
+	ifm->ifi_index = iface->ifindex;
+
+	int ret = mnl_socket_sendto(sock, nlh, nlh->nlmsg_len);
+	if (ret == -1) {
+		perror("mnl_socket_sendto");
+		return -1;
+	}
+
+	ret = mnl_socket_recvfrom(sock, buf, MNL_SOCKET_BUFFER_SIZE);
+	if (ret == -1) {
+		perror("mnl_socket_recvfrom");
+		return -1;
+	}
+	lsdn_if_free(iface);
+
+	nlh = (struct nlmsghdr *)buf;
+	if (nlh->nlmsg_type == NLMSG_ERROR) {
+		int *err_code = mnl_nlmsg_get_payload(nlh);
+		return *err_code;
+	} else {
+		return -1;
+	}
+}
+
 int lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];

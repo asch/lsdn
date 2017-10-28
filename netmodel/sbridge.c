@@ -109,7 +109,11 @@ void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
 void lsdn_sbridge_free(struct lsdn_sbridge *br)
 {
 	assert(lsdn_is_list_empty(&br->if_list));
-	// TODO: destroy the interface
+	if (!br->ctx->disable_decommit) {
+		int err = lsdn_link_delete(br->ctx->nlsock, &br->bridge_if);
+		if (err)
+			abort();
+	}
 }
 
 void lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface)
