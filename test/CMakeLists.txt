@@ -3,7 +3,7 @@ function(join_list values glue output)
   set (${output} "${_tmp_str}" PARENT_SCOPE)
 endfunction(join_list)
 
-file(GLOB TEST_SUPPORT test_*.sh test_*.lsctl run run-qemu)
+file(GLOB TEST_SUPPORT tcl.supp run run-qemu)
 file(GLOB TEST_SUPPORT_PARTS parts/*.sh parts/*.lsctl)
 file(GLOB_RECURSE TEST_SUPPORT_LIB lib/common.sh lib/common.tcl)
 file(GLOB_RECURSE TEST_SUPPORT_QEMU

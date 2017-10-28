@@ -26,6 +26,7 @@ void lsdn_lbridge_free(struct lsdn_lbridge *br)
 		if (err)
 			abort();
 	}
+	lsdn_if_free(&br->bridge_if);
 }
 
 void lsdn_lbridge_add(struct lsdn_lbridge *br, struct lsdn_lbridge_if *br_if, struct lsdn_if *iface)

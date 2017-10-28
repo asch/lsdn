@@ -83,7 +83,7 @@ lsctl_in_all_phys(){
 	local config="$1"
 	shift
 	for p in $PHYS_LIST; do
-		in_phys $p ${TEST_RUNNER:-} $lsctl $config $p
+		pass in_phys $p ${TEST_RUNNER:-} $lsctl $config $p
 	done
 }
 

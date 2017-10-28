@@ -26,6 +26,7 @@ static void vlan_destroy_pa(struct lsdn_phys_attachment *p)
 		if (err)
 			abort();
 	}
+	lsdn_if_free(&p->tunnel_if);
 }
 
 static struct lsdn_net_ops lsdn_net_vlan_ops = {

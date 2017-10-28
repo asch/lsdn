@@ -15,6 +15,20 @@ void lsdn_if_init(struct lsdn_if *lsdn_if)
 	lsdn_if->ifname = NULL;
 }
 
+lsdn_err_t lsdn_if_copy(struct lsdn_if *dst, struct lsdn_if *src)
+{
+	lsdn_if_free(dst);
+	char* dup = NULL;
+	if (src->ifname) {
+		dup = strdup(src->ifname);
+		if (!dup)
+			return LSDNE_NOMEM;
+	}
+	dst->ifindex = src->ifindex;
+	dst->ifname = dup;
+	return LSDNE_OK;
+}
+
 void lsdn_if_free(struct lsdn_if *lsdn_if)
 {
 	free(lsdn_if->ifname);
@@ -507,7 +521,6 @@ int lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface)
 		perror("mnl_socket_recvfrom");
 		return -1;
 	}
-	lsdn_if_free(iface);
 
 	nlh = (struct nlmsghdr *)buf;
 	if (nlh->nlmsg_type == NLMSG_ERROR) {

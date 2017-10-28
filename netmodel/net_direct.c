@@ -29,6 +29,7 @@ static void direct_destroy_pa(struct lsdn_phys_attachment *a)
 		if (err)
 			abort();
 	}
+	lsdn_if_free(&a->tunnel_if);
 }
 
 static struct lsdn_net_ops lsdn_net_direct_ops = {

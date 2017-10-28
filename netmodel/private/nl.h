@@ -48,6 +48,7 @@ struct lsdn_if{
  * Initialize lsdn_if in *empty* state.
  */
 void lsdn_if_init(struct lsdn_if *lsdn_if);
+lsdn_err_t lsdn_if_copy(struct lsdn_if *dst, struct lsdn_if *src);
 /**
  * Free the underlaying memory for storing the name.
  */

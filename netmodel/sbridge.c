@@ -114,6 +114,7 @@ void lsdn_sbridge_free(struct lsdn_sbridge *br)
 		if (err)
 			abort();
 	}
+	lsdn_if_free(&br->bridge_if);
 }
 
 void lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface)

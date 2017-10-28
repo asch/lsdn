@@ -36,6 +36,7 @@ static void vxlan_mcast_destroy_pa(struct lsdn_phys_attachment *a)
 		if (err)
 			abort();
 	}
+	lsdn_if_free(&a->tunnel_if);
 }
 
 struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
@@ -93,6 +94,7 @@ static void vxlan_e2e_destroy_pa(struct lsdn_phys_attachment *a)
 		if (err)
 			abort();
 	}
+	lsdn_if_free(&a->tunnel_if);
 }
 
 static void vxlan_e2e_add_remote_pa(struct lsdn_remote_pa *remote)
@@ -177,11 +179,14 @@ static void vxlan_use_stunnel(struct lsdn_settings *s)
 
 static void vxlan_release_stunnel(struct lsdn_settings *s)
 {
-	if (--s->vxlan.e2e_static.refcount == 0 && !s->ctx->disable_decommit) {
-		lsdn_sbridge_phys_if_free(&s->vxlan.e2e_static.tunnel_sbridge);
-		int err = lsdn_link_delete(s->ctx->nlsock, &s->vxlan.e2e_static.tunnel);
-		if (err)
-			abort();
+	if (--s->vxlan.e2e_static.refcount == 0) {
+		if(!s->ctx->disable_decommit) {
+			lsdn_sbridge_phys_if_free(&s->vxlan.e2e_static.tunnel_sbridge);
+			int err = lsdn_link_delete(s->ctx->nlsock, &s->vxlan.e2e_static.tunnel);
+			if (err)
+				abort();
+		}
+		lsdn_if_free(&s->vxlan.e2e_static.tunnel);
 	}
 }
 

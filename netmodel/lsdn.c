@@ -94,6 +94,9 @@ void lsdn_context_cleanup(struct lsdn_context *ctx, lsdn_problem_cb cb, void *us
 		lsdn_settings_free(s);
 	}
 	lsdn_commit(ctx, cb, user);
+	lsdn_socket_free(ctx->nlsock);
+	free(ctx->name);
+	free(ctx);
 }
 
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user)
@@ -166,7 +169,9 @@ static void net_do_free(struct lsdn_net *net)
 	assert(lsdn_is_list_empty(&net->virt_list));
 	lsdn_list_remove(&net->networks_entry);
 	lsdn_list_remove(&net->settings_users_entry);
+	lsdn_name_free(&net->name);
 	lsdn_names_free(&net->virt_names);
+	free(net);
 }
 
 void lsdn_net_free(struct lsdn_net *net)
@@ -219,6 +224,10 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 static void phys_do_free(struct lsdn_phys *phys)
 {
 	lsdn_list_remove(&phys->phys_entry);
+	lsdn_name_free(&phys->name);
+	free(phys->attr_iface);
+	free(phys->attr_ip);
+	free(phys);
 }
 
 void lsdn_phys_free(struct lsdn_phys *phys)
@@ -395,6 +404,10 @@ static void virt_do_free(struct lsdn_virt *virt)
 	if (virt->connected_through) {
 		free_pa_if_possible(virt->connected_through);
 	}
+	lsdn_name_free(&virt->name);
+	lsdn_if_free(&virt->connected_if);
+	lsdn_if_free(&virt->committed_if);
+	free(virt->attr_mac);
 	free(virt);
 }
 
@@ -427,14 +440,11 @@ lsdn_err_t lsdn_virt_connect(
 	if(!a)
 		ret_err(phys->ctx, LSDNE_NOMEM);
 
-	struct lsdn_if new_if;
-	lsdn_if_init(&new_if);
-	lsdn_err_t err = lsdn_if_set_name(&new_if, iface);
+	lsdn_err_t err = lsdn_if_set_name(&virt->connected_if, iface);
 	if(err != LSDNE_OK)
 		ret_err(phys->ctx, err);
 
 	lsdn_virt_disconnect(virt);
-	virt->connected_if = new_if;
 	virt->connected_through = a;
 	renew(&virt->state);
 	lsdn_list_init_add(&a->connected_virt_list, &virt->connected_virt_entry);
@@ -569,6 +579,7 @@ static bool ack_uncommit(enum lsdn_state *s)
 
 void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 {
+	LSDN_UNUSED(cb); LSDN_UNUSED(user);
 	struct lsdn_net_ops *ops = pa->net->settings->ops;
 	if (pa->state == LSDN_STATE_NEW) {
 		lsdn_log(LSDNL_NETOPS, "create_pa(net = %s (%p), phys = %s (%p), pa = %p)\n",
@@ -581,7 +592,9 @@ void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
 		if (v->state == LSDN_STATE_NEW) {
 			v->committed_to = pa;
-			v->committed_if = v->connected_if;
+			if (lsdn_if_copy(&v->committed_if, &v->connected_if) != LSDNE_OK)
+				abort();
+
 			if (ops->add_virt) {
 				lsdn_log(LSDNL_NETOPS, "add_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
 					 lsdn_nullable(pa->net->name.str), pa->net,
@@ -660,7 +673,7 @@ void decommit_virt(struct lsdn_virt *v)
 			ops->remove_virt(v);
 		}
 		v->committed_to = NULL;
-		lsdn_if_init(&v->committed_if);
+		lsdn_if_reset(&v->committed_if);
 	}
 
 	lsdn_foreach(v->virt_view_list, virt_view_entry, struct lsdn_remote_virt, rv) {
