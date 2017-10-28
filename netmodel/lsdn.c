@@ -72,7 +72,7 @@ struct lsdn_context *lsdn_context_new(const char* name)
 
 static void abort_handler(const struct lsdn_problem *problem, void *user)
 {
-	UNUSED(user);
+	LSDN_UNUSED(user);
 	fprintf(stderr, "WARNING: Encountered an error when freeing network\n");
 	lsdn_problem_format(stderr, problem);
 	abort();
@@ -107,7 +107,7 @@ void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb,
 
 static void lsdn_abort_cb(void *user)
 {
-	UNUSED(user);
+	LSDN_UNUSED(user);
 	fprintf(stderr, "liblsdn: Can not allocate memory\n");
 	abort();
 }
