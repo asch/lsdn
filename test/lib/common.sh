@@ -6,6 +6,10 @@ IFPREFIX=lsdn
 PHYS_LIST=
 VIRT_LIST=
 
+if [ -n "${LSDN_VALGRIND:-}" ]; then
+	TEST_RUNNER="valgrind --leak-check=full --suppressions=tcl.supp --error-exitcode=1 -q"
+fi
+
 mk_netns(){
 	ip netns add "${NSPREFIX}-$1"
 }

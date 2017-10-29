@@ -19,3 +19,4 @@ net 2 {
 
 common::claimLocal
 commit
+common::free
