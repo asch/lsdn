@@ -3,7 +3,7 @@ set -u
 
 function syntax
 {
-   echo "usage: run-qemu [--help] [--kvm] [--gdb] kernel module-dir rootfs guest-command"
+   echo "usage: run-qemu [--help] [--kvm] [--gdb] kernel rootfs guest-command"
    echo 
    echo "Available guest commands: shell, raw-shell, all."
    echo "Unrecognized commands are passed to ./run test harness."
@@ -29,21 +29,16 @@ To use this script, you will need to prepare following components:
 
    An example .config is placed in lsdn/test/qemu/example.config.
 
-2) module-dir
-   This is a directory containing the installed kernel modules.
-   It must contain a folder /lib/modules for your kernel with all
-   the networking modules needed for the sucesfull test run.
-
-   To generate this directory, run: 
-    make INSTALL_MOD_PATH=module-dir modules_install
-
-3) rootfs
-   Qemu disk image with root file system on the first partition.
+2) rootfs
+   Path to the directory where the root filesystem resides in the form
+   of simple file tree. No drive image.
    The rootfs must contain bash, glibc, iproute and cmake. Currently 
    tested with ArchLinux root file sytem.
 
    The file qemu/lsdn-guest-init must be placed in the root directory
    of this filesystem for automatic bootstrap.
+
+   You can use create_rootfs.sh script for this. Of course, you are using ArchLinux.
 EOT
 	exit 0
 }
@@ -72,7 +67,7 @@ while [[ ${1:-} == --* ]]; do
 	shift
 done
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 3 ]; then
 	echo "Missing required arguments"
 	echo 
 	syntax
@@ -80,9 +75,9 @@ if [ $# -lt 4 ]; then
 fi
 
 KERNEL=$1; shift
-MODROOT=$1; shift
 ROOTFS=$1; shift
 QEMU=qemu-system-x86_64
+SHELL=/bin/bash
 INIT="$SHELL /lsdn-guest-init qemu/prepare-guest-env"
 SHELL="/bin/bash"
 CMDLINE=""
@@ -102,18 +97,12 @@ case $1 in
 		;;
 esac
 
-if ! [ -d "$MODROOT/lib/modules" ]; then
-	echo "Can not find modules directory $MODROOT/lib/modules"
-	exit 1
-fi
-
 echo "$CMDLINE" > qemu/work
 
 "$QEMU" -kernel "$KERNEL" -m 256\
-	-drive if=virtio,file="$ROOTFS" \
+	-fsdev local,id=rootfs,path=${ROOTFS},security_model=none \
+	-device virtio-9p-pci,fsdev=rootfs,mount_tag=/dev/root \
 	-virtfs local,mount_tag=build,path=..,security_model=none \
-	-virtfs local,mount_tag=mods,path="$MODROOT/lib/modules",security_model=none \
 	-serial mon:stdio  -nographic \
 	$KVM $GDB \
-	-append "root=/dev/vda1 rw $QUIET console=ttyS0 init=$INIT"
-
+	-append "root=/dev/root rw rootfstype=9p rootflags=trans=virtio,version=9p2000.L $QUIET console=ttyS0 init=$INIT"
