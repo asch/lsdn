@@ -16,6 +16,8 @@ void create_domain(char *name, char *kernel, char *modroot,
 		char *init_script)
 {
 	int res;
+	long size;
+	size_t cnt;
 	pid_t pid;
 	FILE *fp;
 	char xml_desc[MAX_SIZE];
@@ -39,8 +41,18 @@ void create_domain(char *name, char *kernel, char *modroot,
 	fp = fopen(DOMAIN_DESTINATION, "r+");
 	if (!fp)
 		abort();
-	fread(xml_desc, 1, MAX_SIZE, fp);
+
+	fseek(fp, 0, SEEK_END);
+	size = ftell(fp);
+	if (size >= MAX_SIZE)
+		abort();
+	rewind(fp);
+
+	cnt = fread(xml_desc, 1, size, fp);
 	fclose(fp);
+	if (cnt != size)
+		abort();
+	xml_desc[cnt] = '\0';
 
 	conn = virConnectOpen("qemu:///system");
 	if (!conn)

@@ -3,6 +3,13 @@
 NSPREFIX=lsdn
 IFPREFIX=lsdn
 
+PHYS_LIST=
+VIRT_LIST=
+
+if [ -n "${LSDN_VALGRIND:-}" ]; then
+	TEST_RUNNER="valgrind --leak-check=full --suppressions=tcl.supp --error-exitcode=1 -q"
+fi
+
 mk_netns(){
 	ip netns add "${NSPREFIX}-$1"
 }
@@ -36,8 +43,11 @@ mk_phys(){
 	shift 2
 
 	mk_netns "$phys"
+	# cleanup the air by disabling IPv6 (and associated advertisements)
+	in_ns "$phys" sysctl net.ipv6.conf.all.disable_ipv6=1 > /dev/null
 	mk_veth_pair "$phys" out "$net" "$phys"
 	set_ifattr "$phys" out "$@"
+	PHYS_LIST="$PHYS_LIST $phys"
 }
 in_phys(){
 	local ns="$1"
@@ -51,9 +61,13 @@ mk_virt(){
 	shift 2
 
 	mk_netns "$phys-$virt"
+	# cleanup the air by disabling IPv6 (and associated advertisements)
+	in_ns "$phys-$virt" sysctl net.ipv6.conf.all.disable_ipv6=1  > /dev/null
 	mk_veth_pair "$phys" "$virt" "$phys-$virt" out
 	set_ifattr "$phys-$virt" out "$@"
+	in_ns "$phys-$virt" ip link set dev lo up
 	in_ns "$phys" ip link set dev "$virt" up
+	VIRT_LIST="$VIRT_LIST $phys-$virt"
 }
 
 mk_bridge(){
@@ -66,6 +80,14 @@ mk_bridge(){
 	for p in $@; do
 		in_ns "$ns" ip link set dev "$p" master "$if"
 		in_ns "$ns" ip link set dev "$p" up
+	done
+}
+
+lsctl_in_all_phys(){
+	local config="$1"
+	shift
+	for p in $PHYS_LIST; do
+		pass in_phys $p ${TEST_RUNNER:-} $lsctl $config $p
 	done
 }
 

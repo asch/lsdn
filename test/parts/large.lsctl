@@ -1,0 +1,20 @@
+source lib/common.tcl
+common::settings {1}
+
+proc for40 {var body} {
+    for {set $var 1} {[set $var] <= 40} {incr i} $body
+}
+
+for40 i {
+    phys -if out -name p$i -nets {1} -ip 172.16.0.$i
+}
+
+net 1 {
+    for40 i {
+	 virt -if virt -phys p$i -mac 00:00:00:00:00:[format %02x $i]
+    }
+}
+
+common::claimLocal
+commit
+common::free

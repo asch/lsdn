@@ -1,0 +1,23 @@
+{
+   Tcl allocation 1
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:GetBlocks
+   fun:TclpAlloc
+}
+{
+   Tcl allocation 2
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclThreadAllocObj
+}
+{
+   Tcl allocation 3
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+}
+

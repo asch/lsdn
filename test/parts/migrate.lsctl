@@ -1,0 +1,35 @@
+source lib/common.tcl
+common::settings {1}
+
+phys -if out -name a -nets 1 -ip 172.16.0.1
+phys -if out -name b -nets 1 -ip 172.16.0.2
+phys -if out -name c -nets 1 -ip 172.16.0.3
+
+net 1 {
+    virt -if 1 -phys a -mac 00:00:00:00:00:01
+    virt -if 2 -phys a -mac 00:00:00:00:00:02 -name migrator
+}
+
+common::claimLocal
+
+puts "LSCTL: commit 1a"
+commit
+puts "LSCTL: commit 1b"
+commit
+
+net 1 {
+	virt -name migrator -phys b -if 2
+}
+puts "LSCTL: commit 2a"
+commit
+puts "LSCTL: commit 2b"
+commit
+
+net 1 {
+	virt -name migrator -phys c -if 2
+}
+puts "LSCTL: commit 3a"
+commit
+puts "LSCTL: commit 3b"
+commit
+common::free

@@ -45,26 +45,6 @@ void hook(struct lsdn_net *net, struct lsdn_phys *phys, void *data)
 		create_domain("DHCP-SERVER", KERNEL, MODROOT, ROOTFS0, "tap0", "00:00:00:00:00:01", server_init);
 		dhcp_server = lsdn_virt_new(net);
 		lsdn_virt_connect(dhcp_server, phys, "tap0");
-	} else if (phys == phys_b) {
-		create_domain("CLIENT-B-1", KERNEL, MODROOT, ROOTFS1, "tap1", "00:00:00:00:00:02", client_init);
-		virt_b1 = lsdn_virt_new(net);
-		lsdn_virt_connect(virt_b1, phys, "tap1");
-
-		create_domain("CLIENT-B-2", KERNEL, MODROOT, ROOTFS2, "tap2", "00:00:00:00:00:03", client_init);
-		virt_b2 = lsdn_virt_new(net);
-		lsdn_virt_connect(virt_b2, phys, "tap2");
-
-		create_domain("CLIENT-B-3", KERNEL, MODROOT, ROOTFS3, "tap3", "00:00:00:00:00:04", client_init);
-		virt_b3 = lsdn_virt_new(net);
-		lsdn_virt_connect(virt_b3, phys, "tap3");
-	} else if (phys == phys_c) {
-		create_domain("CLIENT-C-1", KERNEL, MODROOT, ROOTFS4, "tap4", "00:00:00:00:00:05", client_init);
-		virt_c1 = lsdn_virt_new(net);
-		lsdn_virt_connect(virt_c1, phys, "tap4");
-
-		create_domain("CLIENT-C-2", KERNEL, MODROOT, ROOTFS5, "tap5", "00:00:00:00:00:06", client_init);
-		virt_c2 = lsdn_virt_new(net);
-		lsdn_virt_connect(virt_c2, phys, "tap5");
 	}
 }
 
@@ -101,6 +81,26 @@ int main(int argc, const char* argv[])
 	lsdn_phys_claim_local(phys_a);
 	lsdn_phys_claim_local(phys_b);
 	lsdn_phys_claim_local(phys_c);
+
+	create_domain("CLIENT-B-1", KERNEL, MODROOT, ROOTFS1, "tap1", "00:00:00:00:00:02", client_init);
+	virt_b1 = lsdn_virt_new(vlan);
+	lsdn_virt_connect(virt_b1, phys_b, "tap1");
+
+	create_domain("CLIENT-B-2", KERNEL, MODROOT, ROOTFS2, "tap2", "00:00:00:00:00:03", client_init);
+	virt_b2 = lsdn_virt_new(vlan);
+	lsdn_virt_connect(virt_b2, phys_b, "tap2");
+
+	create_domain("CLIENT-B-3", KERNEL, MODROOT, ROOTFS3, "tap3", "00:00:00:00:00:04", client_init);
+	virt_b3 = lsdn_virt_new(vlan);
+	lsdn_virt_connect(virt_b3, phys_b, "tap3");
+
+	create_domain("CLIENT-C-1", KERNEL, MODROOT, ROOTFS4, "tap4", "00:00:00:00:00:05", client_init);
+	virt_c1 = lsdn_virt_new(vlan);
+	lsdn_virt_connect(virt_c1, phys_c, "tap4");
+
+	create_domain("CLIENT-C-2", KERNEL, MODROOT, ROOTFS5, "tap5", "00:00:00:00:00:06", client_init);
+	virt_c2 = lsdn_virt_new(vlan);
+	lsdn_virt_connect(virt_c2, phys_c, "tap5");
 
 	lsdn_commit(ctx, lsdn_problem_stderr_handler, NULL);
 

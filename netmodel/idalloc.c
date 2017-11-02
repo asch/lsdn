@@ -14,6 +14,10 @@ bool lsdn_idalloc_get(struct lsdn_idalloc *idalloc, uint32_t *result) {
 	return true;
 }
 
-void lsdn_idalloc_free(struct lsdn_idalloc *idalloc, uint32_t id) {
-	// TODO:
+void lsdn_idalloc_return(struct lsdn_idalloc *idalloc, uint32_t id) {
+	// TODO
+}
+
+void lsdn_idalloc_free(struct lsdn_idalloc *idalloc) {
+	// TODO
 }

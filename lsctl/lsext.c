@@ -83,6 +83,24 @@ CMD(settings_vlan)
 	return create_nets(interp, nets, settings);
 }
 
+CMD(settings_vxlan_e2e)
+{
+	Tcl_Obj *nets = NULL;
+	int port = 0;
+
+	const Tcl_ArgvInfo opts[] = {
+		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
+		{TCL_ARGV_INT, "-port", NULL, &port},
+		{TCL_ARGV_END}
+	};
+	argc--; argv++;
+	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
+		return TCL_ERROR;
+
+	struct lsdn_settings * settings = lsdn_settings_new_vxlan_e2e(ctx->lsctx, port);
+	return create_nets(interp, nets, settings);
+}
+
 CMD(settings_vxlan_mcast)
 {
 	Tcl_Obj *nets = NULL;
@@ -130,8 +148,8 @@ CMD(settings_vxlan_static)
 CMD(settings)
 {
 	int type;
-	static const char *type_names[] = {"direct", "vlan", "vxlan/mcast", "vxlan/static", NULL};
-	enum types {T_DIRECT, T_VLAN, T_VXLAN_MCAST, T_VXLAN_STATIC};
+	static const char *type_names[] = {"direct", "vlan", "vxlan/mcast", "vxlan/static", "vxlan/e2e", NULL};
+	enum types {T_DIRECT, T_VLAN, T_VXLAN_MCAST, T_VXLAN_STATIC, T_VXLAN_E2E};
 
 	if(argc < 2) {
 		Tcl_WrongNumArgs(interp, 1, argv, "type");
@@ -153,6 +171,9 @@ CMD(settings)
 			return tcl_settings_vxlan_mcast(ctx, interp, argc, argv);
 		case T_VXLAN_STATIC:
 			return tcl_settings_vxlan_static(ctx, interp, argc, argv);
+		case T_VXLAN_E2E:
+			return tcl_settings_vxlan_e2e(ctx, interp, argc, argv);
+		default: abort();
 	}
 
 	return TCL_OK;
@@ -161,7 +182,7 @@ CMD(settings)
 CMD(net)
 {
 	if(argc != 3) {
-		Tcl_WrongNumArgs(interp, argc, argv, "net-id contents");
+		Tcl_WrongNumArgs(interp, 1, argv, "net-id contents");
 		return TCL_ERROR;
 	}
 	if(ctx->level != L_ROOT)
@@ -191,16 +212,23 @@ CMD(virt)
 	const char *phys = NULL;
 	struct lsdn_phys *phys_parsed = NULL;
 	const char *iface = NULL;
+	const char *name = NULL;
+	struct lsdn_virt *virt = NULL;
 
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_STRING, "-mac", NULL, &mac},
 		{TCL_ARGV_STRING, "-phys", NULL, &phys},
 		{TCL_ARGV_STRING, "-if", NULL, &iface},
+		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_END}
 	};
 
 	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
 		return TCL_ERROR;
+
+	if(name) {
+		virt = lsdn_virt_by_name(ctx->net, name);
+	}
 
 	if(mac) {
 		if(lsdn_parse_mac(&mac_parsed, mac) != LSDNE_OK)
@@ -211,7 +239,10 @@ CMD(virt)
 		if(!phys_parsed)
 			return tcl_error(interp, "phys was not found");
 	}
-	struct lsdn_virt *virt = lsdn_virt_new(ctx->net);
+	if (!virt)
+		virt = lsdn_virt_new(ctx->net);
+	if(name)
+		lsdn_virt_set_name(virt, name);
 	if(mac)
 		lsdn_virt_set_mac(virt, mac_parsed);
 	if(phys)
@@ -295,7 +326,7 @@ CMD(claimLocal)
 	if(ctx->level != L_ROOT)
 		tcl_error(interp, "claimLocal command can not be nested");
 	if(argc != 2) {
-		Tcl_WrongNumArgs(interp, argc, argv, "phys");
+		Tcl_WrongNumArgs(interp, 1, argv, "phys");
 		return TCL_ERROR;
 	}
 
@@ -306,10 +337,37 @@ CMD(claimLocal)
 	return TCL_OK;
 }
 
+CMD(cleanup)
+{
+	if(ctx->level != L_ROOT)
+		tcl_error(interp, "claimLocal command can not be nested");
+	if(argc != 1) {
+		Tcl_WrongNumArgs(interp, 1, argv, "");
+		return TCL_ERROR;
+	}
+	lsdn_context_cleanup(ctx->lsctx, lsdn_problem_stderr_handler, NULL);
+	ctx->lsctx = lsdn_context_new("lsdn");
+	return TCL_OK;
+}
+
+CMD(free)
+{
+	if(ctx->level != L_ROOT)
+		tcl_error(interp, "claimLocal command can not be nested");
+	if(argc != 1) {
+		Tcl_WrongNumArgs(interp, 1, argv, "");
+		return TCL_ERROR;
+	}
+	lsdn_context_free(ctx->lsctx);
+	ctx->lsctx = lsdn_context_new("lsdn");
+	return TCL_OK;
+}
+
 static struct tcl_ctx default_ctx;
 
 #define REGISTER(name) Tcl_CreateObjCommand(interp, #name, (Tcl_ObjCmdProc*) tcl_##name, ctx, NULL)
-void register_lsdn_tcl(Tcl_Interp *interp)
+
+int register_lsdn_tcl(Tcl_Interp *interp)
 {
 	struct tcl_ctx *ctx = &default_ctx;
 	ctx->lsctx = lsdn_context_new("lsdn");
@@ -322,4 +380,8 @@ void register_lsdn_tcl(Tcl_Interp *interp)
 	REGISTER(commit);
 	REGISTER(validate);
 	REGISTER(claimLocal);
+	REGISTER(cleanup);
+	REGISTER(free);
+
+	return TCL_OK;
 }

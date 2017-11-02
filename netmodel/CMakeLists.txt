@@ -12,7 +12,7 @@ add_library(lsdn
 
 target_link_libraries(
 	lsdn
-	${MNL_LIBRARIES}
+	${MNL_LIBRARIES} pthread
 )
 
 set_source_files_properties(tags PROPERTIES GENERATED true)

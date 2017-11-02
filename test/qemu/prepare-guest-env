@@ -7,13 +7,6 @@ mkdir -p /run/netns
 mount -t tmpfs none /run/netns
 echo OK
 
-echo Mounting kernel modules ...
-mount -t 9p -o trans=virtio mods /lib/modules -oversion=9p2000.L
-modprobe dummy
-modprobe veth
-
-echo OK
-
 echo -n 'Running '
 cat qemu/work
 . qemu/work

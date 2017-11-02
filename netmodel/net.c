@@ -6,18 +6,11 @@ const char *lsdn_mk_ifname(struct lsdn_context* ctx)
 	return ctx->namebuf;
 }
 
-void lsdn_net_set_up(struct lsdn_phys_attachment *a)
+void lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx)
 {
-	struct lsdn_context *ctx = a->net->ctx;
-	int err;
-
-	err = lsdn_link_set(ctx->nlsock, a->bridge_if.ifindex, true);
-	if(err)
-		abort();
-
-	lsdn_foreach(a->tunnel_list, tunnel_entry, struct lsdn_tunnel, t) {
-		err = lsdn_link_set(ctx->nlsock, t->tunnel_if.ifindex, true);
-		if(err)
-			abort();
-	}
+	settings->state = LSDN_STATE_NEW;
+	lsdn_list_init(&settings->setting_users_list);
+	settings->user_hooks = NULL;
+	lsdn_list_init_add(&ctx->settings_list, &settings->settings_entry);
+	settings->ctx = ctx;
 }

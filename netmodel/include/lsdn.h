@@ -9,6 +9,8 @@
 #include "../private/names.h"
 #include "../private/nl.h"
 #include "../private/idalloc.h"
+#include "../private/sbridge.h"
+#include "../private/lbridge.h"
 #include "nettypes.h"
 
 #define LSDN_DECLARE_ATTR(obj, name, type) \
@@ -58,6 +60,7 @@ struct lsdn_context{
 	lsdn_problem_cb problem_cb;
 	void *problem_cb_user;
 	size_t problem_count;
+	bool disable_decommit;
 
 	int ifcount;
 	char namebuf[IF_NAMESIZE + 1];
@@ -69,9 +72,22 @@ struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user);
 void lsdn_context_abort_on_nomem(struct lsdn_context *ctx);
 void lsdn_context_free(struct lsdn_context *ctx);
+/* Will automatically delete all child objects */
+void lsdn_context_cleanup(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 
 enum lsdn_nettype{
 	LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT
+};
+
+enum lsdn_state {
+	/* Object is being commited for a first time */
+	LSDN_STATE_NEW,
+	/* Object was already commited and needs to be recommited */
+	LSDN_STATE_RENEW,
+	/* Object is already commited and needs to be deleted */
+	LSDN_STATE_DELETE,
+	/* Nothing to be done here. */
+	LSDN_STATE_OK
 };
 
 enum lsdn_switch{
@@ -100,28 +116,15 @@ enum lsdn_switch{
 	 */
 };
 
-struct lsdn_shared_tunnel {
-	int refcount;
-	struct lsdn_idalloc chain_ids;
-	struct lsdn_if tunnel_if;
-	/* Used for redirecting to an appropriate interface handling the switching */
-	struct lsdn_ruleset rules;
-	/* Used for redirecting to an appropriate chain handling the broadcast */
-	struct lsdn_ruleset broadcast_rules;
-};
-
-struct lsdn_tunnel {
-	struct lsdn_if tunnel_if;
-	struct lsdn_list_entry tunnel_entry;
-};
-
 /**
  * Defines the type of a lsdn_net. Multiple networks can share the same settings
  * (e.g. vxlan with static routing on port 1234) and only differ by their identifier
  * (vlan id, vni ...).
  */
 struct lsdn_settings{
+	enum lsdn_state state;
 	struct lsdn_list_entry settings_entry;
+	struct lsdn_list_entry setting_users_list;
 	struct lsdn_context *ctx;
 	struct lsdn_net_ops *ops;
 
@@ -135,7 +138,9 @@ struct lsdn_settings{
 					lsdn_ip_t mcast_ip;
 				} mcast;
 				struct {
-					struct lsdn_shared_tunnel tunnel;
+					size_t refcount;
+					struct lsdn_if tunnel;
+					struct lsdn_sbridge_phys_if tunnel_sbridge;
 				} e2e_static;
 			};
 		} vxlan;
@@ -162,7 +167,9 @@ void lsdn_settings_register_user_hooks(struct lsdn_settings *settings, struct ls
  *  - the switching methods used (visible to end users)
  */
 struct lsdn_net {
+	enum lsdn_state state;
 	struct lsdn_list_entry networks_entry;
+	struct lsdn_list_entry settings_users_entry;
 	struct lsdn_context *ctx;
 	struct lsdn_settings *settings;
 	struct lsdn_name name;
@@ -171,13 +178,14 @@ struct lsdn_net {
 	struct lsdn_list_entry virt_list;
 	/* List of lsdn_phys_attachement attached to this network */
 	struct lsdn_list_entry attached_list;
-
+	struct lsdn_names virt_names;
 };
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
 lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name);
 const char* lsdn_net_get_name(struct lsdn_net *net);
 struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name);
+/* Will automatically delete all child objects */
 void lsdn_net_free(struct lsdn_net *net);
 
 /**
@@ -186,12 +194,14 @@ void lsdn_net_free(struct lsdn_net *net);
  * lsdn_phys_attachement.
  */
 struct lsdn_phys {
+	enum lsdn_state state;
 	struct lsdn_name name;
 	struct lsdn_list_entry phys_entry;
 	struct lsdn_list_entry attached_to_list;
 
 	struct lsdn_context* ctx;
 	bool is_local;
+	bool commited_as_local;
 	char *attr_iface;
 	lsdn_ip_t *attr_ip;
 };
@@ -200,10 +210,12 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx);
 lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name);
 const char* lsdn_phys_get_name(struct lsdn_phys *phys);
 struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name);
+/* Will detach all virts */
 void lsdn_phys_free(struct lsdn_phys *phys);
-/* TODO: provide a way to get missing attributes */
 lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net);
+void lsdn_phys_detach(struct lsdn_phys *phys, struct lsdn_net* net);
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
+lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys);
 
 LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
 LSDN_DECLARE_ATTR(phys, iface, const char*);
@@ -213,11 +225,16 @@ LSDN_DECLARE_ATTR(phys, iface, const char*);
  * Only single attachment may exist for a pair of a physical connection and network.
  */
 struct lsdn_phys_attachment {
+	enum lsdn_state state;
 	/* list held by net */
 	struct lsdn_list_entry attached_entry;
 	/* list held by phys */
 	struct lsdn_list_entry attached_to_entry;
 	struct lsdn_list_entry connected_virt_list;
+	/* List of remote PAs that correspond to this PA */
+	struct lsdn_list_entry pa_view_list;
+	/* List of remote PAs that this PA can see in the network */
+	struct lsdn_list_entry remote_pa_list;
 
 	struct lsdn_net *net;
 	struct lsdn_phys *phys;
@@ -228,27 +245,12 @@ struct lsdn_phys_attachment {
 	 */
 	bool explicitely_attached;
 
-	/* Either a dummy interface for static switch or linux bridge for learning networks */
-	struct lsdn_if bridge_if;
-	struct lsdn_ruleset bridge_rules;
+	struct lsdn_if tunnel_if;
+	struct lsdn_lbridge lbridge;
+	struct lsdn_lbridge_if lbridge_if;
 
-	/* List of tunnels connected to the bridge interface. Used by the generic functions such
-	 * as lsdn_net_connect_bridge.
-	 */
-	struct lsdn_list_entry tunnel_list;
-	/* For free internal use by the network. It can store it's tunnel here if it uses one.
-	 * If it uses multiple tunnels, it will probably allocate them somwhere else. Generic
-	 * functions ignore this field.
-	 */
-	struct lsdn_tunnel tunnel;
-	/* Broadcast rules from shared tunnels to virts, on a seprate chain on the tunnel interface */
-	struct lsdn_broadcast broadcast_actions;
-	/* Rules on the shared tunnel sorting the packets by VNI */
-	struct lsdn_list_entry shared_tunnel_rules_entry;
-	/* The chain allocated for broadcast on rules on the shared tunnel */
-	uint32_t shared_tunnel_br_chain;
-	/* Rules on the virts doing the broadcast to the tunnel */
-	struct lsdn_list_entry owned_broadcast_list;
+	struct lsdn_sbridge sbridge;
+	struct lsdn_sbridge_if sbridge_if;
 };
 
 
@@ -260,25 +262,35 @@ struct lsdn_phys_attachment {
  * different lsdn_phys.
  */
 struct lsdn_virt {
+	/* Tracks the state of local virts */
+	enum lsdn_state state;
+	struct lsdn_name name;
 	struct lsdn_list_entry virt_entry;
 	struct lsdn_list_entry connected_virt_entry;
+	struct lsdn_list_entry virt_view_list;
 	struct lsdn_net* network;
 
-	/* List of struct lsdn_flower_rule. They are flower entries used for switching packets. */
-	struct lsdn_list_entry owned_rules_list;
-	/* List of struct lsdn_broadcast_ation. */
-	struct lsdn_list_entry owned_actions_list;
-	struct lsdn_broadcast broadcast_actions;
-
 	struct lsdn_phys_attachment* connected_through;
+	struct lsdn_phys_attachment* committed_to;
 	struct lsdn_if connected_if;
+	struct lsdn_if committed_if;
 
 	lsdn_mac_t *attr_mac;
 	/*lsdn_ip_t *attr_ip; */
+
+	struct lsdn_lbridge_if lbridge_if;
+
+	struct lsdn_sbridge_if sbridge_if;
+	struct lsdn_sbridge_phys_if sbridge_phys_if;
+	struct lsdn_sbridge_route sbridge_route;
+	struct lsdn_sbridge_mac sbridge_mac;
 };
 
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net);
 void lsdn_virt_free(struct lsdn_virt* vsirt);
+lsdn_err_t lsdn_virt_set_name(struct lsdn_virt *virt, const char *name);
+const char* lsdn_virt_get_name(struct lsdn_virt *virt);
+struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name);
 lsdn_err_t lsdn_virt_connect(
 	struct lsdn_virt *virt, struct lsdn_phys *phys, const char *iface);
 void lsdn_virt_disconnect(struct lsdn_virt *virt);
