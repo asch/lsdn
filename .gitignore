@@ -5,3 +5,4 @@ CMakeLists.txt.user
 /build
 tags
 /docs/html
+/test/pacman-cache
