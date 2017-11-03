@@ -15,4 +15,11 @@ $stty "$old"
 
 stty cols "$cols" rows "$rows"
 
+rcfile=/root/.profile
+if [ ! -f  ${rcfile} ]; then
+	echo 'cd /lsdn/build/test' > ${rcfile}
+fi
+
 agetty --autologin  root $tty xterm
+
+
