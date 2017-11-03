@@ -1,3 +1,7 @@
+/** \file
+ * Main LSDN header file.
+ * Contains definitions of structs and enums, and most of the API functions.
+ */
 #ifndef _LSDN_H
 #define _LSDN_H
 
@@ -32,7 +36,7 @@ struct lsdn_user_hooks {
 };
 
 /**
- * A top-level object encompassing all network topology. This includes virtual networks
+ * Top-level context encompassing all network topology. This includes virtual networks
  * (lsdn_network) and physical host connections (lsdn_phys). Only one context will typically exist
  * in a given program.
  *
@@ -42,9 +46,11 @@ struct lsdn_user_hooks {
  * API calls on the physical machines will be the lsdn_phys_claim_local calls.
  */
 struct lsdn_context{
-	/* Determines the prefix for interfaces created in the context */
+	/** Context name. Determines the prefix for interfaces created in the context. */
 	char* name;
+	/** Out-of-memory callback. */
 	lsdn_nomem_cb nomem_cb;
+	/** User data for the OOM calback. */
 	void *nomem_cb_user;
 	struct lsdn_names phys_names;
 	struct lsdn_names net_names;
@@ -75,38 +81,44 @@ void lsdn_context_free(struct lsdn_context *ctx);
 /* Will automatically delete all child objects */
 void lsdn_context_cleanup(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 
+/** Type of network encapsulation. */
 enum lsdn_nettype{
-	LSDN_NET_VXLAN, LSDN_NET_VLAN, LSDN_NET_DIRECT
+	/** VxLAN encapsulation. */
+	LSDN_NET_VXLAN,
+	/** VLAN encapsulation. */
+	LSDN_NET_VLAN,
+	/** No encapsulation. */
+	LSDN_NET_DIRECT
 };
 
+/** State of the LSDN object. */
 enum lsdn_state {
-	/* Object is being commited for a first time */
+	/** Object is being commited for a first time. */
 	LSDN_STATE_NEW,
-	/* Object was already commited and needs to be recommited */
+	/** Object was already commited and needs to be recommited. */
 	LSDN_STATE_RENEW,
-	/* Object is already commited and needs to be deleted */
+	/** Object is already commited and needs to be deleted. */
 	LSDN_STATE_DELETE,
-	/* Nothing to be done here. */
+	/** Object is in commited state. */
 	LSDN_STATE_OK
 };
 
+/** Switch type for the virtual network. */
 enum lsdn_switch{
-	/* A learning switch with single tunnel shared from the phys.
-	 *
+	/** Learning switch with single tunnel shared from the phys.
 	 * The network is essentially autoconfiguring in this mode.
 	 */
 	LSDN_LEARNING,
-	/* A learning switch with a tunnel for each connected endpoint
-	 *
+	/** Learning switch with a tunnel for each connected endpoint.
 	 * In this mode the connection information (IP addr) for each physical node is required.
 	 */
 	LSDN_LEARNING_E2E,
-	/* Static switching with a tunnel for each connected endpoint
-	 * Note: the endpoint is represented by a single linux interface,
-	 * with the actual endpoint being selected by tc actions.
-	 *
+	/** Static switching with a tunnel for each connected endpoint.
 	 * In this mode we need the connection information + MAC addresses of all virts and where
 	 * they reside.
+	 *
+	 * @note the endpoint is represented by a single linux interface,
+	 * with the actual endpoint being selected by tc actions.
 	 */
 	LSDN_STATIC_E2E
 
@@ -116,12 +128,11 @@ enum lsdn_switch{
 	 */
 };
 
-/**
- * Defines the type of a lsdn_net. Multiple networks can share the same settings
- * (e.g. vxlan with static routing on port 1234) and only differ by their identifier
- * (vlan id, vni ...).
+/** Configuration structure for `lsdn_net`.
+ * Multiple networks can share the same settings (e.g. vxlan with static routing on port 1234)
+ * and only differ by their identifier (vlan id, vni ...).
  */
-struct lsdn_settings{
+struct lsdn_settings {
 	enum lsdn_state state;
 	struct lsdn_list_entry settings_entry;
 	struct lsdn_list_entry setting_users_list;
@@ -158,8 +169,8 @@ void lsdn_settings_free(struct lsdn_settings *settings);
 void lsdn_settings_register_user_hooks(struct lsdn_settings *settings, struct lsdn_user_hooks *user_hooks);
 
 
-/**
- * Virtual network to which nodes (lsdn_virt) connect through physical host connections (lsdn_phys).
+/** Virtual network representation.
+ * Nodes defined by `lsdn_virt` connect to a `lsdn_net` through physical host connections `lsdn_phys`.
  * Can be implemented using common tunneling techniques, like vlan or vxlan or no tunneling.
  *
  * Networks are defined by two main characteristics:
@@ -188,10 +199,10 @@ struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name);
 /* Will automatically delete all child objects */
 void lsdn_net_free(struct lsdn_net *net);
 
-/**
- * Represents a physical host connection (e.g. eth0 on lsdn1).
+/** Physical host connection representation.
+ * Represents a kernel interface for a node, e.g., eth0 on lsdn1.
  * Physical interfaces are used to connect to virtual networks. This connection is called
- * lsdn_phys_attachement.
+ * `lsdn_phys_attachement`.
  */
 struct lsdn_phys {
 	enum lsdn_state state;
@@ -220,9 +231,9 @@ lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys);
 LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
 LSDN_DECLARE_ATTR(phys, iface, const char*);
 
-/**
+/** Physical interface attachment.
  * A point of connection to a virtual network through a physical interface.
- * Only single attachment may exist for a pair of a physical connection and network.
+ * Only a single attachment may exist for a pair of `lsdn_phys` and `lsdn_net`.
  */
 struct lsdn_phys_attachment {
 	enum lsdn_state state;
@@ -238,8 +249,8 @@ struct lsdn_phys_attachment {
 
 	struct lsdn_net *net;
 	struct lsdn_phys *phys;
-	/* Was this attachment created by lsdn_phys_attach at some point, or was it implicitely
-	 * created by lsdn_virt_connect, just for bookkeeping? All fields bellow are valid only for
+	/** Was this attachment created by lsdn_phys_attach at some point, or was it implicitely
+	 * created by lsdn_virt_connect, just for bookkeeping? All fields below are valid only for
 	 * explicit attachments. If you try to commit a network and some attachment is not
 	 * explicitely attached, we assume you just made a mistake.
 	 */
@@ -254,7 +265,7 @@ struct lsdn_phys_attachment {
 };
 
 
-/**
+/** Node in the virtual network.
  * A virtual machine (typically -- it may be any linux interface).
  *
  * Virtual machines participate in virtual networks (through phys_attachments on the host machine

@@ -1,11 +1,16 @@
+/** \file
+ * Cleanup list management routines.
+ */
 #include "private/clist.h"
 
+/** Initialize a cleanup list. */
 void lsdn_clist_init(struct lsdn_clist *clist, size_t clist_index)
 {
 	lsdn_list_init(&clist->cleanup_list);
 	clist->clist_index = clist_index;
 }
 
+/** Set up a cleanup list entry. */
 void lsdn_clist_init_entry(struct lsdn_clist_entry *entry, lsdn_clist_cb cb, void *user)
 {
 	entry->cb = cb;
@@ -15,6 +20,7 @@ void lsdn_clist_init_entry(struct lsdn_clist_entry *entry, lsdn_clist_cb cb, voi
 	}
 }
 
+/** Insert an entry into a cleanup list. */
 void lsdn_clist_add(struct lsdn_clist *clist, struct lsdn_clist_entry *entry)
 {
 	struct lsdn_list_entry *e = &entry->cleanup_entry[clist->clist_index];
@@ -22,6 +28,10 @@ void lsdn_clist_add(struct lsdn_clist *clist, struct lsdn_clist_entry *entry)
 	lsdn_list_add(&clist->cleanup_list, e);
 }
 
+/** Perform cleanup callbacks on the list.
+ * This function traverses the cleanup list, dropping all the entries
+ * and invoking their callbacks.
+ */
 void lsdn_clist_flush(struct lsdn_clist *clist)
 {
 	lsdn_foreach(clist->cleanup_list, cleanup_entry[clist->clist_index], struct lsdn_clist_entry, ce) {

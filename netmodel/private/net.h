@@ -53,7 +53,7 @@ struct lsdn_net_ops {
 	void (*remove_virt) (struct lsdn_virt *virt);
 	/* Clean up after a remote PA. All its remote nodes were already removed. */
 	void (*remove_remote_pa) (struct lsdn_remote_pa *pa);
-	/* Clean up after a remote virt/*/
+	/* Clean up after a remote virt. */
 	void (*remove_remote_virt) (struct lsdn_remote_virt *virt);
 
 	void (*validate_pa) (struct lsdn_phys_attachment *pa);

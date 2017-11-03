@@ -1,3 +1,6 @@
+/** \file
+ * Error reporting related structs and definitions.
+ */
 #ifndef LSDN_ERRORS_H
 #define LSDN_ERRORS_H
 
@@ -6,15 +9,25 @@
 
 struct lsdn_context;
 
+/** Possible LSDN errors. */
 enum lsdn_err {
+	/** No error. */
 	LSDNE_OK = 0,
+	/** Out of memory. */
 	LSDNE_NOMEM,
-	/* Parsing from textual representatio has failed (for parsing IPs, MACs etc.) */
+	/** Parsing from string has failed.
+	 * Can occur when parsing IPs, MACs etc. */
 	LSDNE_PARSE,
+	/** Duplicate name.
+	 * Can occur when setting name for a network, virt or phys. */
 	LSDNE_DUPLICATE,
+	/** Interface does not exist. */
 	LSDNE_NOIF,
+	/** Operating system error. */
 	LSDNE_OS,
+	/** Network model validation failed. */
 	LSDNE_VALIDATE,
+	/** Network model commit failed. */
 	LSDNE_COMMIT,
 };
 typedef enum lsdn_err lsdn_err_t;
@@ -27,22 +40,27 @@ typedef enum lsdn_err lsdn_err_t;
 #define lsdn_mk_problem_enum(name, string) LSDNP_##name,
 
 /* Information about validation or commit error */
-enum lsdn_problem_code{
+enum lsdn_problem_code {
 	lsdn_foreach_problem(lsdn_mk_problem_enum)
 };
 
-enum lsdn_problem_ref_type{
-	LSDNS_ATTR, LSDNS_PHYS, LSDNS_NET, LSDNS_VIRT, LSDNS_IF, LSDNS_END
+enum lsdn_problem_ref_type {
+	LSDNS_ATTR,
+	LSDNS_PHYS,
+	LSDNS_NET,
+	LSDNS_VIRT,
+	LSDNS_IF,
+	LSDNS_END
 };
 
 #define LSDN_MAX_PROBLEM_REFS 10
 
-struct lsdn_problem_ref{
+struct lsdn_problem_ref {
 	enum lsdn_problem_ref_type type;
 	void *ptr;
 };
 
-struct lsdn_problem{
+struct lsdn_problem {
 	enum lsdn_problem_code code;
 	size_t refs_count;
 	struct lsdn_problem_ref *refs;

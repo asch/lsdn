@@ -1,3 +1,6 @@
+/** \file
+ * Error formatting functions.
+ */
 #include "include/errors.h"
 #include "include/lsdn.h"
 #include <stdio.h>
@@ -8,12 +11,14 @@
 
 #define mk_diag_fmt(x, fmt) fmt,
 
+/** List of errors and their format strings. */
 static const char* error_fmt[] = {
 	lsdn_foreach_problem(mk_diag_fmt)
 };
 
 #define CAST(x) ((x)subj->ptr)
-void format_subject(FILE* out, const struct lsdn_problem_ref *subj)
+/** Convert subject name to string. */
+static void format_subject(FILE* out, const struct lsdn_problem_ref *subj)
 {
 	switch(subj->type){
 	case LSDNS_IF:

@@ -1,12 +1,18 @@
+/** \file
+ * cleanup list related structs and function headers
+ */
 #ifndef LSDN_CLIST_H
 #define LSDN_CLIST_H
 
 #include "list.h"
 
 typedef void (*lsdn_clist_cb)(void *user);
+
+/** Maximum number of cleanup lists for an entry to inhabit simultaneously. */
 #define LSDN_CLIST_MAX 2
 
-/* Cleanup list. Allows objects to register cleanup handlers to be called when the
+/** Cleanup list.
+ * Allows objects to register cleanup handlers to be called when the
  * object is destroyed.
  */
 struct lsdn_clist{
@@ -14,7 +20,8 @@ struct lsdn_clist{
 	size_t clist_index;
 };
 
-/* Entry in cleanup list. Each entry can be in multiple lists, as long as the have
+/** Cleanup list entry.
+ * Each entry can be in multiple lists, as long as they have
  * different indices.
  */
 struct lsdn_clist_entry {

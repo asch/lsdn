@@ -1,3 +1,6 @@
+/** \file
+ * Network-related structs and definitions.
+ */
 #ifndef _LSDN_NETTYPES_H
 #define _LSDN_NETTYPES_H
 
@@ -11,24 +14,31 @@ enum lsdn_ethertype_{
 	LSDN_ETHERTYPE_IPV6 = 0x86DD
 };
 
+/** IP protocol version. */
 enum lsdn_ipv {
+	/** IPv4 */
 	LSDN_IPv4,
+	/** IPv6 */
 	LSDN_IPv6
 };
 
+/** MAC address. */
 typedef union lsdn_mac {
 	uint8_t bytes[6];
 	char chr[6];
 } lsdn_mac_t;
 
+/** IPv4 address. */
 typedef union lsdn_ipv4 {
 	uint8_t bytes[4];
 } lsdn_ipv4_t;
 
+/** IPv6 address. */
 typedef union lsdn_ipv6 {
 	uint8_t bytes[16];
 } lsdn_ipv6_t;
 
+/** IP address (any version). */
 typedef struct lsdn_ip {
 	enum lsdn_ipv v;
 	union{
@@ -37,6 +47,7 @@ typedef struct lsdn_ip {
 	};
 } lsdn_ip_t;
 
+/** Construct a `lsdn_ip` IPv4 address from a 4-tuple. */
 #define LSDN_MK_IPV4(a, b, c, d)\
 	(struct lsdn_ip) { .v = LSDN_IPv4, .v4 = { .bytes = { (a), (b), (c), (d) } } }
 
@@ -59,6 +70,7 @@ bool lsdn_ipv6_eq(lsdn_ipv6_t a, lsdn_ipv6_t b);
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf);
 void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf);
 
+/** Convert `lsdn_ipv4` to `uint32_t`. */
 static inline uint32_t lsdn_ip4_u32(const lsdn_ipv4_t *v4)
 {
 	const uint8_t *b = v4->bytes;
