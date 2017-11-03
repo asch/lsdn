@@ -1,6 +1,6 @@
 namespace eval common {
-	proc settings {nets} {
-		::settings {*}$::env(LSCTL_NETTYPE) -nets $nets
+	proc settings {} {
+		::settings {*}$::env(LSCTL_NETTYPE)
 	}
 	proc claimLocal {} {
 		set phys [lindex $::argv 0]

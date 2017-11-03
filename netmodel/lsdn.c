@@ -64,6 +64,7 @@ struct lsdn_context *lsdn_context_new(const char* name)
 	ctx->ifcount = 0;
 	lsdn_names_init(&ctx->phys_names);
 	lsdn_names_init(&ctx->net_names);
+	lsdn_names_init(&ctx->setting_names);
 	lsdn_list_init(&ctx->networks_list);
 	lsdn_list_init(&ctx->settings_list);
 	lsdn_list_init(&ctx->phys_list);
@@ -126,6 +127,22 @@ void lsdn_settings_register_user_hooks(
 	if (!settings)
 		return;
 	settings->user_hooks = user_hooks;
+}
+
+lsdn_err_t lsdn_settings_set_name(struct lsdn_settings *s, const char *name)
+{
+	return lsdn_name_set(&s->name, &s->ctx->setting_names, name);
+}
+const char* lsdn_settings_get_name(struct lsdn_settings *s)
+{
+	return s->name.str;
+}
+struct lsdn_settings* lsdn_settings_by_name(struct lsdn_context *ctx, const char *name)
+{
+	struct lsdn_name *r = lsdn_names_search(&ctx->setting_names, name);
+	if(!r)
+		return NULL;
+	return lsdn_container_of(r, struct lsdn_settings, name);
 }
 
 static void settings_do_free(struct lsdn_settings *settings)

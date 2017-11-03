@@ -22,39 +22,27 @@ static int store_arg(ClientData d, Tcl_Obj *obj, void *dst_ptr)
 	return 1;
 }
 
-static int create_nets(Tcl_Interp *interp, Tcl_Obj *nets, struct lsdn_settings *settings)
+static int settings_common(Tcl_Interp *interp, struct lsdn_settings *settings, const char *name)
 {
-	if(!nets)
-		return tcl_error(interp, "-nets argument is required");
-
-	int netc;
-	Tcl_Obj** netv;
-	if(Tcl_ListObjGetElements(interp, nets, &netc, &netv) != TCL_OK)
-		return TCL_ERROR;
-	/* first just validate */
-	for(int i = 0; i < netc; i++) {
-		int netid;
-		if(Tcl_GetIntFromObj(interp, netv[i], &netid) != TCL_OK)
-			return TCL_ERROR;
+	lsdn_err_t err = lsdn_settings_set_name(settings, name ? name : "default");
+	if (err != LSDNE_OK) {
+		if (err == LSDNE_DUPLICATE) {
+			if (name)
+				return tcl_error(interp, "Name already exists");
+			else
+				return tcl_error(interp, "Default settings already exist");
+		} else abort();
 	}
 
-	/* now create */
-	for(int i = 0; i < netc; i++) {
-		int netid;
-		if(Tcl_GetIntFromObj(interp, netv[i], &netid) != TCL_OK)
-			return TCL_ERROR;
-		struct lsdn_net *net = lsdn_net_new(settings, netid);
-		lsdn_net_set_name(net, Tcl_GetString(netv[i]));
-	}
 	return TCL_OK;
 }
 
 CMD(settings_direct)
 {
-	Tcl_Obj *nets = NULL;
+	const char *name = NULL;
 
 	const Tcl_ArgvInfo opts[] = {
-		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
+		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_END}
 	};
 	argc--; argv++;
@@ -63,15 +51,15 @@ CMD(settings_direct)
 		return TCL_ERROR;
 
 	struct lsdn_settings * settings = lsdn_settings_new_direct(ctx->lsctx);
-	return create_nets(interp, nets, settings);
+	return settings_common(interp, settings, name);
 }
 
 CMD(settings_vlan)
 {
-	Tcl_Obj *nets = NULL;
+	const char *name = NULL;
 
 	const Tcl_ArgvInfo opts[] = {
-		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
+		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_END}
 	};
 	argc--; argv++;
@@ -80,17 +68,17 @@ CMD(settings_vlan)
 		return TCL_ERROR;
 
 	struct lsdn_settings * settings = lsdn_settings_new_vlan(ctx->lsctx);
-	return create_nets(interp, nets, settings);
+	return settings_common(interp, settings, name);
 }
 
 CMD(settings_vxlan_e2e)
 {
-	Tcl_Obj *nets = NULL;
+	const char *name = NULL;
 	int port = 0;
 
 	const Tcl_ArgvInfo opts[] = {
-		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
 		{TCL_ARGV_INT, "-port", NULL, &port},
+		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_END}
 	};
 	argc--; argv++;
@@ -98,19 +86,19 @@ CMD(settings_vxlan_e2e)
 		return TCL_ERROR;
 
 	struct lsdn_settings * settings = lsdn_settings_new_vxlan_e2e(ctx->lsctx, port);
-	return create_nets(interp, nets, settings);
+	return settings_common(interp, settings, name);
 }
 
 CMD(settings_vxlan_mcast)
 {
-	Tcl_Obj *nets = NULL;
+	const char* name = NULL;
 	const char* ip;
 	lsdn_ip_t ip_parsed;
 	int port = 0;
 
 	const Tcl_ArgvInfo opts[] = {
-		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
 		{TCL_ARGV_STRING, "-mcastIp", NULL, &ip},
+		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_INT, "-port", NULL, &port},
 		{TCL_ARGV_END}
 	};
@@ -124,16 +112,16 @@ CMD(settings_vxlan_mcast)
 		return tcl_error(interp, "mcastIp is not a valid ip address");
 
 	struct lsdn_settings * settings = lsdn_settings_new_vxlan_mcast(ctx->lsctx, ip_parsed, port);
-	return create_nets(interp, nets, settings);
+	return settings_common(interp, settings, name);
 }
 
 CMD(settings_vxlan_static)
 {
-	Tcl_Obj *nets = NULL;
 	int port = 0;
+	const char *name = NULL;
 	const Tcl_ArgvInfo opts[] = {
-		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
 		{TCL_ARGV_INT, "-port", NULL, &port},
+		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_END}
 	};
 	argc--; argv++;
@@ -142,7 +130,7 @@ CMD(settings_vxlan_static)
 		return TCL_ERROR;
 
 	struct lsdn_settings * settings = lsdn_settings_new_vxlan_static(ctx->lsctx, port);
-	return create_nets(interp, nets, settings);
+	return settings_common(interp, settings, name);
 }
 
 CMD(settings)
@@ -157,7 +145,7 @@ CMD(settings)
 	}
 
 	if(ctx->level != L_ROOT)
-		tcl_error(interp, "settings command can not be nested");
+		return tcl_error(interp, "settings command can not be nested");
 
 	if(Tcl_GetIndexFromObj(interp, argv[1], type_names, "type", 0, &type) != TCL_OK)
 		return TCL_ERROR;
@@ -186,11 +174,19 @@ CMD(net)
 		return TCL_ERROR;
 	}
 	if(ctx->level != L_ROOT)
-		tcl_error(interp, "net command can not be nested");
-
+		return tcl_error(interp, "net command can not be nested");
 	ctx->net = lsdn_net_by_name(ctx->lsctx, Tcl_GetString(argv[1]));
-	if(!ctx->net)
-		return tcl_error(interp, "net not found");
+	if(!ctx->net) {
+		struct lsdn_settings *s = lsdn_settings_by_name(ctx->lsctx, "default");
+		if (!s)
+			return tcl_error(interp, "Please define default network settings first");
+
+		int netid;
+		if (Tcl_GetIntFromObj(interp, argv[1], &netid))
+			return TCL_ERROR;
+
+		ctx->net = lsdn_net_new(s, netid);
+	}
 
 	ctx->level = L_NET;
 	lsdn_net_set_name(ctx->net, Tcl_GetString(argv[1]));
@@ -260,22 +256,16 @@ CMD(phys)
 	const char *iface = NULL;
 	const char *ip = NULL;
 	lsdn_ip_t ip_parsed;
-	Tcl_Obj *nets = NULL;
-	int netc;
-	Tcl_Obj** netv;
 
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_STRING, "-name", NULL, &name},
 		{TCL_ARGV_STRING, "-if", NULL, &iface},
 		{TCL_ARGV_STRING, "-ip", NULL, &ip},
-		{TCL_ARGV_FUNC, "-nets", store_arg, &nets},
 		{TCL_ARGV_END}
 	};
 	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
 		return TCL_ERROR;
 
-	if(nets && Tcl_ListObjGetElements(interp, nets, &netc, &netv) != TCL_OK)
-		return TCL_ERROR;
 	if(ip) {
 		if(lsdn_parse_ip(&ip_parsed, ip) != LSDNE_OK)
 			return tcl_error(interp, "ip address not in valid format");
@@ -289,22 +279,13 @@ CMD(phys)
 	if(ip)
 		lsdn_phys_set_ip(phys, ip_parsed);
 
-	if(nets){
-		for(int i = 0; i < netc; i++) {
-			struct lsdn_net *net = lsdn_net_by_name(ctx->lsctx, Tcl_GetString(netv[i]));
-			if(!net)
-				return tcl_error(interp, "network not found");
-			lsdn_phys_attach(phys, net);
-		}
-	}
-
 	return TCL_OK;
 }
 
 CMD(commit)
 {
 	if(ctx->level != L_ROOT)
-		tcl_error(interp, "commit command can not be nested");
+		return tcl_error(interp, "commit command can not be nested");
 
 	if(lsdn_commit(ctx->lsctx, lsdn_problem_stderr_handler, NULL) != LSDNE_OK)
 		return tcl_error(interp, "commit error");
@@ -314,7 +295,7 @@ CMD(commit)
 CMD(validate)
 {
 	if(ctx->level != L_ROOT)
-		tcl_error(interp, "validate command can not be nested");
+		return tcl_error(interp, "validate command can not be nested");
 
 	if(lsdn_validate(ctx->lsctx, lsdn_problem_stderr_handler, NULL) != LSDNE_OK)
 		return tcl_error(interp, "commit error");
@@ -324,7 +305,7 @@ CMD(validate)
 CMD(claimLocal)
 {
 	if(ctx->level != L_ROOT)
-		tcl_error(interp, "claimLocal command can not be nested");
+		return tcl_error(interp, "claimLocal command can not be nested");
 	if(argc != 2) {
 		Tcl_WrongNumArgs(interp, 1, argv, "phys");
 		return TCL_ERROR;
@@ -340,7 +321,7 @@ CMD(claimLocal)
 CMD(cleanup)
 {
 	if(ctx->level != L_ROOT)
-		tcl_error(interp, "claimLocal command can not be nested");
+		return tcl_error(interp, "claimLocal command can not be nested");
 	if(argc != 1) {
 		Tcl_WrongNumArgs(interp, 1, argv, "");
 		return TCL_ERROR;
@@ -353,13 +334,45 @@ CMD(cleanup)
 CMD(free)
 {
 	if(ctx->level != L_ROOT)
-		tcl_error(interp, "claimLocal command can not be nested");
+		return  tcl_error(interp, "claimLocal command can not be nested");
 	if(argc != 1) {
 		Tcl_WrongNumArgs(interp, 1, argv, "");
 		return TCL_ERROR;
 	}
 	lsdn_context_free(ctx->lsctx);
 	ctx->lsctx = lsdn_context_new("lsdn");
+	return TCL_OK;
+}
+
+CMD(attach)
+{
+	if(ctx->level != L_NET)
+		/* TODO: relax this requirement -- allow passing the net to the command*/
+		return tcl_error(interp, "virt command may only appear inside net definition");
+
+	for (int i = 1; i<argc; i++)
+	{
+		struct lsdn_phys *p = lsdn_phys_by_name(ctx->lsctx, Tcl_GetString(argv[i]));
+		if (!p)
+			return tcl_error(interp, "phys not found");
+		lsdn_phys_attach(p, ctx->net);
+	}
+	return TCL_OK;
+}
+
+CMD(detach)
+{
+	if(ctx->level != L_NET)
+		/* TODO: relax this requirement -- allow passing the net to the command*/
+		return tcl_error(interp, "virt command may only appear inside net definition");
+
+	for (int i = 1; i<argc; i++)
+	{
+		struct lsdn_phys *p = lsdn_phys_by_name(ctx->lsctx, Tcl_GetString(argv[i]));
+		if (!p)
+			return tcl_error(interp, "phys not found");
+		lsdn_phys_detach(p, ctx->net);
+	}
 	return TCL_OK;
 }
 
@@ -376,12 +389,15 @@ int register_lsdn_tcl(Tcl_Interp *interp)
 	REGISTER(settings);
 	REGISTER(net);
 	REGISTER(virt);
+	REGISTER(virt);
 	REGISTER(phys);
 	REGISTER(commit);
 	REGISTER(validate);
 	REGISTER(claimLocal);
 	REGISTER(cleanup);
 	REGISTER(free);
+	REGISTER(attach);
+	REGISTER(detach);
 
 	return TCL_OK;
 }

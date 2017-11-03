@@ -54,6 +54,7 @@ struct lsdn_context{
 	void *nomem_cb_user;
 	struct lsdn_names phys_names;
 	struct lsdn_names net_names;
+	struct lsdn_names setting_names;
 
 	struct lsdn_list_entry networks_list;
 	struct lsdn_list_entry settings_list;
@@ -138,6 +139,7 @@ struct lsdn_settings {
 	struct lsdn_list_entry setting_users_list;
 	struct lsdn_context *ctx;
 	struct lsdn_net_ops *ops;
+	struct lsdn_name name;
 
 	enum lsdn_nettype nettype;
 	enum lsdn_switch switch_type;
@@ -167,6 +169,9 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port);
 void lsdn_settings_free(struct lsdn_settings *settings);
 void lsdn_settings_register_user_hooks(struct lsdn_settings *settings, struct lsdn_user_hooks *user_hooks);
+lsdn_err_t lsdn_settings_set_name(struct lsdn_settings *s, const char *name);
+const char* lsdn_settings_get_name(struct lsdn_settings *s);
+struct lsdn_settings *lsdn_settings_by_name(struct lsdn_context *ctx, const char *name);
 
 
 /** Virtual network representation.

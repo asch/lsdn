@@ -13,4 +13,5 @@ void lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_conte
 	settings->user_hooks = NULL;
 	lsdn_list_init_add(&ctx->settings_list, &settings->settings_entry);
 	settings->ctx = ctx;
+	lsdn_name_init(&settings->name);
 }
