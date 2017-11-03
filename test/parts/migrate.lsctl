@@ -1,14 +1,13 @@
 source lib/common.tcl
 common::settings
 
-phys -if out -name a -ip 172.16.0.1
-phys -if out -name b -ip 172.16.0.2
-phys -if out -name c -ip 172.16.0.3
-
 net 1 {
-	attach a b c
-	virt -if 1 -phys a -mac 00:00:00:00:00:01
-	virt -if 2 -phys a -mac 00:00:00:00:00:02 -name migrator
+	phys -if out -name a -ip 172.16.0.1 {
+		virt -if 1 -mac 00:00:00:00:00:01
+		virt -if 2 -mac 00:00:00:00:00:02 -name migrator
+	}
+	phys -if out -name b -ip 172.16.0.2
+	phys -if out -name c -ip 172.16.0.3
 }
 
 common::claimLocal
