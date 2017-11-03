@@ -1,6 +1,0 @@
-a) Je to ten priklad se trema switchema
-b) Vytvorte si vyrtualni rozhrani sp-ex1-{a-f} pomoci 'bash create-vm.sh'
-c) Vytvorte TC switche pomoci 'bash create-tc-bridge.sh'
-d) pingejte
-   ip netns exec sp-ex1-a ping 192.168.59.2
-e) smazte ten balast pomoci 'bash cleanup.sh'
