@@ -1,5 +1,4 @@
-#ifndef LSDN_SBRIDGE_H
-#define LSDN_SBRIDGE_H
+#pragma once
 
 #include "list.h"
 #include "idalloc.h"
@@ -108,5 +107,3 @@ void lsdn_sbridge_add_stunnel(
 		struct lsdn_sbridge_phys_if *tunnel, struct lsdn_net *net);
 void lsdn_sbridge_remove_stunnel(
 		struct lsdn_sbridge_if *iface);
-
-#endif

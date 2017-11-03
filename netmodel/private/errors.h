@@ -1,5 +1,4 @@
-#ifndef LSDN_PRIVATE_ERRORS_H
-#define LSDN_PRIVATE_ERRORS_H
+#pragma once
 
 #include "../include/errors.h"
 #include "../include/lsdn.h"
@@ -18,5 +17,3 @@ static inline void *ret_ptr(struct lsdn_context *ctx, void *ptr){
 	return ptr;
 }
 #define ret_ptr(ctx, x) return ret_ptr(ctx, x)
-
-#endif

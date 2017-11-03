@@ -1,5 +1,4 @@
-#ifndef LSDN_LBRIDGE_H
-#define LSDN_LBRIDGE_H
+#pragma once
 
 #include "nl.h"
 
@@ -22,5 +21,3 @@ void lsdn_lbridge_remove(struct lsdn_lbridge_if *iface);
 
 void lsdn_lbridge_add_virt(struct lsdn_virt *v);
 void lsdn_lbridge_remove_virt(struct lsdn_virt *v);
-
-#endif

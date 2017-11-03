@@ -1,8 +1,7 @@
 /** \file
  * Network-related structs and definitions.
  */
-#ifndef _LSDN_NETTYPES_H
-#define _LSDN_NETTYPES_H
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -76,5 +75,3 @@ static inline uint32_t lsdn_ip4_u32(const lsdn_ipv4_t *v4)
 	const uint8_t *b = v4->bytes;
 	return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 }
-
-#endif

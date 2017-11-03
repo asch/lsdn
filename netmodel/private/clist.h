@@ -1,8 +1,7 @@
 /** \file
  * cleanup list related structs and function headers
  */
-#ifndef LSDN_CLIST_H
-#define LSDN_CLIST_H
+#pragma once
 
 #include "list.h"
 
@@ -34,5 +33,3 @@ void lsdn_clist_init(struct lsdn_clist *clist, size_t clist_index);
 void lsdn_clist_init_entry(struct lsdn_clist_entry *entry, lsdn_clist_cb cb, void *user);
 void lsdn_clist_add(struct lsdn_clist *clist, struct lsdn_clist_entry *entry);
 void lsdn_clist_flush(struct lsdn_clist *clist);
-
-#endif

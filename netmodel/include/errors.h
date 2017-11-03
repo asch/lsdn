@@ -1,8 +1,7 @@
 /** \file
  * Error reporting related structs and definitions.
  */
-#ifndef LSDN_ERRORS_H
-#define LSDN_ERRORS_H
+#pragma once
 
 #include <stddef.h>
 #include <stdio.h>
@@ -72,5 +71,3 @@ void lsdn_problem_report(struct lsdn_context *ctx, enum lsdn_problem_code code, 
 
 typedef void (*lsdn_problem_cb)(const struct lsdn_problem *diag, void *user);
 void lsdn_problem_stderr_handler(const struct lsdn_problem *problem, void *user);
-
-#endif

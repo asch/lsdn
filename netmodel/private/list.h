@@ -1,5 +1,4 @@
-#ifndef _LSDN_LIST_H_PRIVATE_
-#define _LSDN_LIST_H_PRIVATE_
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -26,7 +25,3 @@ void lsdn_list_remove(struct lsdn_list_entry *entry);
 int lsdn_is_list_empty(struct lsdn_list_entry *head);
 
 typedef int (*lsdn_predicate_t)(struct lsdn_list_entry *what, void *ctx);
-
-
-
-#endif

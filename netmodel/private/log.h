@@ -1,5 +1,4 @@
-#ifndef LSDN_LOG_H
-#define LSDN_LOG_H
+#pragma once
 
 #include <stdarg.h>
 
@@ -21,5 +20,3 @@ const char* lsdn_log_category_name(enum lsdn_log_category category);
 static inline const char* lsdn_nullable(const char *nullable) {
 	return nullable ? nullable : "*";
 }
-
-#endif

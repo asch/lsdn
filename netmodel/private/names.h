@@ -1,5 +1,4 @@
-#ifndef _LSDN_NAMES_H
-#define _LSDN_NAMES_H
+#pragma once
 
 #include "list.h"
 #include "../include/errors.h"
@@ -20,5 +19,3 @@ void lsdn_name_init(struct lsdn_name *name);
 void lsdn_name_free(struct lsdn_name *name);
 struct lsdn_name * lsdn_names_search(struct lsdn_names *tab, const char* key);
 // TODO: allow names removal
-
-#endif

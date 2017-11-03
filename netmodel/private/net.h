@@ -1,5 +1,4 @@
-#ifndef _LSDN_NET_H
-#define _LSDN_NET_H
+#pragma once
 
 #include "../include/lsdn.h"
 
@@ -59,5 +58,3 @@ struct lsdn_net_ops {
 	void (*validate_pa) (struct lsdn_phys_attachment *pa);
 	void (*validate_virt) (struct lsdn_virt *virt);
 };
-
-#endif

@@ -2,8 +2,7 @@
  * Main LSDN header file.
  * Contains definitions of structs and enums, and most of the API functions.
  */
-#ifndef _LSDN_H
-#define _LSDN_H
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -315,5 +314,3 @@ LSDN_DECLARE_ATTR(virt, mac, lsdn_mac_t);
 
 lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
-
-#endif

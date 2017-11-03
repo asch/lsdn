@@ -1,5 +1,4 @@
-#ifndef LSDN_RULES_H
-#define LSDN_RULES_H
+#pragma once
 
 #include "list.h"
 #include <stdbool.h>
@@ -78,6 +77,3 @@ void lsdn_broadcast_init(struct lsdn_broadcast *br, struct lsdn_context *ctx, st
 void lsdn_broadcast_add(struct lsdn_broadcast *br, struct lsdn_broadcast_action *action, struct lsdn_action_desc desc);
 void lsdn_broadcast_remove(struct lsdn_broadcast_action *action);
 void lsdn_broadcast_free(struct lsdn_broadcast *br);
-
-
-#endif

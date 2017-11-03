@@ -1,5 +1,4 @@
-#ifndef _LSDN_UTIL_H
-#define _LSDN_UTIL_H
+#pragma once
 
 #define LSDN_UNUSED(x) ((void)(x))
 
@@ -7,5 +6,3 @@
 	DEBUG_PRINTF("%s: not implemented", __func__); \
 	exit(EXIT_FAILURE); \
 } while (0);
-
-#endif
