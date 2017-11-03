@@ -1,36 +1,20 @@
 function dhcp_server(){
 	in_virt $1 $2 tcpdump -i out -w dump.pcap&
-#	cat << EOF > /tmp/dhcpd.conf
-#default-lease-time 600;
-#max-lease-time 7200;
-#
-#subnet 192.168.99.0 netmask 255.255.255.0 {
-#	option subnet-mask 255.255.255.0;
-#	range 192.168.99.2 192.168.99.250;
-#}
-## Having a statically assigned addresses prevent the DHCP server from doing ARP probes
-## and speeds up the whole process
-#host b1 { hardware ethernet 00:00:00:00:00:b1; fixed-address 192.168.99.2; }
-#host b2 { hardware ethernet 00:00:00:00:00:b2; fixed-address 192.168.99.3; }
-#host b3 { hardware ethernet 00:00:00:00:00:b3; fixed-address 192.168.99.5; }
-#host c1 { hardware ethernet 00:00:00:00:00:c1; fixed-address 192.168.99.4; }
-#EOF
+	cat << EOF > /tmp/dhcpd.conf
+default-lease-time 600;
+max-lease-time 7200;
 
-# TODO This is workaround until rkapl's patch for 9p on COW FS is accepted. The problem is that cat
-# cannot open stdin thus fails when using HEREDOC.
-echo "default-lease-time 600;" > /tmp/dhcpd.conf
-echo "max-lease-time 7200;" >> /tmp/dhcpd.conf
-echo "subnet 192.168.99.0 netmask 255.255.255.0 {" >> /tmp/dhcpd.conf
-echo "	option subnet-mask 255.255.255.0;" >> /tmp/dhcpd.conf
-echo "	range 192.168.99.2 192.168.99.250;" >> /tmp/dhcpd.conf
-echo "}" >> /tmp/dhcpd.conf
-echo "host b1 { hardware ethernet 00:00:00:00:00:b1; fixed-address 192.168.99.2; }" >> /tmp/dhcpd.conf
-echo "host b2 { hardware ethernet 00:00:00:00:00:b2; fixed-address 192.168.99.3; }" >> /tmp/dhcpd.conf
-echo "host b3 { hardware ethernet 00:00:00:00:00:b3; fixed-address 192.168.99.5; }" >> /tmp/dhcpd.conf
-echo "host c1 { hardware ethernet 00:00:00:00:00:c1; fixed-address 192.168.99.4; }" >> /tmp/dhcpd.conf
-# TODO END
-
-
+subnet 192.168.99.0 netmask 255.255.255.0 {
+	option subnet-mask 255.255.255.0;
+	range 192.168.99.2 192.168.99.250;
+}
+# Having a statically assigned addresses prevent the DHCP server from doing ARP probes
+# and speeds up the whole process
+host b1 { hardware ethernet 00:00:00:00:00:b1; fixed-address 192.168.99.2; }
+host b2 { hardware ethernet 00:00:00:00:00:b2; fixed-address 192.168.99.3; }
+host b3 { hardware ethernet 00:00:00:00:00:b3; fixed-address 192.168.99.5; }
+host c1 { hardware ethernet 00:00:00:00:00:c1; fixed-address 192.168.99.4; }
+EOF
 	echo > /tmp/dhcpd.leases
 	in_virt $1 $2 dhcpd -4 -cf /tmp/dhcpd.conf -lf /tmp/dhcpd.leases --no-pid $3
 }
