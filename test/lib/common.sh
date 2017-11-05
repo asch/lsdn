@@ -55,7 +55,7 @@ in_phys(){
 	in_ns "$ns" "$@"
 }
 
-mk_virt(){
+mk_virt_common(){
 	local phys="$1"
 	local virt="$2"
 	shift 2
@@ -63,11 +63,42 @@ mk_virt(){
 	mk_netns "$phys-$virt"
 	# cleanup the air by disabling IPv6 (and associated advertisements)
 	in_ns "$phys-$virt" sysctl net.ipv6.conf.all.disable_ipv6=1  > /dev/null
-	mk_veth_pair "$phys" "$virt" "$phys-$virt" out
-	set_ifattr "$phys-$virt" out "$@"
 	in_ns "$phys-$virt" ip link set dev lo up
-	in_ns "$phys" ip link set dev "$virt" up
-	VIRT_LIST="$VIRT_LIST $phys-$virt"
+}
+
+mk_virt(){
+	local phys="$1"
+	shift 1
+	local virt="$1"
+	local ns="$phys-$virt"
+
+	mk_virt_common "$phys" "$virt"
+
+	cnt=1
+	while [ $# -ne 0 ] ; do
+		local virt="$1"
+		shift
+
+		local args=
+		while [ $# -ne 0 ] ; do
+			if [ "$1" == "next" ] ; then
+				shift
+				break
+			else
+				args="$args $1"
+				shift
+			fi
+		done
+
+		mk_veth_pair "$phys" "$virt" "$ns" out-$cnt
+		set_ifattr "$ns" out-$cnt $args
+		in_ns "$phys" ip link set dev "$virt" up
+
+		cnt=$((++cnt))
+	done
+
+	# TODO
+	#VIRT_LIST="$VIRT_LIST $phys-$virt"
 }
 
 mk_bridge(){
@@ -131,6 +162,20 @@ set_ifattr(){
 		esac
 	done
 	set_up_if "$ns" "$if"
+}
+
+enable_ipv4_forwarding(){
+	local ns="$1"
+	local if="$2"
+	in_ns "$ns-$if" sysctl -w net.ipv4.ip_forward=1
+}
+
+add_default_route(){
+	local ns="$1"
+	local if="$2"
+	local ip="$3"
+	local dev="$4"
+	in_ns "$ns-$if" ip route add default via "$ip" dev "$dev"
 }
 
 cleanup() {

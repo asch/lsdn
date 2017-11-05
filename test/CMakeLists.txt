@@ -70,6 +70,9 @@ test_parts(vxlan_static basic cleanup)
 test_parts(vxlan_static migrate cleanup)
 test_parts(vxlan_static large cleanup)
 test_parts(vxlan_static dhcp)
+
 test_parts(dhcp_in_vms)
+
+test_parts(vlan gateway ping)
 
 test_executable_vm(dhcp_in_vms)

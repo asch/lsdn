@@ -1,5 +1,5 @@
 function dhcp_server(){
-	in_virt $1 $2 tcpdump -i out -w dump.pcap&
+	in_virt $1 $2 tcpdump -i $3 -w dump.pcap&
 	cat << EOF > /tmp/dhcpd.conf
 default-lease-time 600;
 max-lease-time 7200;
@@ -43,12 +43,12 @@ function prepare(){
 function connect(){
 	lsctl_in_all_phys parts/dhcp.lsctl
 
-	dhcp_server a 1 out
+	dhcp_server a 1 out-1
 
-	pass dhcp_client b 1 out
-	pass dhcp_client b 2 out
-	fail dhcp_client b 3 out
-	pass dhcp_client c 1 out
+	pass dhcp_client b 1 out-1
+	pass dhcp_client b 2 out-1
+	fail dhcp_client b 3 out-1
+	pass dhcp_client c 1 out-1
 
 }
 
