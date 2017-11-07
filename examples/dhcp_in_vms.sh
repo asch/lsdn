@@ -1,4 +1,5 @@
-# TODO add to lib/common.sh
+#!/bin/bash
+
 function create_bridge(){
 	ip link add name "$1" type bridge
 }
@@ -42,7 +43,7 @@ function prepare(){
 }
 
 function connect(){
-	$test
+    ./dhcp_in_vms
 }
 
 function test(){
@@ -56,3 +57,7 @@ function test(){
 	# TODO cleanup the interfaces
 	echo "Cleanup the interfaces: ..."
 }
+
+prepare
+connect
+test

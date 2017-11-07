@@ -4,7 +4,7 @@
 
 function help
 {
-	echo "usage: vm_gen name kernel module-dir rootfs tap-interface mac-address dest init-script"
+	echo "usage: vm_gen name kernel rootfs tap-interface mac-address dest init-script"
 
 	cat <<EOT
 
@@ -14,23 +14,21 @@ Arguments:
 
 2) Kernel
 
-3) Module-dir
-
-4) Rootfs
+3) Rootfs
      **** qemu/domain-init needs to reside in the root directory of your rootfs ****
 
-5) Tap interface used on the host
+4) Tap interface used on the host
 
-6) Mac address
+5) Mac address
 
-7) Domain description (output file)
+6) Domain description (output file)
 
-8) Init script to be run in guest
+7) Init script to be run in guest
 EOT
 	exit 0
 }
 
-if [ $# -ne 8 ]; then
+if [ $# -ne 7 ]; then
 	echo "Invalid number of required arguments"
 	echo 
 	help
@@ -39,7 +37,6 @@ fi
 
 NAME=$1; shift
 KERNEL=$1; shift
-MODROOT=$1; shift
 ROOTFS=$1; shift
 TAP=$1; shift
 MAC=$1; shift
@@ -49,11 +46,6 @@ QEMU=/usr/bin/qemu-system-x86_64
 QUIET="quiet"
 INIT="/bin/bash /domain-init ${NAME}"
 BUILD_DIR=$(dirname $(pwd))
-
-if ! [ -d "$MODROOT/lib/modules" ]; then
-	echo "Can not find modules directory $MODROOT/lib/modules"
-	exit 1
-fi
 
 echo "${INIT_SCRIPT}" > ${BUILD_DIR}/hooks/qemu/script-${NAME}
 
@@ -103,10 +95,6 @@ read -d '' DOMAIN <<EOF
       <model type='e1000'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
     </interface>
-    <filesystem type='mount' accessmode='passthrough'>
-        <source dir='${MODROOT}/lib/modules'/>
-        <target dir='mods'/>
-    </filesystem>
     <filesystem type='mount' accessmode='passthrough'>
         <source dir='${BUILD_DIR}'/>
         <target dir='build'/>

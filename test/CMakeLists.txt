@@ -26,12 +26,6 @@ function(test_executable testname)
 	target_link_libraries(test_${testname} lsdn)
 endfunction(test_executable)
 
-function(test_executable_vm testname)
-	add_executable(test_${testname} test_${testname}.c)
-	target_include_directories(test_${testname} PRIVATE ../netmodel/include ../hooks)
-	target_link_libraries(test_${testname} lsdn hooks)
-endfunction(test_executable_vm)
-
 function(test_parts)
 	join_list("${ARGN}" "_" testname)
 	add_test(NAME ${testname} COMMAND ./run ${ARGN})
@@ -71,8 +65,4 @@ test_parts(vxlan_static migrate cleanup)
 test_parts(vxlan_static large cleanup)
 test_parts(vxlan_static dhcp)
 
-test_parts(dhcp_in_vms)
-
 test_parts(vlan gateway ping)
-
-test_executable_vm(dhcp_in_vms)

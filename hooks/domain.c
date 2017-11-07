@@ -11,7 +11,7 @@
 #define DOMAIN_DESTINATION "/tmp/DOMAIN.xml"
 #define MAX_SIZE 16384
 
-void create_domain(char *name, char *kernel, char *modroot,
+void create_domain(char *name, char *kernel,
 		char *rootfs, char *tap, char *mac,
 		char *init_script)
 {
@@ -29,7 +29,7 @@ void create_domain(char *name, char *kernel, char *modroot,
 		abort();
 	case 0:
 		execl("../hooks/vm_gen", "vm_gen", name,
-			kernel, modroot, rootfs,
+			kernel, rootfs,
 			tap, mac, DOMAIN_DESTINATION,
 			init_script, NULL);
 		abort();

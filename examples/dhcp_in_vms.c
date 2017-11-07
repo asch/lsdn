@@ -11,7 +11,6 @@ static struct lsdn_virt
 	*virt_c1, *virt_c2;
 
 #define KERNEL "/home/qemu/bzImage"
-#define MODROOT "/home/qemu/modroot"
 
 #define str(s) #s
 #define ROOTFS(n) str(/home/qemu/rootfs##n.qcow2)
@@ -42,7 +41,7 @@ char *client_init = "sleep 10 # let the server some time to start up\n"
 void hook(struct lsdn_net *net, struct lsdn_phys *phys, void *data)
 {
 	if (phys == phys_a) {
-		create_domain("DHCP-SERVER", KERNEL, MODROOT, ROOTFS0, "tap0", "00:00:00:00:00:01", server_init);
+		create_domain("DHCP-SERVER", KERNEL, ROOTFS0, "tap0", "00:00:00:00:00:01", server_init);
 		dhcp_server = lsdn_virt_new(net);
 		lsdn_virt_connect(dhcp_server, phys, "tap0");
 	}
@@ -82,23 +81,23 @@ int main(int argc, const char* argv[])
 	lsdn_phys_claim_local(phys_b);
 	lsdn_phys_claim_local(phys_c);
 
-	create_domain("CLIENT-B-1", KERNEL, MODROOT, ROOTFS1, "tap1", "00:00:00:00:00:02", client_init);
+	create_domain("CLIENT-B-1", KERNEL, ROOTFS1, "tap1", "00:00:00:00:00:02", client_init);
 	virt_b1 = lsdn_virt_new(vlan);
 	lsdn_virt_connect(virt_b1, phys_b, "tap1");
 
-	create_domain("CLIENT-B-2", KERNEL, MODROOT, ROOTFS2, "tap2", "00:00:00:00:00:03", client_init);
+	create_domain("CLIENT-B-2", KERNEL, ROOTFS2, "tap2", "00:00:00:00:00:03", client_init);
 	virt_b2 = lsdn_virt_new(vlan);
 	lsdn_virt_connect(virt_b2, phys_b, "tap2");
 
-	create_domain("CLIENT-B-3", KERNEL, MODROOT, ROOTFS3, "tap3", "00:00:00:00:00:04", client_init);
+	create_domain("CLIENT-B-3", KERNEL, ROOTFS3, "tap3", "00:00:00:00:00:04", client_init);
 	virt_b3 = lsdn_virt_new(vlan);
 	lsdn_virt_connect(virt_b3, phys_b, "tap3");
 
-	create_domain("CLIENT-C-1", KERNEL, MODROOT, ROOTFS4, "tap4", "00:00:00:00:00:05", client_init);
+	create_domain("CLIENT-C-1", KERNEL, ROOTFS4, "tap4", "00:00:00:00:00:05", client_init);
 	virt_c1 = lsdn_virt_new(vlan);
 	lsdn_virt_connect(virt_c1, phys_c, "tap4");
 
-	create_domain("CLIENT-C-2", KERNEL, MODROOT, ROOTFS5, "tap5", "00:00:00:00:00:06", client_init);
+	create_domain("CLIENT-C-2", KERNEL, ROOTFS5, "tap5", "00:00:00:00:00:06", client_init);
 	virt_c2 = lsdn_virt_new(vlan);
 	lsdn_virt_connect(virt_c2, phys_c, "tap5");
 
