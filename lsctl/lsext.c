@@ -294,8 +294,6 @@ CMD(net)
 
 CMD(virt)
 {
-	/* TODO: allowing naming of virts */
-
 	const char *mac = NULL;
 	lsdn_mac_t mac_parsed;
 	const char *net = NULL;
@@ -609,7 +607,6 @@ int register_lsdn_tcl(Tcl_Interp *interp)
 	lsdn_context_abort_on_nomem(ctx->lsctx);
 	REGISTER(settings);
 	REGISTER(net);
-	REGISTER(virt);
 	REGISTER(virt);
 	REGISTER(phys);
 	REGISTER(commit);
