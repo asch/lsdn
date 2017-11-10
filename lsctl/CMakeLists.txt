@@ -1,3 +1,5 @@
-add_executable(lsctl lsctl.c lsext.c)
+find_package(TCL)
 
-target_link_libraries(lsctl lsdn tcl)
+add_executable(lsctl lsctl.c lsext.c)
+target_link_libraries(lsctl lsdn ${TCL_LIBRARY})
+target_include_directories(lsctl PRIVATE ${TCL_INCLUDE_PATH})

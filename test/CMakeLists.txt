@@ -3,6 +3,8 @@ function(join_list values glue output)
   set (${output} "${_tmp_str}" PARENT_SCOPE)
 endfunction(join_list)
 
+add_executable(halt halt.c)
+
 file(GLOB TEST_SUPPORT tcl.supp run run-qemu)
 file(GLOB TEST_SUPPORT_PARTS parts/*.sh parts/*.lsctl)
 file(GLOB_RECURSE TEST_SUPPORT_LIB lib/common.sh lib/common.tcl)
@@ -36,6 +38,8 @@ function(test_simple test)
 	add_test(NAME ${test} COMMAND ./test_${test})
 endfunction(test_simple)
 
+option(LARGE_TESTS "Disable larger tests" ON)
+
 test_executable(basic)
 test_simple(nettypes)
 # direct connection does not support multiple vnets, so no need to run the regular test
@@ -64,10 +68,13 @@ test_parts(vxlan_e2e migrate cleanup)
 test_parts(vxlan_static basic ping)
 test_parts(vxlan_static cbasic ping)
 test_parts(vxlan_static migrate ping)
-test_parts(vxlan_static large ping)
 test_parts(vxlan_static basic cleanup)
 test_parts(vxlan_static migrate cleanup)
-test_parts(vxlan_static large cleanup)
 test_parts(vxlan_static dhcp)
+
+if(LARGE_TESTS)
+test_parts(vxlan_static large ping)
+test_parts(vxlan_static large cleanup)
+endif(LARGE_TESTS)
 
 test_parts(vlan gateway ping)

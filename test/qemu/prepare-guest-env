@@ -12,4 +12,4 @@ echo -n 'Running '
 cat qemu/work
 . qemu/work
 
-poweroff -f
+/lsdn/build/test/halt

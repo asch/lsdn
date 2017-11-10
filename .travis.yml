@@ -1,0 +1,25 @@
+language: c
+sudo: required
+dist: trusty
+
+install:
+    - sudo apt-get install tcl-dev libmnl-dev libvirt-dev cmake valgrind qemu
+    - pwd
+    - wget https://rkapl.cz/uploads/lsdn-testenv-1.tar.xz -O testenv.tar.xz
+    -  echo '75552ec682bd5d2664183e93cb668a166b686cbac196dba2ec3d38454a63f067  testenv.tar.xz'|sha256sum -c
+    - tar xf testenv.tar.xz
+
+env:
+  global:
+    - CTEST_EXT_COLOR_OUTPUT=TRUE
+    - CTEST_BUILD_FLAGS=-j4
+    - LSDN_VALGRIND=1
+
+script:
+    - pwd
+    - mkdir -p build
+    - cd build
+    - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DLARGE_TESTS=OFF -DKERNEL_HEADERS=`pwd`/../headers/include ..
+    - make
+    - cd test
+    - ./run-qemu ../../bzImage ../../rootfs all

@@ -7,7 +7,7 @@ find_package(PkgConfig)
 pkg_check_modules(MNL libmnl REQUIRED)
 pkg_check_modules(LIBVIRT libvirt)
 
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "-std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 
 add_subdirectory(netmodel)
 add_subdirectory(test)
