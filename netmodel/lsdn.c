@@ -314,6 +314,9 @@ static void phys_do_free(struct lsdn_phys *phys)
 void lsdn_phys_free(struct lsdn_phys *phys)
 {
 	lsdn_foreach(phys->attached_to_list, attached_to_entry, struct lsdn_phys_attachment, pa) {
+		lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
+			lsdn_virt_disconnect(v);
+		}
 		phys_detach_by_pa(pa);
 	}
 	free_helper(phys, phys_do_free);
@@ -480,11 +483,12 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 
 static void virt_do_free(struct lsdn_virt *virt)
 {
-	lsdn_list_remove(&virt->connected_virt_entry);
-	lsdn_list_remove(&virt->virt_entry);
 	if (virt->connected_through) {
+		lsdn_list_remove(&virt->connected_virt_entry);
 		free_pa_if_possible(virt->connected_through);
+		virt->connected_through = NULL;
 	}
+	lsdn_list_remove(&virt->virt_entry);
 	lsdn_name_free(&virt->name);
 	lsdn_if_free(&virt->connected_if);
 	lsdn_if_free(&virt->committed_if);
@@ -750,15 +754,15 @@ void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 void decommit_virt(struct lsdn_virt *v)
 {
 	struct lsdn_net_ops *ops = v->network->settings->ops;
-	struct lsdn_phys_attachment *pa = v->connected_through;
+	struct lsdn_phys_attachment *pa = v->committed_to;
 
-	if (v->committed_to) {
+	if (pa) {
 		if (ops->remove_virt) {
 			lsdn_log(LSDNL_NETOPS, "remove_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
 				 lsdn_nullable(pa->net->name.str), pa->net,
 				 lsdn_nullable(pa->phys->name.str), pa->phys,
 				 pa,
-				 v->connected_if.ifname, v);
+				 v->committed_if.ifname, v);
 			ops->remove_virt(v);
 		}
 		v->committed_to = NULL;
