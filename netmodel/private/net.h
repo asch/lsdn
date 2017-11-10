@@ -32,17 +32,34 @@ struct lsdn_remote_virt {
 	struct lsdn_sbridge_mac sbridge_mac;
 };
 
+/* Calbacks implemented by concrete network types. The documentation at each callback should be
+ * taken as a hint as to what actions you might want to take, in order to make the network work.
+ */
 struct lsdn_net_ops {
-	/* Create a local physical attachment to a network and needed related interfaces, such as
-	 * bridges or tunnels (if there is one tunnel-per local attachment). */
+	/* This machine has connected to a network, create:
+	 *
+	 * - bridge (lbridge or sbridge)
+	 * - tunnel interface (interface + lbridge if or interface + sbridge_phys_if + sbridge_if)
+	 * - or connect an existing shared tunnel (sbridge_if)
+	 */
 	void (*create_pa) (struct lsdn_phys_attachment *pa);
-	/* A virt has conncted on this machine. A per-PA tunnel might be created here. */
+	/* A virt has connected to a network, create:
+	 *
+	 * - bridge interface (lbridge_if or sbridge_phys_if + sbridge_if)
+	 */
 	void (*add_virt) (struct lsdn_virt *virt);
-	/* Another machine has connected to this network. A routing rule
-	 * might be created here and virt might be connected to a bridge. */
+	/* Another machine has connected to this network. Create:
+	 *
+	 * - a routing rule (sbridge_route)
+	 * - or nothing, if the network does not need routing information
+	 */
 	void (*add_remote_pa) (struct lsdn_remote_pa *pa);
-	/* A virt has connected on a remote PA. add_remote_pa was already
-	 * called for the remote PA. A routing rule might be created here. */
+	/* A virt has connected on a remote machine. `add_remote_pa was` already
+	 * called for the remote PA. Create:
+	 *
+	 * - a MAC address match on a routing rule (sbridge_mac)
+	 * - or nothing, if the network does not need routing information
+	 */
 	void (*add_remote_virt) (struct lsdn_remote_virt *virt);
 
 	/* Destroy all resources created by create_pa. All virts, remote virts and remote PAs were
@@ -50,7 +67,7 @@ struct lsdn_net_ops {
 	void (*destroy_pa) (struct lsdn_phys_attachment *pa);
 	/* Clean up after a local virt. */
 	void (*remove_virt) (struct lsdn_virt *virt);
-	/* Clean up after a remote PA. All its remote nodes were already removed. */
+	/* Clean up after a remote PA. All its remote virts were already removed. */
 	void (*remove_remote_pa) (struct lsdn_remote_pa *pa);
 	/* Clean up after a remote virt. */
 	void (*remove_remote_virt) (struct lsdn_remote_virt *virt);
