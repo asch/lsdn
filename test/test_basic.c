@@ -17,16 +17,16 @@ int main(int argc, const char* argv[])
 	if (!nettype) {
 		fprintf(stderr, "no LSCTL_NETTYPE\n");
 		abort();
-	} else if (strcmp(nettype, "vlan")) {
+	} else if (!strcmp(nettype, "vlan")) {
 		settings = lsdn_settings_new_vlan(ctx);
-	} else if (strcmp(nettype, "vxlan/e2e")) {
+	} else if (!strcmp(nettype, "vxlan/e2e")) {
 		settings = lsdn_settings_new_vxlan_e2e(ctx, 0);
-	} else if (strcmp(nettype, "vxlan/static")) {
+	} else if (!strcmp(nettype, "vxlan/static")) {
 		settings = lsdn_settings_new_vxlan_static(ctx, 0);
-	} else if (strcmp(nettype, "vlan")) {
+	} else if (!strcmp(nettype, "vxlan/mcast")) {
 		settings = lsdn_settings_new_vxlan_mcast(ctx, LSDN_MK_IPV4(239,239,239,239), 0);
-	} else if (strcmp(nettype, "vlan")) {
-		settings = lsdn_settings_new_vlan(ctx);
+	} else if (!strcmp(nettype, "direct")) {
+		settings = lsdn_settings_new_direct(ctx);
 	} else {
 		fprintf(stderr, "Unknown nettype: %s\n", nettype);
 		abort();
