@@ -624,6 +624,14 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 			if(!a->explicitely_attached){
 				report_virts(a);
 			}else{
+				if (p->is_local && !p->attr_iface)
+					lsdn_problem_report(
+						ctx, LSDNP_PHYS_NOATTR,
+						LSDNS_ATTR, "iface",
+						LSDNS_PHYS, p,
+						LSDNS_NET, a->net,
+						LSDNS_END);
+
 				if(should_be_validated(a->state) && a->net->settings->ops->validate_pa)
 					a->net->settings->ops->validate_pa(a);
 				validate_virts(a);
