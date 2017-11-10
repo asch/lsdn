@@ -210,6 +210,7 @@ struct lsdn_settings* lsdn_settings_by_name(struct lsdn_context *ctx, const char
 static void settings_do_free(struct lsdn_settings *settings)
 {
 	lsdn_list_remove(&settings->settings_entry);
+	lsdn_name_free(&settings->name);
 	assert(lsdn_is_list_empty(&settings->setting_users_list));
 	free(settings);
 }
