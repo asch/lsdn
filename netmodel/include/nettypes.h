@@ -50,6 +50,10 @@ typedef struct lsdn_ip {
 #define LSDN_MK_IPV4(a, b, c, d)\
 	(struct lsdn_ip) { .v = LSDN_IPv4, .v4 = { .bytes = { (a), (b), (c), (d) } } }
 
+/** Construct a lsdn_mac_t from a 6-tuple. */
+#define LSDN_MK_MAC(a, b, c, d, e, f) \
+	(union lsdn_mac) { .bytes = {(a), (b), (c), (d), (e), (f)}}
+
 extern const lsdn_mac_t lsdn_broadcast_mac;
 extern const lsdn_mac_t lsdn_all_zeroes_mac;
 extern const lsdn_mac_t lsdn_multicast_mac_mask;

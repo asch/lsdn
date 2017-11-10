@@ -1,1 +1,2 @@
-export LSCTL_NETTYPE='vxlan/mcast -mcastIp 239.239.239.239'
+export LSCTL_NETTYPE='vxlan/mcast'
+export LSCTL_NETTYPE_SETTINGS='-mcastIp 239.239.239.239'

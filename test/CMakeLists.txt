@@ -36,28 +36,33 @@ function(test_simple test)
 	add_test(NAME ${test} COMMAND ./test_${test})
 endfunction(test_simple)
 
+test_executable(basic)
 test_simple(nettypes)
 # direct connection does not support multiple vnets, so no need to run the regular test
 test_parts(direct migrate ping)
 test_parts(direct migrate cleanup)
 
 test_parts(vlan basic ping)
+test_parts(vlan cbasic ping)
 test_parts(vlan migrate ping)
 test_parts(vlan basic cleanup)
 test_parts(vlan migrate cleanup)
 test_parts(vlan dhcp)
 
 test_parts(vxlan_mcast basic ping)
+test_parts(vxlan_mcast cbasic ping)
 test_parts(vxlan_mcast migrate ping)
 test_parts(vxlan_mcast basic cleanup)
 test_parts(vxlan_mcast migrate cleanup)
 
 test_parts(vxlan_e2e basic ping)
+test_parts(vxlan_e2e cbasic ping)
 test_parts(vxlan_e2e migrate ping)
 test_parts(vxlan_e2e basic cleanup)
 test_parts(vxlan_e2e migrate cleanup)
 
 test_parts(vxlan_static basic ping)
+test_parts(vxlan_static cbasic ping)
 test_parts(vxlan_static migrate ping)
 test_parts(vxlan_static large ping)
 test_parts(vxlan_static basic cleanup)
