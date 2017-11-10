@@ -1,3 +1,5 @@
+/** \file
+ * Main library file. */
 #include "include/lsdn.h"
 #include "private/nl.h"
 #include "private/net.h"
@@ -12,23 +14,26 @@ static void phys_detach_by_pa(struct lsdn_phys_attachment *pa);
 static void pa_do_free(struct lsdn_phys_attachment *pa);
 static void phys_do_free(struct lsdn_phys *pa);
 
-/*
- * Move from OK to a RENEW state.
- */
+/** Move from OK to a RENEW state.
+ * Only switch state to RENEW if the state is OK, not NEW. */
 static void renew(enum lsdn_state *state) {
 	assert (*state != LSDN_STATE_DELETE);
 	if (*state == LSDN_STATE_OK)
 		*state = LSDN_STATE_RENEW;
 }
 
+/** Propagate RENEW state.
+ * If `from` is slated for renewal and `to` is OK, switch to RENEW too. */
 static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 	if (*from == LSDN_STATE_RENEW && *to == LSDN_STATE_OK)
 		*to = LSDN_STATE_RENEW;
 }
 
-/*
- * Either delete the object right now or mark it for deletion.
- */
+/** Mark object for deletion.
+ * If the object is in NEW state, so it's not in tc tables yet, delete it
+ * immediately. Otherwise, set to DELETE state for later deletion sweep.
+ * @param obj Object to delete, expected to have a `state` member.
+ * @param free Deletion function to use. */
 #define free_helper(obj, free) \
 	do{ \
 		if (obj->state == LSDN_STATE_NEW) \
@@ -37,6 +42,11 @@ static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 			obj->state = LSDN_STATE_DELETE; \
 	} while(0)
 
+/** Create new LSDN context.
+ * Initialize a `lsdn_context` struct, set its name to `name` and configure a netlink socket.
+ * The returned struct must be freed by `lsdn_context_free` after use.
+ * @param name Context name.
+ * @return `NULL` if allocation failed, pointer to new `lsdn_context` otherwise. */
 struct lsdn_context *lsdn_context_new(const char* name)
 {
 	struct lsdn_context *ctx = malloc(sizeof(*ctx));
@@ -71,6 +81,10 @@ struct lsdn_context *lsdn_context_new(const char* name)
 	return ctx;
 }
 
+/** Problem handler that aborts when a problem is found.
+ * Used in `lsdn_context_free`. When freeing a context, we can't handle errors
+ * meaningfully and we don't expect any errors to happen anyway. Any reported problem
+ * will then simply dump description to `stderr` and abort. */
 static void abort_handler(const struct lsdn_problem *problem, void *user)
 {
 	LSDN_UNUSED(user);
@@ -79,13 +93,26 @@ static void abort_handler(const struct lsdn_problem *problem, void *user)
 	abort();
 }
 
+/** Free a LSDN context.
+ * Deletes the context and all its child objects from memory. Does __not__
+ * delete TC rules from kernel tables.
+ *
+ * Use this before exiting your program.
+ * @param ctx Context to free. */
 void lsdn_context_free(struct lsdn_context *ctx)
 {
 	ctx->disable_decommit = true;
 	lsdn_context_cleanup(ctx, abort_handler, NULL);
 }
 
-/* Will automatically delete all child objects */
+/** Clear a LSDN context.
+ * Deletes the context and all its child objects from memory. Also deletes
+ * configured TC rules from kernel tables.
+ *
+ * Use this to deinitialize the LSDN context and tear down the virtual network.
+ * @param ctx Context to cleanup.
+ * @param cb  Problem callback for encountered errors.
+ * @param user User data for the problem callback. */
 void lsdn_context_cleanup(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p) {
@@ -100,6 +127,13 @@ void lsdn_context_cleanup(struct lsdn_context *ctx, lsdn_problem_cb cb, void *us
 	free(ctx);
 }
 
+/** Configure out-of-memory callback.
+ * By default, LSDN will return an error code to indicate that an allocation
+ * failed. This function allows you to set a callback that gets called to handle
+ * this condition instead.
+ * @param ctx LSDN context.
+ * @param cb Callback function.
+ * @param user User data for the callback function. */
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user)
 {
 	if(ctx == NULL)
@@ -109,6 +143,9 @@ void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb,
 	ctx->nomem_cb_user = user;
 }
 
+/** Abort on out-of-memory problem.
+ * Predefined callback for out-of-memory conditions. Prints a message to `stderr`
+ * and aborts. */
 static void lsdn_abort_cb(void *user)
 {
 	LSDN_UNUSED(user);
@@ -116,11 +153,20 @@ static void lsdn_abort_cb(void *user)
 	abort();
 }
 
+/** Configure the context to abort on out-of-memory.
+ * This sets the out-of-memory callback to `lsdn_abort_cb`. If an allocation
+ * fails, this will abort the program.
+ *
+ * It is recommended to use this, unless you have a specific way to handle
+ * out-of-memory conditions.
+ * @param ctx LSDN context. */
 void lsdn_context_abort_on_nomem(struct lsdn_context *ctx)
 {
 	lsdn_context_set_nomem_callback(ctx, lsdn_abort_cb, NULL);
 }
 
+/** Configure user hooks.
+ * Associates a #lsdn_user_hooks structure with `settings`. */
 void lsdn_settings_register_user_hooks(
         struct lsdn_settings *settings, struct lsdn_user_hooks *user_hooks)
 {
@@ -129,14 +175,27 @@ void lsdn_settings_register_user_hooks(
 	settings->user_hooks = user_hooks;
 }
 
+/** Assign a name to settings.
+ * @return #LSDNE_OK if the name is successfully set.
+ * @return #LSDNE_DUPLICATE if this name is already in use. */
 lsdn_err_t lsdn_settings_set_name(struct lsdn_settings *s, const char *name)
 {
 	return lsdn_name_set(&s->name, &s->ctx->setting_names, name);
 }
+
+/** Get settings name.
+ * @return name of the settings struct. */
 const char* lsdn_settings_get_name(struct lsdn_settings *s)
 {
 	return s->name.str;
 }
+
+/** Find settings by name.
+ * Searches the context for a named #lsdn_settings object and returns it.
+ * @param ctx LSDN context.
+ * @param name Requested name
+ * @return Pointer to #lsdn_settings with this name.
+ * @return `NULL` if no settings with that name exist in the context. */
 struct lsdn_settings* lsdn_settings_by_name(struct lsdn_context *ctx, const char *name)
 {
 	struct lsdn_name *r = lsdn_names_search(&ctx->setting_names, name);
@@ -145,6 +204,9 @@ struct lsdn_settings* lsdn_settings_by_name(struct lsdn_context *ctx, const char
 	return lsdn_container_of(r, struct lsdn_settings, name);
 }
 
+/** Delete settings object from memory.
+ * Removes the object from list of settings for its context and then frees it.
+ * */
 static void settings_do_free(struct lsdn_settings *settings)
 {
 	lsdn_list_remove(&settings->settings_entry);
@@ -152,6 +214,8 @@ static void settings_do_free(struct lsdn_settings *settings)
 	free(settings);
 }
 
+/** Free settings object.
+ * Deletes the settings object and all #lsdn_net objects that use it. */
 void lsdn_settings_free(struct lsdn_settings *settings)
 {
 	lsdn_foreach(settings->setting_users_list, settings_users_entry, struct lsdn_net, net) {

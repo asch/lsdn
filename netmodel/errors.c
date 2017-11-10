@@ -44,6 +44,8 @@ static void format_subject(FILE* out, const struct lsdn_problem_ref *subj)
 	}
 }
 
+/** Print problem description.
+ * Constructs a string describing the problem and writes it out to `out`. */
 void lsdn_problem_format(FILE* out, const struct lsdn_problem *problem)
 {
 	size_t i = 0;
@@ -62,7 +64,14 @@ void lsdn_problem_format(FILE* out, const struct lsdn_problem *problem)
 	fputc('\n', stderr);
 }
 
-/* The variadic arguments are pairs of subject type and pointers. The las type must be LSDNS_END */
+/** Report problems to caller.
+ * Walks the list of variadic arguments and invokes the problem callback for each.
+ * Also prepares data for the `lsdn_problem_format` function.
+ * @param ctx Current context.
+ * @param code Problem code.
+ * @param ...  Variadic list of pairs of `lsdn_problem_ref_type`
+ *   and a pointer to the specified object.
+ *   The last element must be a single `LSDNS_END` value. */
 void lsdn_problem_report(struct lsdn_context *ctx, enum lsdn_problem_code code, ...)
 {
 	va_list args;

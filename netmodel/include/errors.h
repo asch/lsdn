@@ -43,22 +43,34 @@ enum lsdn_problem_code {
 	lsdn_foreach_problem(lsdn_mk_problem_enum)
 };
 
+/** Problem reference type. */
 enum lsdn_problem_ref_type {
+	/** Problem with attribute. */
 	LSDNS_ATTR,
+	/** Problem with `lsdn_phys`. */
 	LSDNS_PHYS,
+	/** Problem with `lsdn_net`. */
 	LSDNS_NET,
+	/** Problem with `lsdn_virt`. */
 	LSDNS_VIRT,
+	/** Problem with `lsdn_if`. */
 	LSDNS_IF,
+	/** End of problem list. */
 	LSDNS_END
 };
 
 #define LSDN_MAX_PROBLEM_REFS 10
 
+/** Single problem reference. */
 struct lsdn_problem_ref {
+	/** Problem type. */
 	enum lsdn_problem_ref_type type;
+	/** Associated data, depending on problem type.
+	 * TODO this should probably be a union. */
 	void *ptr;
 };
 
+/** Something about a problem. XXX */
 struct lsdn_problem {
 	enum lsdn_problem_code code;
 	size_t refs_count;
@@ -66,8 +78,10 @@ struct lsdn_problem {
 };
 
 void lsdn_problem_format(FILE* out, const struct lsdn_problem *problem);
-/* The variadic arguments are pairs of subject type and pointers. The las type must be LSDNS_END */
 void lsdn_problem_report(struct lsdn_context *ctx, enum lsdn_problem_code code, ...);
 
+/** Problem handler callback.
+ * @param diag description of the problem.
+ * @param user user-specified data. */
 typedef void (*lsdn_problem_cb)(const struct lsdn_problem *diag, void *user);
 void lsdn_problem_stderr_handler(const struct lsdn_problem *problem, void *user);
