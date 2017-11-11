@@ -23,7 +23,7 @@ void lsdn_ruleset_remove(struct lsdn_rule *rule)
 {
 	if(!rule->ruleset->ctx->disable_decommit) {
 		lsdn_log(LSDNL_RULES, "ruleset_remove(iface=%s,chain=%d, prio=%d, handle=0x%x)\n",
-			 rule->ruleset->iface->ifname, rule->ruleset->chain, rule->ruleset->chain, rule->handle);
+			 rule->ruleset->iface->ifname, rule->ruleset->chain, rule->ruleset->prio, rule->handle);
 		int err = lsdn_filter_delete(
 			rule->ruleset->ctx->nlsock, rule->ruleset->iface->ifindex, rule->handle,
 			LSDN_INGRESS_HANDLE, rule->ruleset->chain, rule->ruleset->prio);
@@ -56,7 +56,7 @@ struct lsdn_filter* lsdn_ruleset_add(struct lsdn_ruleset *ruleset, struct lsdn_r
 void lsdn_ruleset_add_finish(struct lsdn_rule *rule)
 {
 	lsdn_log(LSDNL_RULES, "ruleset_add(iface=%s,chain=%d, prio=%d, handle=0x%x)\n",
-		 rule->ruleset->iface->ifname, rule->ruleset->chain, rule->ruleset->chain, rule->handle);
+		 rule->ruleset->iface->ifname, rule->ruleset->chain, rule->ruleset->prio, rule->handle);
 	int err = lsdn_filter_create(rule->ruleset->ctx->nlsock, rule->filter);
 	if (err)
 		abort();
