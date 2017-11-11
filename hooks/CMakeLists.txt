@@ -7,7 +7,9 @@ add_library(hooks ${HOOKS})
 
 target_link_libraries(hooks ${LIBVIRT_LIBRARIES})
 
-add_custom_target(install_hooks ALL
-	mkdir -p qemu
-	COMMAND ln -f ${DOMAIN_GENERATOR} .
-)
+if(${OUT_TREE})
+    add_custom_target(install_hooks ALL
+        mkdir -p qemu
+        COMMAND ln -f ${DOMAIN_GENERATOR} .
+    )
+endif()

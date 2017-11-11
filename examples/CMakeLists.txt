@@ -1,9 +1,11 @@
 file(GLOB EXAMPLES *.c *.h *.sh)
 
-add_custom_target(install_examples ALL
-    COMMAND ln -f ${EXAMPLES} .
-    SOURCES ${EXAMPLES}
-)
+if(${OUT_TREE})
+	add_custom_target(install_examples ALL
+		COMMAND ln -f ${EXAMPLES} .
+		SOURCES ${EXAMPLES}
+	)
+endif()
 
 function(executable_example example)
 	add_executable(${example} ${example}.c)

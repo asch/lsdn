@@ -13,14 +13,16 @@ file(GLOB_RECURSE TEST_SUPPORT_QEMU
 	qemu/prepare-guest-env
 	qemu/serial-shell)
 
-add_custom_target(install_test_harness ALL
-	mkdir -p qemu lib parts
-	COMMAND ln -f ${TEST_SUPPORT} .
-	COMMAND ln -f ${TEST_SUPPORT_LIB} lib
-	COMMAND ln -f ${TEST_SUPPORT_PARTS} parts
-	COMMAND ln -f ${TEST_SUPPORT_QEMU} qemu
-	SOURCES ${TEST_SUPPORT} ${TEST_SUPPORT_LIB} ${TEST_SUPPORT_QEMU} ${TEST_SUPPORT_PARTS}
-)
+if(${OUT_TREE})
+	add_custom_target(install_test_harness ALL
+		mkdir -p qemu lib parts
+		COMMAND ln -f ${TEST_SUPPORT} .
+		COMMAND ln -f ${TEST_SUPPORT_LIB} lib
+		COMMAND ln -f ${TEST_SUPPORT_PARTS} parts
+		COMMAND ln -f ${TEST_SUPPORT_QEMU} qemu
+		SOURCES ${TEST_SUPPORT} ${TEST_SUPPORT_LIB} ${TEST_SUPPORT_QEMU} ${TEST_SUPPORT_PARTS}
+	)
+endif()
 
 function(test_executable testname)
 	add_executable(test_${testname} test_${testname}.c)

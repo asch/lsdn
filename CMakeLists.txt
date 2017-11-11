@@ -9,6 +9,10 @@ pkg_check_modules(LIBVIRT libvirt)
 
 set(CMAKE_C_FLAGS "-std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 
+if(NOT ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+    SET(OUT_TREE ON)
+endif()
+
 add_subdirectory(netmodel)
 add_subdirectory(test)
 add_subdirectory(lsctl)
