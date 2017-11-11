@@ -3,14 +3,11 @@ sudo: required
 dist: trusty
 
 notifications:
-	irc: "chat.freenode.net#lsdn"
-		on_success: change
-		on_failure: always
-	email:
-		recipients:
-			- lsdn-travis@asch.cz
-		on_success: change
-		on_failure: always
+    email:
+        recipients:
+            - lsdn-travis@asch.cz
+        on_success: change
+        on_failure: always
 
 install:
     - sudo apt-get install tcl-dev libmnl-dev libvirt-dev cmake valgrind qemu
