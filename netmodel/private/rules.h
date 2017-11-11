@@ -70,6 +70,9 @@ struct lsdn_broadcast_filter {
 	struct lsdn_list_entry filters_entry;
 	int prio;
 	size_t free_actions;
+	/* The last action is reserved for the potential continue action,
+	 * that is why we keep track of at most LSDN_MAX_PRIO - 1 actions.
+	 */
 	struct lsdn_broadcast_action *actions[LSDN_MAX_PRIO - 1];
 };
 
