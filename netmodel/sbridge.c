@@ -79,7 +79,7 @@ static void br_forward_make(struct lsdn_sbridge_mac *mac)
 		order += mac->route->tunnel_action.actions_count;
 	}
 	lsdn_action_redir_egress_add(f, order, mac->route->iface->phys_if->iface->ifindex);
-	lsdn_filter_actions_end(f);
+	lsdn_flower_actions_end(f);
 	lsdn_ruleset_add_finish(&fwdr->rule);
 	lsdn_clist_add(&mac->cl_dest, &fwdr->clist);
 }
@@ -140,7 +140,7 @@ void lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface)
 	lsdn_flower_set_dst_mac(f, lsdn_broadcast_mac.chr, lsdn_single_mac_mask.chr);
 	lsdn_flower_actions_start(f);
 	lsdn_action_goto_chain(f, 1, iface->broadcast.chain);
-	lsdn_filter_actions_end(f);
+	lsdn_flower_actions_end(f);
 	lsdn_ruleset_add_finish(&iface->rule_match_br);
 
 	f = lsdn_ruleset_add(&iface->phys_if->rules_fallback, &iface->rule_fallback);
@@ -151,7 +151,7 @@ void lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface)
 	}
 	lsdn_flower_actions_start(f);
 	lsdn_action_redir_ingress_add(f, 1, br->bridge_if.ifindex);
-	lsdn_filter_actions_end(f);
+	lsdn_flower_actions_end(f);
 	lsdn_ruleset_add_finish(&iface->rule_fallback);
 
 	/* pull broadcast rules */

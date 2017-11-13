@@ -135,7 +135,7 @@ static void lsdn_flush_action_list(struct lsdn_broadcast_filter* br_filter)
 		order += action->action.actions_count;
 	}
 	lsdn_action_continue(filter, order);
-	lsdn_filter_actions_end(filter);
+	lsdn_flower_actions_end(filter);
 	err = lsdn_filter_create(br->ctx->nlsock, filter);
 	if (err)
 		abort();

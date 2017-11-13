@@ -22,6 +22,8 @@ enum lsdn_err {
 	LSDNE_DUPLICATE,
 	/** Interface does not exist. */
 	LSDNE_NOIF,
+	/** Netlink error. */
+	LSDNE_NETLINK,
 	/** Operating system error. */
 	LSDNE_OS,
 	/** Network model validation failed. */
