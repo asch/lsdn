@@ -24,10 +24,10 @@ void lsdn_ruleset_remove(struct lsdn_rule *rule)
 	if(!rule->ruleset->ctx->disable_decommit) {
 		lsdn_log(LSDNL_RULES, "ruleset_remove(iface=%s,chain=%d, prio=%d, handle=0x%x)\n",
 			 rule->ruleset->iface->ifname, rule->ruleset->chain, rule->ruleset->prio, rule->handle);
-		int err = lsdn_filter_delete(
+		lsdn_err_t err = lsdn_filter_delete(
 			rule->ruleset->ctx->nlsock, rule->ruleset->iface->ifindex, rule->handle,
 			LSDN_INGRESS_HANDLE, rule->ruleset->chain, rule->ruleset->prio);
-		if (err)
+		if (err != LSDNE_OK)
 			abort();
 	}
 	lsdn_list_remove(&rule->rules_entry);
@@ -57,8 +57,8 @@ void lsdn_ruleset_add_finish(struct lsdn_rule *rule)
 {
 	lsdn_log(LSDNL_RULES, "ruleset_add(iface=%s,chain=%d, prio=%d, handle=0x%x)\n",
 		 rule->ruleset->iface->ifname, rule->ruleset->chain, rule->ruleset->prio, rule->handle);
-	int err = lsdn_filter_create(rule->ruleset->ctx->nlsock, rule->filter);
-	if (err)
+	lsdn_err_t err = lsdn_filter_create(rule->ruleset->ctx->nlsock, rule->filter);
+	if (err != LSDNE_OK)
 		abort();
 	lsdn_filter_free(rule->filter);
 	lsdn_list_init_add(&rule->ruleset->rules_list, &rule->rules_entry);
@@ -137,7 +137,7 @@ static void lsdn_flush_action_list(struct lsdn_broadcast_filter* br_filter)
 	lsdn_action_continue(filter, order);
 	lsdn_flower_actions_end(filter);
 	err = lsdn_filter_create(br->ctx->nlsock, filter);
-	if (err)
+	if (err != LSDNE_OK)
 		abort();
 	lsdn_filter_free(filter);
 }
@@ -169,10 +169,10 @@ void lsdn_broadcast_free(struct lsdn_broadcast *br)
 	lsdn_foreach(br->filters_list, filters_entry, struct lsdn_broadcast_filter, f)
 	{
 		if(!br->ctx->disable_decommit) {
-			int err = lsdn_filter_delete(
+			lsdn_err_t err = lsdn_filter_delete(
 				br->ctx->nlsock, br->iface->ifindex,
 				MAIN_RULE_HANDLE, LSDN_INGRESS_HANDLE, br->chain, f->prio);
-			if (err)
+			if (err != LSDNE_OK)
 				abort();
 		}
 		free(f);

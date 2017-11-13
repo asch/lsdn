@@ -88,16 +88,16 @@ void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
 {
 	struct lsdn_if sbridge_if;
 	lsdn_if_init(&sbridge_if);
-	int err = lsdn_link_dummy_create(ctx->nlsock, &sbridge_if, lsdn_mk_ifname(ctx));
-	if (err)
+	lsdn_err_t err = lsdn_link_dummy_create(ctx->nlsock, &sbridge_if, lsdn_mk_ifname(ctx));
+	if (err != LSDNE_OK)
 		abort();
 
 	err = lsdn_qdisc_ingress_create(ctx->nlsock, sbridge_if.ifindex);
-	if (err)
+	if (err != LSDNE_OK)
 		abort();
 
 	err = lsdn_link_set(ctx->nlsock, sbridge_if.ifindex, true);
-	if (err)
+	if (err != LSDNE_OK)
 		abort();
 
 	br->bridge_if = sbridge_if;
@@ -110,8 +110,8 @@ void lsdn_sbridge_free(struct lsdn_sbridge *br)
 {
 	assert(lsdn_is_list_empty(&br->if_list));
 	if (!br->ctx->disable_decommit) {
-		int err = lsdn_link_delete(br->ctx->nlsock, &br->bridge_if);
-		if (err)
+		lsdn_err_t err = lsdn_link_delete(br->ctx->nlsock, &br->bridge_if);
+		if (err != LSDNE_OK)
 			abort();
 	}
 	lsdn_if_free(&br->bridge_if);
@@ -231,8 +231,8 @@ void lsdn_sbridge_phys_if_init(struct lsdn_context *ctx, struct lsdn_sbridge_phy
 	lsdn_idalloc_init(&sbridge_if->br_chain_ids, 1, 0xFFFF);
 	lsdn_ruleset_init(&sbridge_if->rules_match_mac, ctx, iface, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY);
 	lsdn_ruleset_init(&sbridge_if->rules_fallback, ctx, iface, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY + 1);
-	int err = lsdn_qdisc_ingress_create(ctx->nlsock, iface->ifindex);
-	if (err)
+	lsdn_err_t err = lsdn_qdisc_ingress_create(ctx->nlsock, iface->ifindex);
+	if (err != LSDNE_OK)
 		abort();
 }
 

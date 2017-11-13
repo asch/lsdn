@@ -7,10 +7,10 @@
 static void vlan_create_pa(struct lsdn_phys_attachment *p)
 {
 	// create the vxlan interface
-	int err = lsdn_link_vlan_create(
+	lsdn_err_t err = lsdn_link_vlan_create(
 		p->net->ctx->nlsock, &p->tunnel_if,
 		p->phys->attr_iface, lsdn_mk_ifname(p->net->ctx), p->net->vnet_id);
-	if(err)
+	if(err != LSDNE_OK)
 		abort();
 
 	lsdn_lbridge_init(p->net->ctx, &p->lbridge);

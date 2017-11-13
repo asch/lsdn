@@ -10,7 +10,7 @@
 static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_settings *s = a->net->settings;
-	int err = lsdn_link_vxlan_create(
+	lsdn_err_t err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
 		&a->tunnel_if,
 		a->phys->attr_iface,
@@ -20,7 +20,7 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 		s->vxlan.port,
 		true,
 		false);
-	if (err)
+	if (err != LSDNE_OK)
 		abort();
 
 	lsdn_lbridge_init(a->net->ctx ,&a->lbridge);
@@ -32,8 +32,8 @@ static void vxlan_mcast_destroy_pa(struct lsdn_phys_attachment *a)
 	lsdn_lbridge_remove(&a->lbridge_if);
 	lsdn_lbridge_free(&a->lbridge);
 	if(!a->net->ctx->disable_decommit) {
-		int err = lsdn_link_delete(a->net->ctx->nlsock, &a->tunnel_if);
-		if (err)
+		lsdn_err_t err = lsdn_link_delete(a->net->ctx->nlsock, &a->tunnel_if);
+		if (err != LSDNE_OK)
 			abort();
 	}
 	lsdn_if_free(&a->tunnel_if);
@@ -68,7 +68,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 
 static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 {
-	int err = lsdn_link_vxlan_create(
+	lsdn_err_t err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
 		&a->tunnel_if,
 		a->phys->attr_iface,
@@ -78,7 +78,7 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 		a->net->settings->vxlan.port,
 		true,
 		false);
-	if (err)
+	if (err != LSDNE_OK)
 		abort();
 
 	lsdn_lbridge_init(a->net->ctx ,&a->lbridge);
@@ -90,8 +90,8 @@ static void vxlan_e2e_destroy_pa(struct lsdn_phys_attachment *a)
 	lsdn_lbridge_remove(&a->lbridge_if);
 	lsdn_lbridge_free(&a->lbridge);
 	if(!a->net->ctx->disable_decommit) {
-		int err = lsdn_link_delete(a->net->ctx->nlsock, &a->tunnel_if);
-		if (err)
+		lsdn_err_t err = lsdn_link_delete(a->net->ctx->nlsock, &a->tunnel_if);
+		if (err != LSDNE_OK)
 			abort();
 	}
 	lsdn_if_free(&a->tunnel_if);
@@ -101,14 +101,12 @@ static void vxlan_e2e_add_remote_pa(struct lsdn_remote_pa *remote)
 {
 	/* Redirect broadcast packets to all remote PAs */
 	struct lsdn_phys_attachment *local = remote->local;
-	int err = lsdn_fdb_add_entry(
+	lsdn_err_t err = lsdn_fdb_add_entry(
 		local->net->ctx->nlsock, local->tunnel_if.ifindex,
 		lsdn_all_zeroes_mac,
 		*remote->remote->phys->attr_ip);
-	if (err)
+	if (err != LSDNE_OK)
 		abort();
-
-
 }
 
 static void vxlan_e2e_remove_remote_pa(struct lsdn_remote_pa *remote)
@@ -117,11 +115,11 @@ static void vxlan_e2e_remove_remote_pa(struct lsdn_remote_pa *remote)
 		return;
 
 	struct lsdn_phys_attachment *local = remote->local;
-	int err = lsdn_fdb_remove_entry(
+	lsdn_err_t err = lsdn_fdb_remove_entry(
 		local->net->ctx->nlsock, local->tunnel_if.ifindex,
 		lsdn_all_zeroes_mac,
 		*remote->remote->phys->attr_ip);
-	if (err)
+	if (err != LSDNE_OK)
 		abort();
 }
 
@@ -152,7 +150,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
 /* Make sure the VXLAN interface operating in metadata mode for that UDP port exists. */
 static void vxlan_use_stunnel(struct lsdn_settings *s)
 {
-	int err;
+	lsdn_err_t err;
 	struct lsdn_context *ctx = s->ctx;
 	struct lsdn_if *tunnel = &s->vxlan.e2e_static.tunnel;
 	if (s->vxlan.e2e_static.refcount++ == 0) {
@@ -166,11 +164,11 @@ static void vxlan_use_stunnel(struct lsdn_settings *s)
 			s->vxlan.port,
 			false,
 			true);
-		if (err)
+		if (err != LSDNE_OK)
 			abort();
 
 		err = lsdn_link_set(ctx->nlsock, tunnel->ifindex, true);
-		if (err)
+		if (err != LSDNE_OK)
 			abort();
 
 		lsdn_sbridge_phys_if_init(ctx, &s->vxlan.e2e_static.tunnel_sbridge, tunnel);
@@ -182,8 +180,8 @@ static void vxlan_release_stunnel(struct lsdn_settings *s)
 	if (--s->vxlan.e2e_static.refcount == 0) {
 		if(!s->ctx->disable_decommit) {
 			lsdn_sbridge_phys_if_free(&s->vxlan.e2e_static.tunnel_sbridge);
-			int err = lsdn_link_delete(s->ctx->nlsock, &s->vxlan.e2e_static.tunnel);
-			if (err)
+			lsdn_err_t err = lsdn_link_delete(s->ctx->nlsock, &s->vxlan.e2e_static.tunnel);
+			if (err != LSDNE_OK)
 				abort();
 		}
 		lsdn_if_free(&s->vxlan.e2e_static.tunnel);
