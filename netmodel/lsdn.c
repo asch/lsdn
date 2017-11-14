@@ -5,6 +5,7 @@
 #include "private/net.h"
 #include "private/log.h"
 #include "include/util.h"
+#include "private/errors.h"
 #include <errno.h>
 
 static void settings_do_free(struct lsdn_settings *settings);

@@ -2,6 +2,7 @@
 
 #include "../include/errors.h"
 #include "../include/lsdn.h"
+#include "lsdn.h"
 
 static inline lsdn_err_t ret_err(struct lsdn_context *ctx, lsdn_err_t err)
 {

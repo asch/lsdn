@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "private/lsdn.h"
 
 
 #define mk_diag_fmt(x, fmt) fmt,

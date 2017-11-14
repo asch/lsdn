@@ -6,14 +6,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <net/if.h>
-#include "../private/list.h"
-#include "../private/rules.h"
-#include "../private/names.h"
-#include "../private/nl.h"
-#include "../private/idalloc.h"
-#include "../private/sbridge.h"
-#include "../private/lbridge.h"
 #include "nettypes.h"
 
 #define LSDN_DECLARE_ATTR(obj, name, type) \
@@ -44,35 +36,7 @@ struct lsdn_user_hooks {
  * on all physical machines to construct the network topology. The only difference between the
  * API calls on the physical machines will be the lsdn_phys_claim_local calls.
  */
-struct lsdn_context{
-	/** Context name. Determines the prefix for interfaces created in the context. */
-	char* name;
-	/** Out-of-memory callback. */
-	lsdn_nomem_cb nomem_cb;
-	/** User data for the OOM calback. */
-	void *nomem_cb_user;
-	struct lsdn_names phys_names;
-	struct lsdn_names net_names;
-	struct lsdn_names setting_names;
-
-	struct lsdn_list_entry networks_list;
-	struct lsdn_list_entry settings_list;
-	struct lsdn_list_entry phys_list;
-	struct mnl_socket *nlsock;
-
-	// error handling -- only valid during validation and commit
-	struct lsdn_problem problem;
-	struct lsdn_problem_ref problem_refs[LSDN_MAX_PROBLEM_REFS];
-	lsdn_problem_cb problem_cb;
-	void *problem_cb_user;
-	size_t problem_count;
-	bool disable_decommit;
-
-	int ifcount;
-	char namebuf[IF_NAMESIZE + 1];
-};
-
-#include "../private/errors.h"
+struct lsdn_context;
 
 struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user);
@@ -89,18 +53,6 @@ enum lsdn_nettype{
 	LSDN_NET_VLAN,
 	/** No encapsulation. */
 	LSDN_NET_DIRECT
-};
-
-/** State of the LSDN object. */
-enum lsdn_state {
-	/** Object is being commited for a first time. */
-	LSDN_STATE_NEW,
-	/** Object was already commited and needs to be recommited. */
-	LSDN_STATE_RENEW,
-	/** Object is already commited and needs to be deleted. */
-	LSDN_STATE_DELETE,
-	/** Object is in commited state. */
-	LSDN_STATE_OK
 };
 
 /** Switch type for the virtual network. */
@@ -132,34 +84,7 @@ enum lsdn_switch{
  * Multiple networks can share the same settings (e.g. vxlan with static routing on port 1234)
  * and only differ by their identifier (vlan id, vni ...).
  */
-struct lsdn_settings {
-	enum lsdn_state state;
-	struct lsdn_list_entry settings_entry;
-	struct lsdn_list_entry setting_users_list;
-	struct lsdn_context *ctx;
-	struct lsdn_net_ops *ops;
-	struct lsdn_name name;
-
-	enum lsdn_nettype nettype;
-	enum lsdn_switch switch_type;
-	union {
-		struct {
-			uint16_t port;
-			union{
-				struct mcast {
-					lsdn_ip_t mcast_ip;
-				} mcast;
-				struct {
-					size_t refcount;
-					struct lsdn_if tunnel;
-					struct lsdn_sbridge_phys_if tunnel_sbridge;
-				} e2e_static;
-			};
-		} vxlan;
-	};
-
-	struct lsdn_user_hooks *user_hooks;
-};
+struct lsdn_settings;
 
 struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx);
 struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx);
@@ -181,20 +106,7 @@ struct lsdn_settings *lsdn_settings_by_name(struct lsdn_context *ctx, const char
  *  - the tunnel used to overlay the network over physical topology (transparent to end users)
  *  - the switching methods used (visible to end users)
  */
-struct lsdn_net {
-	enum lsdn_state state;
-	struct lsdn_list_entry networks_entry;
-	struct lsdn_list_entry settings_users_entry;
-	struct lsdn_context *ctx;
-	struct lsdn_settings *settings;
-	struct lsdn_name name;
-
-	uint32_t vnet_id;
-	struct lsdn_list_entry virt_list;
-	/* List of lsdn_phys_attachement attached to this network */
-	struct lsdn_list_entry attached_list;
-	struct lsdn_names virt_names;
-};
+struct lsdn_net;
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
 lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name);
@@ -208,18 +120,7 @@ void lsdn_net_free(struct lsdn_net *net);
  * Physical interfaces are used to connect to virtual networks. This connection is called
  * `lsdn_phys_attachement`.
  */
-struct lsdn_phys {
-	enum lsdn_state state;
-	struct lsdn_name name;
-	struct lsdn_list_entry phys_entry;
-	struct lsdn_list_entry attached_to_list;
-
-	struct lsdn_context* ctx;
-	bool is_local;
-	bool commited_as_local;
-	char *attr_iface;
-	lsdn_ip_t *attr_ip;
-};
+struct lsdn_phys;
 
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx);
 lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name);
@@ -239,34 +140,7 @@ LSDN_DECLARE_ATTR(phys, iface, const char*);
  * A point of connection to a virtual network through a physical interface.
  * Only a single attachment may exist for a pair of `lsdn_phys` and `lsdn_net`.
  */
-struct lsdn_phys_attachment {
-	enum lsdn_state state;
-	/* list held by net */
-	struct lsdn_list_entry attached_entry;
-	/* list held by phys */
-	struct lsdn_list_entry attached_to_entry;
-	struct lsdn_list_entry connected_virt_list;
-	/* List of remote PAs that correspond to this PA */
-	struct lsdn_list_entry pa_view_list;
-	/* List of remote PAs that this PA can see in the network */
-	struct lsdn_list_entry remote_pa_list;
-
-	struct lsdn_net *net;
-	struct lsdn_phys *phys;
-	/** Was this attachment created by lsdn_phys_attach at some point, or was it implicitely
-	 * created by lsdn_virt_connect, just for bookkeeping? All fields below are valid only for
-	 * explicit attachments. If you try to commit a network and some attachment is not
-	 * explicitely attached, we assume you just made a mistake.
-	 */
-	bool explicitely_attached;
-
-	struct lsdn_if tunnel_if;
-	struct lsdn_lbridge lbridge;
-	struct lsdn_lbridge_if lbridge_if;
-
-	struct lsdn_sbridge sbridge;
-	struct lsdn_sbridge_if sbridge_if;
-};
+struct lsdn_phys_attachment;
 
 
 /** Node in the virtual network.
@@ -276,30 +150,7 @@ struct lsdn_phys_attachment {
  * connection). They can be migrated between the physical machines by connecting them through
  * different lsdn_phys.
  */
-struct lsdn_virt {
-	/* Tracks the state of local virts */
-	enum lsdn_state state;
-	struct lsdn_name name;
-	struct lsdn_list_entry virt_entry;
-	struct lsdn_list_entry connected_virt_entry;
-	struct lsdn_list_entry virt_view_list;
-	struct lsdn_net* network;
-
-	struct lsdn_phys_attachment* connected_through;
-	struct lsdn_phys_attachment* committed_to;
-	struct lsdn_if connected_if;
-	struct lsdn_if committed_if;
-
-	lsdn_mac_t *attr_mac;
-	/*lsdn_ip_t *attr_ip; */
-
-	struct lsdn_lbridge_if lbridge_if;
-
-	struct lsdn_sbridge_if sbridge_if;
-	struct lsdn_sbridge_phys_if sbridge_phys_if;
-	struct lsdn_sbridge_route sbridge_route;
-	struct lsdn_sbridge_mac sbridge_mac;
-};
+struct lsdn_virt;
 
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net);
 void lsdn_virt_free(struct lsdn_virt* vsirt);

@@ -1,6 +1,7 @@
 #include "private/rules.h"
 #include "include/lsdn.h"
 #include "private/log.h"
+#include "private/lsdn.h"
 
 void lsdn_ruleset_init(
 	struct lsdn_ruleset *ruleset, struct lsdn_context *ctx,

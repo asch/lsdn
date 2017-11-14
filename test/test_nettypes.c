@@ -1,4 +1,5 @@
 #include <lsdn.h>
+#include <stdlib.h>
 
 static void check_ip(lsdn_ip_t ip, const char* str)
 {

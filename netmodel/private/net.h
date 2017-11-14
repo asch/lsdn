@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../include/lsdn.h"
+#include "lsdn.h"
 
 const char *lsdn_mk_ifname(struct lsdn_context* ctx);
 void lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx);

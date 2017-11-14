@@ -1,4 +1,7 @@
-#include "lsdn.h"
+#include <lsdn.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 static struct lsdn_context *ctx;
 static struct lsdn_settings *settings;

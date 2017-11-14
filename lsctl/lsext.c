@@ -1,4 +1,5 @@
 #include "lsext.h"
+#include <stdlib.h>
 #include "../netmodel/include/lsdn.h"
 
 static int tcl_error(Tcl_Interp *interp, const char *err) {

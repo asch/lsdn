@@ -1,5 +1,6 @@
 #include "lsdn.h"
 #include "domain.h"
+#include <assert.h>
 
 static struct lsdn_context *ctx;
 static struct lsdn_settings *settings;
