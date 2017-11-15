@@ -21,13 +21,13 @@ To use this script, you will need to prepare following components:
    (usually in arch/x86_64/boot/bzImage).
 
    The kernel needs to have the following configuration options built-in:
-    CONFIG_EXT4_FS (or other, depending on your rootfs)
     CONFIG_NET_9P
     CONFIG_NET_9P_VIRTIO
     CONFIG_9P_FS
-    CONFIG_VIRTIO_BLK
+    CONFIG_VIRTIO_BLK 
+   Also enable most networking config options: network namespaces, bridges, VXLANs, VLANs and so on.
 
-   An example .config is placed in lsdn/test/qemu/example.config.
+   Or just use the  x64 .config in lsdn/test/qemu/example.config :).
 
 2) rootfs
    Path to the directory where the root filesystem resides in the form
