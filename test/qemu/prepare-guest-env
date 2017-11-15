@@ -12,4 +12,6 @@ echo -n 'Running '
 cat qemu/work
 . qemu/work
 
+echo $? > ctest.result
+
 /lsdn/build/test/halt

@@ -81,6 +81,7 @@ SHELL=/bin/bash
 INIT="$SHELL /lsdn-guest-init qemu/prepare-guest-env"
 SHELL="/bin/bash"
 CMDLINE=""
+RESULT=""
 
 case $1 in
 	raw-shell)
@@ -91,6 +92,7 @@ case $1 in
 		;;
 	all)
 		CMDLINE='ctest'
+		RESULT="ctest.result"
 		;;
 	*)
 		CMDLINE="./run $*"
@@ -106,3 +108,11 @@ echo "$CMDLINE" > qemu/work
 	-serial mon:stdio  -nographic \
 	$KVM $GDB \
 	-append "root=/dev/root rw rootfstype=9p rootflags=trans=virtio,version=9p2000.L $QUIET console=ttyS0 init=$INIT"
+
+if [ ! -z "${RESULT}" ] ; then
+	ret=1
+	if [ -f "${RESULT}" ] ; then
+		ret=`cat "${RESULT}"`
+	fi
+	exit $ret
+fi
