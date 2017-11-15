@@ -11,7 +11,8 @@ file(GLOB_RECURSE TEST_SUPPORT_LIB lib/common.sh lib/common.tcl)
 file(GLOB_RECURSE TEST_SUPPORT_QEMU
 	qemu/lsdn-guest-init
 	qemu/prepare-guest-env
-	qemu/serial-shell)
+	qemu/serial-shell
+	qemu/user-profile)
 
 if(${OUT_TREE})
 	add_custom_target(install_test_harness ALL

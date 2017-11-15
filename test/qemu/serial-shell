@@ -17,7 +17,7 @@ stty cols "$cols" rows "$rows"
 
 rcfile=/root/.profile
 if [ ! -f  ${rcfile} ]; then
-	echo 'cd /lsdn/build/test' > ${rcfile}
+	echo 'source /lsdn/build/test/qemu/user-profile' > ${rcfile}
 fi
 
 agetty --autologin  root $tty xterm

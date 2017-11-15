@@ -9,6 +9,7 @@ mount -t tmpfs none /tmp
 echo OK
 
 echo -n 'Running '
+source /lsdn/build/test/qemu/user-profile
 cat qemu/work
 . qemu/work
 
