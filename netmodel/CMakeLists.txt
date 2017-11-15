@@ -4,7 +4,7 @@ file(GLOB lsdn_PRIVATE "private/*.h")
 
 include_directories(${MNL_INCLUDE_DIRS} ${KERNEL_HEADERS})
 
-add_library(lsdn SHARED
+add_library(lsdn
    ${lsdn_SRC}
    ${lsdn_PUBLIC}
    ${lsdn_PRIVATE}

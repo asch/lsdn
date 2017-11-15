@@ -1,7 +1,8 @@
 project(lsdn)
 cmake_minimum_required(VERSION 2.8)
-
 enable_testing()
+
+option(BUILD_SHARED_LIBS "Build lsdn library as shared" ON)
 
 find_package(PkgConfig)
 pkg_check_modules(MNL libmnl REQUIRED)
