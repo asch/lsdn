@@ -81,3 +81,5 @@ test_parts(vxlan_static large cleanup)
 endif(LARGE_TESTS)
 
 test_parts(vlan gateway ping)
+
+test_parts(msettings basic_msettings ping)
