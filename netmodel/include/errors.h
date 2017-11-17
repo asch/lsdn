@@ -30,6 +30,8 @@ enum lsdn_err {
 	LSDNE_VALIDATE,
 	/** Network model commit failed. */
 	LSDNE_COMMIT,
+	/** Incompatible rules with the same priority */
+	LSDNE_INCOMPATIBLE_MATCH
 };
 typedef enum lsdn_err lsdn_err_t;
 

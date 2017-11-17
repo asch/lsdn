@@ -2,7 +2,7 @@ file(GLOB lsdn_SRC "*.c")
 file(GLOB lsdn_PUBLIC "include/*.h")
 file(GLOB lsdn_PRIVATE "private/*.h")
 
-include_directories(${MNL_INCLUDE_DIRS} ${KERNEL_HEADERS})
+include_directories(${MNL_INCLUDE_DIRS} ${KERNEL_HEADERS} ${UTHASH_INCLUDE_DIR})
 
 add_library(lsdn
    ${lsdn_SRC}

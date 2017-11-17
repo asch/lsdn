@@ -719,6 +719,7 @@ lsdn_err_t lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f)
 	return send_await_response(sock, f->nlh);
 }
 
+/* Allow an existing TC filter to be updated. Unless this called, the filter must not exist */
 void lsdn_filter_set_update(struct lsdn_filter *f)
 {
 	f->update = true;

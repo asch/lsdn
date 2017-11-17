@@ -60,27 +60,32 @@ static void br_forward_rule_free(void *user)
 	free(fwdr);
 }
 
-static void br_forward_make(struct lsdn_sbridge_mac *mac)
+static void br_forward_mkaction(struct lsdn_filter *f, uint16_t order, void *user)
 {
-	struct lsdn_sbridge *br = mac->route->iface->bridge;
-	struct br_forward_rule *fwdr = malloc(sizeof(*fwdr));
-	if (!fwdr)
-		abort();
-	lsdn_clist_init_entry(&fwdr->clist, br_forward_rule_free, fwdr);
-	fwdr->mac = mac;
-	struct lsdn_filter *f = lsdn_ruleset_add(&br->bridge_ruleset, &fwdr->rule);
-	if (!f)
-		abort();
-	lsdn_flower_set_dst_mac(f, mac->mac.chr, lsdn_single_mac_mask.chr);
-	lsdn_flower_actions_start(f);
-	uint16_t order = 1;
+	struct br_forward_rule *fwdr = user;
+	struct lsdn_sbridge_mac *mac = fwdr->mac;
 	if (mac->route->tunnel_action.fn) {
 		mac->route->tunnel_action.fn(f, order, mac->route->tunnel_action.user);
 		order += mac->route->tunnel_action.actions_count;
 	}
 	lsdn_action_redir_egress_add(f, order, mac->route->iface->phys_if->iface->ifindex);
-	lsdn_flower_actions_end(f);
-	lsdn_ruleset_add_finish(&fwdr->rule);
+}
+
+static void br_forward_make(struct lsdn_sbridge_mac *mac)
+{
+	lsdn_err_t err;
+	struct lsdn_sbridge *br = mac->route->iface->bridge;
+	struct br_forward_rule *fwdr = malloc(sizeof(*fwdr));
+	if (!fwdr)
+		abort();
+	lsdn_clist_init_entry(&fwdr->clist, br_forward_rule_free, fwdr);	
+	fwdr->mac = mac;
+	lsdn_action_init(&fwdr->rule.action, 1 +  mac->route->tunnel_action.actions_count, br_forward_mkaction, fwdr);
+	fwdr->rule.subprio = 0;
+	fwdr->rule.matches[0].mac = mac->mac;
+	err = lsdn_ruleset_add(br->bridge_ruleset, &fwdr->rule);
+	if (err != LSDNE_OK)
+		abort();
 	lsdn_clist_add(&mac->cl_dest, &fwdr->clist);
 }
 
@@ -102,7 +107,13 @@ void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
 
 	br->bridge_if = sbridge_if;
 	br->ctx = ctx;
-	lsdn_ruleset_init(&br->bridge_ruleset, ctx, &br->bridge_if, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY);
+	lsdn_ruleset_init(&br->bridge_ruleset_main, ctx, &br->bridge_if, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY, 1);
+	struct lsdn_ruleset_prio *prio = br->bridge_ruleset =
+			lsdn_ruleset_define_prio(&br->bridge_ruleset_main, 0);
+	if (!prio)
+		abort();
+	prio->targets[0] = LSDN_MATCH_DST_MAC;
+	prio->masks[0].mac = lsdn_single_mac_mask;
 	lsdn_list_init(&br->if_list);
 }
 
@@ -114,11 +125,25 @@ void lsdn_sbridge_free(struct lsdn_sbridge *br)
 		if (err != LSDNE_OK)
 			abort();
 	}
+	lsdn_ruleset_free(&br->bridge_ruleset_main);
 	lsdn_if_free(&br->bridge_if);
+}
+
+static void mkaction_goto_br_chain(struct lsdn_filter *filter, uint16_t order, void *user)
+{
+	struct lsdn_sbridge_if *iface = user;
+	lsdn_action_goto_chain(filter, order, iface->broadcast.chain);
+}
+
+static void mkaction_goto_switch(struct lsdn_filter *filter, uint16_t order, void *user)
+{
+	struct lsdn_sbridge_if *iface = user;
+	lsdn_action_redir_ingress_add(filter, order, iface->bridge->bridge_if.ifindex);
 }
 
 void lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface)
 {
+	lsdn_err_t err;
 	lsdn_list_init(&iface->route_list);
 	lsdn_clist_init(&iface->cl_owner, CL_OWNER);
 	iface->bridge = br;
@@ -129,30 +154,29 @@ void lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface)
 		abort();
 	lsdn_broadcast_init(&iface->broadcast, br->ctx, iface->phys_if->iface, br_handle);
 
-	/* setup basic broadcast/non-broadcast classification */
-	struct lsdn_filter *f;
-	f = lsdn_ruleset_add(&iface->phys_if->rules_match_mac, &iface->rule_match_br);
-	if (!f)
-		abort();
-	if (iface->rules_filter) {
-		iface->rules_filter(f, iface->rules_filter_user);
-	}
-	lsdn_flower_set_dst_mac(f, lsdn_broadcast_mac.chr, lsdn_single_mac_mask.chr);
-	lsdn_flower_actions_start(f);
-	lsdn_action_goto_chain(f, 1, iface->broadcast.chain);
-	lsdn_flower_actions_end(f);
-	lsdn_ruleset_add_finish(&iface->rule_match_br);
+	/* check that the ruleset is correctly setup by the caller, at least the targets */
+	assert(iface->phys_if->rules_match_mac->targets[0] == LSDN_MATCH_DST_MAC);
+	assert(iface->phys_if->rules_match_mac->targets[1] == iface->additional_match);
+	assert(iface->phys_if->rules_fallback->targets[0] == iface->additional_match);
+	assert(iface->phys_if->rules_fallback->targets[1] == LSDN_MATCH_NONE);
 
-	f = lsdn_ruleset_add(&iface->phys_if->rules_fallback, &iface->rule_fallback);
-	if (!f)
+	/* setup basic broadcast/non-broadcast classification */
+	struct lsdn_rule* match_mac = &iface->rule_match_br;
+	match_mac->subprio = LSDN_SBRIDGE_IF_SUBPRIO;
+	match_mac->matches[0].mac = lsdn_broadcast_mac;
+	match_mac->matches[1] = iface->additional_matchdata;
+	lsdn_action_init(&match_mac->action, 1, mkaction_goto_br_chain, iface);
+	err = lsdn_ruleset_add(iface->phys_if->rules_match_mac, match_mac);
+	if (err != LSDNE_OK)
 		abort();
-	if (iface->rules_filter) {
-		iface->rules_filter(f, iface->rules_filter_user);
-	}
-	lsdn_flower_actions_start(f);
-	lsdn_action_redir_ingress_add(f, 1, br->bridge_if.ifindex);
-	lsdn_flower_actions_end(f);
-	lsdn_ruleset_add_finish(&iface->rule_fallback);
+
+	struct lsdn_rule* fallback = &iface->rule_fallback;
+	fallback->subprio = LSDN_SBRIDGE_IF_SUBPRIO;
+	fallback->matches[0] = iface->additional_matchdata;
+	lsdn_action_init(&fallback->action, 1, mkaction_goto_switch, iface);
+	lsdn_ruleset_add(iface->phys_if->rules_fallback, fallback);
+	if (err != LSDNE_OK)
+		abort();
 
 	/* pull broadcast rules */
 	lsdn_foreach(br->if_list, if_entry, struct lsdn_sbridge_if, other_if) {
@@ -225,22 +249,39 @@ void lsdn_sbridge_remove_mac(struct lsdn_sbridge_mac *mac)
 	lsdn_clist_flush(&mac->cl_dest);
 }
 
-void lsdn_sbridge_phys_if_init(struct lsdn_context *ctx, struct lsdn_sbridge_phys_if *sbridge_if, struct lsdn_if* iface)
+void lsdn_sbridge_phys_if_init(struct lsdn_context *ctx, struct lsdn_sbridge_phys_if *sbridge_if, struct lsdn_if* iface, bool match_vni)
 {
 	sbridge_if->iface = iface;
 	lsdn_idalloc_init(&sbridge_if->br_chain_ids, 1, 0xFFFF);
-	lsdn_ruleset_init(&sbridge_if->rules_match_mac, ctx, iface, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY);
-	lsdn_ruleset_init(&sbridge_if->rules_fallback, ctx, iface, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY + 1);
+
 	lsdn_err_t err = lsdn_qdisc_ingress_create(ctx->nlsock, iface->ifindex);
 	if (err != LSDNE_OK)
 		abort();
+
+	// define the ruleset with priorities for match and fallback and subpriorities for us.
+	// Someone else (the firewall can share the priorities with us).
+	lsdn_ruleset_init(&sbridge_if->rules, ctx, iface, LSDN_DEFAULT_CHAIN, 1, UINT32_MAX);
+	struct lsdn_ruleset_prio *prio_match = sbridge_if->rules_match_mac =
+		lsdn_ruleset_define_prio(&sbridge_if->rules, LSDN_SBRIDGE_IF_PRIO_MATCH);
+	if(!prio_match)
+		abort();
+	prio_match->targets[0] = LSDN_MATCH_DST_MAC;
+	prio_match->masks[0].mac = lsdn_single_mac_mask;
+	if (match_vni)
+		prio_match->targets[1]= LSDN_MATCH_ENC_KEY_ID;
+
+	struct lsdn_ruleset_prio *prio_fallback = sbridge_if->rules_fallback =
+		lsdn_ruleset_define_prio(&sbridge_if->rules, LSDN_SBRIDGE_IF_PRIO_FALLBACK);
+	if(!prio_fallback)
+		abort();
+	if (match_vni)
+		prio_fallback->targets[0]= LSDN_MATCH_ENC_KEY_ID;
 }
 
 void lsdn_sbridge_phys_if_free(struct lsdn_sbridge_phys_if *iface)
 {
 	lsdn_idalloc_free(&iface->br_chain_ids);
-	lsdn_ruleset_free(&iface->rules_fallback);
-	lsdn_ruleset_free(&iface->rules_match_mac);
+	lsdn_ruleset_free(&iface->rules);
 }
 
 /* This are chain and priority numbers for rules on virts and shared tunnels. */
@@ -250,11 +291,11 @@ void lsdn_sbridge_phys_if_free(struct lsdn_sbridge_phys_if *iface)
 void lsdn_sbridge_add_virt(struct lsdn_sbridge *br, struct lsdn_virt *virt)
 {
 	struct lsdn_context *ctx = virt->network->ctx;
-	lsdn_sbridge_phys_if_init(ctx, &virt->sbridge_phys_if, &virt->committed_if);
+	lsdn_sbridge_phys_if_init(ctx, &virt->sbridge_phys_if, &virt->committed_if, false);
 
 	struct lsdn_sbridge_if *iface = &virt->sbridge_if;
 	iface->phys_if = &virt->sbridge_phys_if;
-	iface->rules_filter = NULL;
+	iface->additional_match = LSDN_MATCH_NONE;
 	lsdn_sbridge_add_if(br, iface);
 
 	struct lsdn_sbridge_route *route = &virt->sbridge_route;
@@ -267,19 +308,17 @@ void lsdn_sbridge_remove_virt(struct lsdn_virt *virt)
 	lsdn_sbridge_remove_mac(&virt->sbridge_mac);
 	lsdn_sbridge_remove_route(&virt->sbridge_route);
 	lsdn_sbridge_remove_if(&virt->sbridge_if);
+	lsdn_sbridge_phys_if_free(&virt->sbridge_phys_if);
 }
 
-static void stunnel_filter(struct lsdn_filter *f, void *user)
-{
-	struct lsdn_net *net = user;
-	lsdn_flower_set_enc_key_id(f, net->vnet_id);
-}
 
-void lsdn_sbridge_add_stunnel(struct lsdn_sbridge *br, struct lsdn_sbridge_if* iface, struct lsdn_sbridge_phys_if *phys_if, struct lsdn_net *net)
+void lsdn_sbridge_add_stunnel(
+	struct lsdn_sbridge *br, struct lsdn_sbridge_if* iface,
+	struct lsdn_sbridge_phys_if *phys_if, struct lsdn_net *net)
 {
 	iface->phys_if = phys_if;
-	iface->rules_filter = stunnel_filter;
-	iface->rules_filter_user = net;
+	iface->additional_match = LSDN_MATCH_ENC_KEY_ID;
+	iface->additional_matchdata.enc_key_id = net->vnet_id;
 	lsdn_sbridge_add_if(br, iface);
 }
 

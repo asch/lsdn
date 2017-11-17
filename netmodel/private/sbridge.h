@@ -19,7 +19,8 @@ struct lsdn_sbridge {
 	struct lsdn_context *ctx;
 
 	struct lsdn_if bridge_if;
-	struct lsdn_ruleset bridge_ruleset;
+	struct lsdn_ruleset bridge_ruleset_main;
+	struct lsdn_ruleset_prio *bridge_ruleset;
 };
 
 typedef void (*lsdn_mkmatch_cb)(struct lsdn_filter *f, void *user);
@@ -29,17 +30,13 @@ typedef void (*lsdn_mkmatch_cb)(struct lsdn_filter *f, void *user);
  * Multiple possible outgoing routes can be associated with this interface.*/
 struct lsdn_sbridge_if {
 	/* The user of the sbridge API must provide a sbridge_phys_if. The physical interface
-	 * can be shared among multiple users, in that case use rules_filter when sharing the chain,
-	 * or set it to NULL if not.
+	 * can be shared among multiple users, in that case use rules_filter=true when sharing the chain,
+	 * or set it to false if not.
 	 */
 	struct lsdn_sbridge_phys_if *phys_if;
 
-	/* Callback for settings additional matching rules on the filter. The sbridge itself
-	 * will prepare a filter matching on a dst_mac, the user of the sbridge API can use this hook
-	 * to add additional matches if the interface is shared (like VNI id).
-	 */
-	lsdn_mkmatch_cb rules_filter;
-	void *rules_filter_user;
+	enum lsdn_rule_target additional_match;
+	union lsdn_matchdata additional_matchdata;
 
 	/* Private part starts here */
 	struct lsdn_broadcast broadcast;
@@ -52,11 +49,15 @@ struct lsdn_sbridge_if {
 	struct lsdn_rule rule_fallback;
 };
 
+#define LSDN_SBRIDGE_IF_PRIO_MATCH 0xFF00
+#define LSDN_SBRIDGE_IF_PRIO_FALLBACK (LSDN_SBRIDGE_IF_PRIO_MATCH + 1)
+#define LSDN_SBRIDGE_IF_SUBPRIO 0xFFFFFF00
 struct lsdn_sbridge_phys_if {
 	struct lsdn_if *iface;
 	struct lsdn_idalloc br_chain_ids;
-	struct lsdn_ruleset rules_match_mac;
-	struct lsdn_ruleset rules_fallback;
+	struct lsdn_ruleset rules;
+	struct lsdn_ruleset_prio *rules_match_mac;
+	struct lsdn_ruleset_prio *rules_fallback;
 };
 
 /* Outgoing route from a bridge. because data outgoing from the bridge sometimes need a tunneling metadata,
@@ -92,7 +93,9 @@ void lsdn_sbridge_remove_route(struct lsdn_sbridge_route *route);
 void lsdn_sbridge_add_mac(
 	struct lsdn_sbridge_route* route, struct lsdn_sbridge_mac *mac_entry, lsdn_mac_t mac);
 void lsdn_sbridge_remove_mac(struct lsdn_sbridge_mac *mac);
-void lsdn_sbridge_phys_if_init(struct lsdn_context *ctx, struct lsdn_sbridge_phys_if *sbridge_if, struct lsdn_if* iface);
+void lsdn_sbridge_phys_if_init(
+	struct lsdn_context *ctx, struct lsdn_sbridge_phys_if *sbridge_if,
+	struct lsdn_if* iface, bool match_vni);
 void lsdn_sbridge_phys_if_free(struct lsdn_sbridge_phys_if *iface);
 
 struct lsdn_virt;
