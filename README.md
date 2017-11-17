@@ -30,3 +30,6 @@ you what to prepare.
 LSDN is a C library using TC (Traffic Control) Linux subsystem for comfortable management of virtual
 networks. It is suitable for home/small office networks as well as for huge virtual networks in data
 centers.
+
+## Contact
+We can be reached on mailing list <sp@asch.cz> and IRC channel `#lsdn` on Freenode.
