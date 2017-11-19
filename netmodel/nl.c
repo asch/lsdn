@@ -9,6 +9,16 @@
 #include <assert.h>
 #include <errno.h>
 
+#ifdef NDEBUG
+#define nl_buf(buf) \
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+#else
+#define nl_buf(buf) \
+	char buf[MNL_SOCKET_BUFFER_SIZE]; \
+	bzero(buf, sizeof(buf))
+#endif
+
+
 void lsdn_if_init(struct lsdn_if *lsdn_if)
 {
 	lsdn_if->ifindex = 0;
@@ -171,7 +181,7 @@ static lsdn_err_t link_create_send(
 // ip link add name <if_name> type dummy
 lsdn_err_t lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
 {
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
 
@@ -184,7 +194,7 @@ lsdn_err_t lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if
 		const char *vlan_name, uint16_t vlanid)
 {
 	unsigned int seq = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
 
@@ -222,7 +232,7 @@ lsdn_err_t lsdn_link_vxlan_create(
 	bool learning, bool collect_metadata)
 {
 	unsigned int seq = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
 
@@ -268,7 +278,7 @@ lsdn_err_t lsdn_link_vxlan_create(
 
 lsdn_err_t lsdn_link_bridge_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
 {
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
 
@@ -280,7 +290,7 @@ lsdn_err_t lsdn_link_set_master(struct mnl_socket *sock,
 		unsigned int master, unsigned int slave)
 {
 	unsigned int seq = 0, change = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	nlh->nlmsg_type = RTM_NEWLINK;
@@ -314,7 +324,7 @@ lsdn_err_t lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 		lsdn_mac_t mac, lsdn_ip_t ip)
 {
 	unsigned int seq = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	nlh->nlmsg_type = RTM_NEWNEIGH;
@@ -336,7 +346,7 @@ lsdn_err_t lsdn_fdb_remove_entry(struct mnl_socket *sock, unsigned int ifindex,
 			  lsdn_mac_t mac, lsdn_ip_t ip)
 {
 	unsigned int seq = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	nlh->nlmsg_type = RTM_DELNEIGH;
@@ -358,7 +368,7 @@ lsdn_err_t lsdn_link_set_ip(struct mnl_socket *sock,
 		const char *iface, lsdn_ip_t ip)
 {
 	unsigned int seq = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 
 	int ifindex = if_nametoindex(iface);
 
@@ -388,7 +398,7 @@ lsdn_err_t lsdn_link_veth_create(
 		struct lsdn_if* if2, const char *if_name2)
 {
 	lsdn_err_t err;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
@@ -429,7 +439,7 @@ lsdn_err_t lsdn_link_veth_create(
 lsdn_err_t lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface)
 {
 	unsigned int seq = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 
 	nlh->nlmsg_type = RTM_DELLINK;
@@ -448,7 +458,7 @@ lsdn_err_t lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface)
 lsdn_err_t lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up)
 {
 	unsigned int seq = 0, change = IFF_UP, flags = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 
 	if (up)
 		flags = IFF_UP;
@@ -470,7 +480,7 @@ lsdn_err_t lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up)
 lsdn_err_t lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex)
 {
 	unsigned int seq = 0;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	nlh->nlmsg_type = RTM_NEWQDISC;
@@ -719,6 +729,7 @@ lsdn_err_t lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f)
 	return send_await_response(sock, f->nlh);
 }
 
+/* Allow an existing TC filter to be updated. Unless this called, the filter must not exist */
 void lsdn_filter_set_update(struct lsdn_filter *f)
 {
 	f->update = true;
@@ -728,7 +739,7 @@ lsdn_err_t lsdn_filter_delete(
 	struct mnl_socket *sock, uint32_t ifindex, uint32_t handle,
 	uint32_t parent, uint32_t chain, uint16_t prio)
 {
-	char buf[MNL_SOCKET_BUFFER_SIZE];
+	nl_buf(buf);
 	unsigned int seq = 0;
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);

@@ -171,15 +171,15 @@ static void vxlan_use_stunnel(struct lsdn_settings *s)
 		if (err != LSDNE_OK)
 			abort();
 
-		lsdn_sbridge_phys_if_init(ctx, &s->vxlan.e2e_static.tunnel_sbridge, tunnel);
+		lsdn_sbridge_phys_if_init(ctx, &s->vxlan.e2e_static.tunnel_sbridge, tunnel, true);
 	}
 }
 
 static void vxlan_release_stunnel(struct lsdn_settings *s)
 {
 	if (--s->vxlan.e2e_static.refcount == 0) {
+		lsdn_sbridge_phys_if_free(&s->vxlan.e2e_static.tunnel_sbridge);
 		if(!s->ctx->disable_decommit) {
-			lsdn_sbridge_phys_if_free(&s->vxlan.e2e_static.tunnel_sbridge);
 			lsdn_err_t err = lsdn_link_delete(s->ctx->nlsock, &s->vxlan.e2e_static.tunnel);
 			if (err != LSDNE_OK)
 				abort();

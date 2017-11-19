@@ -70,10 +70,16 @@ void lsdn_log(enum lsdn_log_category category, const char* format, ...)
 	lsdn_vlog(category, format, args);
 	va_end(args);
 }
+
+bool lsdn_log_enabled(enum lsdn_log_category category)
+{
+	return ((1 << category) & mask);
+}
+
 void lsdn_vlog(enum lsdn_log_category category, const char* format, va_list args)
 {
 	lsdn_log_init();
-	if (!((1 << category) & mask))
+	if (!lsdn_log_enabled(category))
 		return;
 
 	pthread_mutex_lock(&log_mutex);
