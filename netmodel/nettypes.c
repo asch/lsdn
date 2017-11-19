@@ -53,6 +53,12 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii)
 	return LSDNE_OK;
 }
 
+/** Compare two `lsdn_mac_t` for equality. */
+bool lsdn_mac_eq(lsdn_mac_t a, lsdn_mac_t b)
+{
+	return memcmp(a.bytes, b.bytes, 6) == 0;
+}
+
 /** Parse IP address string into `lsdn_ip`. */
 lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii)
 {
@@ -111,9 +117,9 @@ bool lsdn_ip_eq(lsdn_ip_t a, lsdn_ip_t b)
 		return false;
 
 	if(a.v == LSDN_IPv4)
-		return lsdn_ipv4_eq(a.v4, a.v4);
+		return lsdn_ipv4_eq(a.v4, b.v4);
 	else
-		return lsdn_ipv6_eq(a.v6, a.v6);
+		return lsdn_ipv6_eq(a.v6, b.v6);
 }
 
 /** Compare two `lsdn_ipv4` for equality. */

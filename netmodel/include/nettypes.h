@@ -60,6 +60,7 @@ extern const lsdn_mac_t lsdn_multicast_mac_mask;
 extern const lsdn_mac_t lsdn_single_mac_mask;
 
 lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii);
+bool lsdn_mac_eq(lsdn_mac_t a, lsdn_mac_t b);
 lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii);
 lsdn_err_t lsdn_parse_ipv4(lsdn_ipv4_t *ip, const char *ascii);
 lsdn_err_t lsdn_parse_ipv6(lsdn_ipv6_t *ip, const char *ascii);

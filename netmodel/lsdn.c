@@ -406,7 +406,6 @@ static void phys_detach_by_pa(struct lsdn_phys_attachment *a)
 {
 	a->explicitely_attached = false;
 	free_pa_if_possible(a);
-
 }
 
 void lsdn_phys_detach(struct lsdn_phys *phys, struct lsdn_net* net)
@@ -564,6 +563,11 @@ static bool should_be_validated(enum lsdn_state state) {
 	return state == LSDN_STATE_NEW || state == LSDN_STATE_RENEW;
 }
 
+static bool will_be_deleted(enum lsdn_state state)
+{
+	return state == LSDN_STATE_DELETE;
+}
+
 static void report_virts(struct lsdn_phys_attachment *pa)
 {
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v)
@@ -578,7 +582,7 @@ static void report_virts(struct lsdn_phys_attachment *pa)
 	}
 }
 
-static void validate_virts(struct lsdn_phys_attachment *pa)
+static void validate_virts_pa(struct lsdn_phys_attachment *pa)
 {
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v){
 		if(!should_be_validated(v->state))
@@ -594,6 +598,65 @@ static void validate_virts(struct lsdn_phys_attachment *pa)
 		}
 		if(pa->net->settings->ops->validate_virt)
 			pa->net->settings->ops->validate_virt(v);
+	}
+}
+
+static void validate_virts_net(struct lsdn_net *net)
+{
+	lsdn_foreach(net->virt_list, virt_entry, struct lsdn_virt, v1) {
+		if (!should_be_validated(v1->state) || !v1->attr_mac)
+			continue;
+		lsdn_foreach(net->virt_list, virt_entry, struct lsdn_virt, v2) {
+			if (v1 == v2 || !should_be_validated(v2->state) || !v2->attr_mac)
+				continue;
+			if (lsdn_mac_eq(*v1->attr_mac, *v2->attr_mac))
+				lsdn_problem_report(
+					net->ctx, LSDNP_VIRT_DUPATTR,
+					LSDNS_ATTR, "mac",
+					LSDNS_VIRT, v1,
+					LSDNS_VIRT, v2,
+					LSDNS_NET, net,
+					LSDNS_END);
+		}
+	}
+}
+
+static void cross_validate_networks(struct lsdn_net *net1, struct lsdn_net *net2)
+{
+	struct lsdn_settings *s1 = net1->settings;
+	struct lsdn_settings *s2 = net2->settings;
+
+	if (s1->nettype == s2->nettype && net1->vnet_id == net2->vnet_id)
+		lsdn_problem_report(
+			s1->ctx, LSDNP_NET_DUPID,
+			LSDNS_NET, net1,
+			LSDNS_NET, net2,
+			LSDNS_NETID, net1->vnet_id,
+			LSDNS_END);
+
+	bool check_nettypes = false;
+	lsdn_foreach(net1->attached_list, attached_entry, struct lsdn_phys_attachment, pa1) {
+		if (!pa1->phys->is_local)
+			continue;
+		lsdn_foreach(net2->attached_list, attached_entry, struct lsdn_phys_attachment, pa2) {
+			if (!pa2->phys->is_local)
+				continue;
+			check_nettypes = true;
+		}
+	}
+
+	if (check_nettypes) {
+		if (s1->nettype == LSDN_NET_VXLAN && s2->nettype == LSDN_NET_VXLAN) {
+			if (s1->switch_type == LSDN_STATIC_E2E && s2->switch_type != LSDN_STATIC_E2E) {
+				if (s1->vxlan.port == s2->vxlan.port) {
+					lsdn_problem_report(
+						s1->ctx, LSDNP_NET_BAD_NETTYPE,
+						LSDNS_NET, net1,
+						LSDNS_NET, net2,
+						LSDNS_END);
+				}
+			}
+		}
 	}
 }
 
@@ -624,7 +687,19 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	}
 
 	/******* Do the validation ********/
+	lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, net1) {
+		if (will_be_deleted(net1->state))
+			continue;
+		validate_virts_net(net1);
+		lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, net2) {
+			if (net1 != net2 && !will_be_deleted(net2->state))
+				cross_validate_networks(net1, net2);
+		}
+	}
+
 	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p){
+		if (will_be_deleted(p->state))
+			continue;
 		lsdn_foreach(p->attached_to_list, attached_to_entry, struct lsdn_phys_attachment, a)
 		{
 			if(!a->explicitely_attached){
@@ -640,8 +715,20 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 
 				if(should_be_validated(a->state) && a->net->settings->ops->validate_pa)
 					a->net->settings->ops->validate_pa(a);
-				validate_virts(a);
+				validate_virts_pa(a);
 			}
+		}
+		lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p_other) {
+			if (p == p_other || will_be_deleted(p_other->state))
+				continue;
+			if (p->attr_ip && p_other->attr_ip)
+				if (lsdn_ip_eq(*p->attr_ip, *p_other->attr_ip))
+					lsdn_problem_report(
+						ctx, LSDNP_PHYS_DUPATTR,
+						LSDNS_ATTR, "ip",
+						LSDNS_PHYS, p,
+						LSDNS_PHYS, p_other,
+						LSDNS_END);
 		}
 	}
 

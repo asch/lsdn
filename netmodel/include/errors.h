@@ -35,8 +35,13 @@ typedef enum lsdn_err lsdn_err_t;
 
 #define lsdn_foreach_problem(x) \
 	x(PHYS_NOATTR, "An attribute %o must be defined on phys %o for attachment to net %o.") \
+	x(PHYS_DUPATTR, "Duplicate attribute %o specified for phys %o and phys %o.") \
 	x(PHYS_NOT_ATTACHED, "Trying to connect virt %o to a network %o on phys %o, but the phys is not attached to that network.") \
-	x(VIRT_NOIF, "The interface %o specified for virt %o does not exist.")
+	x(VIRT_NOIF, "The interface %o specified for virt %o does not exist.") \
+	x(VIRT_NOATTR, "An attribute %o must be defined on virt %o connected to net %o.") \
+	x(VIRT_DUPATTR, "Duplicate attribute %o specified for virt %o and virt %o connected to net %o.") \
+	x(NET_BAD_NETTYPE, "Trying to create net %o and net %o of incompatible network types on the same machine.") \
+	x(NET_DUPID, "Trying to create net %o and net %o with the same net id %o.")
 
 #define lsdn_mk_problem_enum(name, string) LSDNP_##name,
 
@@ -57,6 +62,8 @@ enum lsdn_problem_ref_type {
 	LSDNS_VIRT,
 	/** Problem with `lsdn_if`. */
 	LSDNS_IF,
+	/** Problem with `vnet_id`. */
+	LSDNS_NETID,
 	/** End of problem list. */
 	LSDNS_END
 };
