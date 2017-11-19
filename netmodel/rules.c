@@ -56,6 +56,7 @@ static void dump_rule(struct lsdn_rule *rule)
 bool lsdn_target_supports_masking(enum lsdn_rule_target target)
 {
 	switch(target) {
+	case LSDN_MATCH_NONE:
 	case LSDN_MATCH_ENC_KEY_ID:
 		return false;
 	default:
@@ -186,14 +187,31 @@ void lsdn_ruleset_remove(struct lsdn_rule *rule)
 	rule->fl_rule = NULL;
 }
 
+static void hard_mask(char *value, size_t valsize)
+{
+	assert(valsize < LSDN_MAX_MATCH_LEN);
+	bzero(value + valsize, LSDN_MAX_MATCH_LEN - valsize);
+}
+
 static void mask_key(struct lsdn_rule *r)
 {
 	struct lsdn_ruleset_prio *p = r->prio;
 	for(int i = 0; i<LSDN_MAX_MATCHES; i++) {
-		if (!lsdn_target_supports_masking(p->targets[i]))
-			continue;
-		for(int j = 0; j<LSDN_MAX_MATCH_LEN; j++) {
-			r->matches[i].bytes[j] &= p->masks[i].bytes[j];
+		if (!lsdn_target_supports_masking(p->targets[i])) {
+			switch (p->targets[i]) {
+			case LSDN_MATCH_NONE:
+				hard_mask(r->matches[i].bytes, 0);
+			break;
+			case LSDN_MATCH_ENC_KEY_ID:
+				hard_mask(r->matches[i].bytes, sizeof(r->matches[i].enc_key_id));
+			break;
+			default:
+				abort();
+			}
+		} else {
+			for(int j = 0; j<LSDN_MAX_MATCH_LEN; j++) {
+				r->matches[i].bytes[j] &= p->masks[i].bytes[j];
+			}
 		}
 	}
 }
