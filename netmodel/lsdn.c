@@ -243,7 +243,7 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 	lsdn_list_init(&net->virt_list);
 	lsdn_name_init(&net->name);
 	lsdn_names_init(&net->virt_names);
-	return net;
+	ret_ptr(s->ctx, net);
 }
 
 static void net_do_free(struct lsdn_net *net)
@@ -373,12 +373,8 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 	if(!a)
 		ret_err(net->ctx, LSDNE_NOMEM);
 
-	if(a->explicitely_attached)
-		return LSDNE_OK;
-
 	a->explicitely_attached = true;
-
-	return LSDNE_OK;
+	ret_err(net->ctx, LSDNE_OK);
 }
 
 static void pa_do_free(struct lsdn_phys_attachment *a)
@@ -421,29 +417,29 @@ void lsdn_phys_detach(struct lsdn_phys *phys, struct lsdn_net* net)
 lsdn_err_t lsdn_phys_set_iface(struct lsdn_phys *phys, const char *iface){
 	char* iface_dup = strdup(iface);
 	if(iface_dup == NULL)
-		return LSDNE_NOMEM;
+		ret_err(phys->ctx, LSDNE_NOMEM);
 
 	free(phys->attr_iface);
 	phys->attr_iface = iface_dup;
-	return LSDNE_OK;
+	ret_err(phys->ctx, LSDNE_OK);
 }
 
 lsdn_err_t lsdn_phys_clear_iface(struct lsdn_phys *phys){
 	free(phys->attr_iface);
 	phys->attr_iface = NULL;
-	return LSDNE_OK;
+	ret_err(phys->ctx, LSDNE_OK);
 }
 
 lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, lsdn_ip_t ip)
 {
 	lsdn_ip_t *ip_dup = malloc(sizeof(*ip_dup));
 	if (ip_dup == NULL)
-		return LSDNE_NOMEM;
+		ret_err(phys->ctx, LSDNE_NOMEM);
 	*ip_dup = ip;
 
 	free(phys->attr_ip);
 	phys->attr_ip = ip_dup;
-	return LSDNE_OK;
+	ret_err(phys->ctx, LSDNE_OK);
 }
 
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys)
@@ -468,7 +464,7 @@ lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys)
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	struct lsdn_virt *virt = malloc(sizeof(*virt));
 	if(!virt)
-		return NULL;
+		ret_ptr(net->ctx, LSDNE_NOMEM);
 	virt->network = net;
 	virt->state = LSDN_STATE_NEW;
 	virt->attr_mac = NULL;
@@ -479,7 +475,7 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
 	lsdn_list_init(&virt->virt_view_list);
 	lsdn_name_init(&virt->name);
-	return virt;
+	ret_ptr(net->ctx, virt);
 }
 
 static void virt_do_free(struct lsdn_virt *virt)
@@ -535,7 +531,7 @@ lsdn_err_t lsdn_virt_connect(
 	renew(&virt->state);
 	lsdn_list_init_add(&a->connected_virt_list, &virt->connected_virt_entry);
 
-	return LSDNE_OK;
+	ret_err(phys->ctx, LSDNE_OK);
 }
 
 void lsdn_virt_disconnect(struct lsdn_virt *virt){
@@ -551,12 +547,12 @@ lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 {
 	lsdn_mac_t *mac_dup = malloc(sizeof(*mac_dup));
 	if (mac_dup == NULL)
-		return LSDNE_NOMEM;
+		ret_err(virt->network->ctx, LSDNE_NOMEM);
 	*mac_dup = mac;
 
 	free(virt->attr_mac);
 	virt->attr_mac = mac_dup;
-	return LSDNE_OK;
+	ret_err(virt->network->ctx, LSDNE_OK);
 }
 
 static bool should_be_validated(enum lsdn_state state) {
@@ -660,7 +656,7 @@ static void cross_validate_networks(struct lsdn_net *net1, struct lsdn_net *net2
 	}
 }
 
-lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
+static lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	ctx->problem_cb = cb;
 	ctx->problem_cb_user = user;
@@ -759,7 +755,7 @@ static bool ack_uncommit(enum lsdn_state *s)
 			free(obj); \
 	}while(0);
 
-void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
+static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 {
 	LSDN_UNUSED(cb); LSDN_UNUSED(user);
 	struct lsdn_net_ops *ops = pa->net->settings->ops;
@@ -840,7 +836,7 @@ void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 	}
 }
 
-void decommit_virt(struct lsdn_virt *v)
+static void decommit_virt(struct lsdn_virt *v)
 {
 	struct lsdn_net_ops *ops = v->network->settings->ops;
 	struct lsdn_phys_attachment *pa = v->committed_to;
@@ -875,7 +871,7 @@ void decommit_virt(struct lsdn_virt *v)
 	}
 }
 
-void decommit_remote_pa(struct lsdn_remote_pa *rpa)
+static void decommit_remote_pa(struct lsdn_remote_pa *rpa)
 {
 	struct lsdn_phys_attachment *local = rpa->local;
 	struct lsdn_phys_attachment *remote = rpa->remote;
@@ -896,7 +892,7 @@ void decommit_remote_pa(struct lsdn_remote_pa *rpa)
 	free(rpa);
 }
 
-void decommit_pa(struct lsdn_phys_attachment *pa)
+static void decommit_pa(struct lsdn_phys_attachment *pa)
 {
 	struct lsdn_net_ops *ops = pa->net->settings->ops;
 
@@ -943,7 +939,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 
 	lsdn_err_t lerr = lsdn_validate(ctx, cb, user);
 	if(lerr != LSDNE_OK)
-		return lerr;
+		return err;
 
 	/* List of objects to process:
 	 *	setting, network, phys, physical attachment, virt
