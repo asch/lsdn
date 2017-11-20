@@ -373,6 +373,9 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 	if(!a)
 		ret_err(net->ctx, LSDNE_NOMEM);
 
+	if (!a->explicitely_attached)
+		renew(&phys->state);
+
 	a->explicitely_attached = true;
 	ret_err(net->ctx, LSDNE_OK);
 }
@@ -419,6 +422,9 @@ lsdn_err_t lsdn_phys_set_iface(struct lsdn_phys *phys, const char *iface){
 	if(iface_dup == NULL)
 		ret_err(phys->ctx, LSDNE_NOMEM);
 
+	if (!phys->attr_iface || strcmp(iface, phys->attr_iface))
+		renew(&phys->state);
+
 	free(phys->attr_iface);
 	phys->attr_iface = iface_dup;
 	ret_err(phys->ctx, LSDNE_OK);
@@ -436,6 +442,9 @@ lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, lsdn_ip_t ip)
 	if (ip_dup == NULL)
 		ret_err(phys->ctx, LSDNE_NOMEM);
 	*ip_dup = ip;
+
+	if (!phys->attr_ip || !lsdn_ip_eq(ip, *phys->attr_ip))
+		renew(&phys->state);
 
 	free(phys->attr_ip);
 	phys->attr_ip = ip_dup;

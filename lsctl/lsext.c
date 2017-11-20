@@ -379,7 +379,12 @@ CMD(phys)
 		}
 	}
 
-	struct lsdn_phys *phys = lsdn_phys_new(ctx->lsctx);
+	struct lsdn_phys *phys = NULL;
+	if (name)
+		phys = lsdn_phys_by_name(ctx->lsctx, name);
+
+	if (!phys)
+		phys = lsdn_phys_new(ctx->lsctx);
 	if(name)
 		lsdn_phys_set_name(phys, name);
 	if(iface)
