@@ -261,6 +261,8 @@ CMD(net)
 		return TCL_ERROR;
 	}
 
+	if (!vnet_id)
+		vnet_id = strtol(Tcl_GetString(pos_args[1]), NULL, 10);
 	struct lsdn_net *net = lsdn_net_by_name(ctx->lsctx, Tcl_GetString(pos_args[1]));
 	if(!net) {
 		struct lsdn_settings *s;
