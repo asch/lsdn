@@ -464,7 +464,7 @@ lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys)
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	struct lsdn_virt *virt = malloc(sizeof(*virt));
 	if(!virt)
-		ret_ptr(net->ctx, LSDNE_NOMEM);
+		ret_ptr(net->ctx, NULL);
 	virt->network = net;
 	virt->state = LSDN_STATE_NEW;
 	virt->attr_mac = NULL;
@@ -656,7 +656,7 @@ static void cross_validate_networks(struct lsdn_net *net1, struct lsdn_net *net2
 	}
 }
 
-static lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
+lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	ctx->problem_cb = cb;
 	ctx->problem_cb_user = user;
@@ -939,7 +939,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 
 	lsdn_err_t lerr = lsdn_validate(ctx, cb, user);
 	if(lerr != LSDNE_OK)
-		return err;
+		return lerr;
 
 	/* List of objects to process:
 	 *	setting, network, phys, physical attachment, virt
