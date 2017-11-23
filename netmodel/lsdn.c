@@ -790,14 +790,13 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 					 v->connected_if.ifname, v);
 				ops->add_virt(v);
 			}
-
 		}
 	}
 
 	lsdn_foreach(pa->net->attached_list, attached_entry, struct lsdn_phys_attachment, remote) {
 		if (remote == pa)
 			continue;
-		if (remote->state != LSDN_STATE_NEW)
+		if (pa->state != LSDN_STATE_NEW && remote->state != LSDN_STATE_NEW)
 			continue;
 
 		struct lsdn_remote_pa *rpa = malloc(sizeof(*rpa));
@@ -822,7 +821,7 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 
 	lsdn_foreach(pa->remote_pa_list, remote_pa_entry, struct lsdn_remote_pa, remote) {
 		lsdn_foreach(remote->remote->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
-			if (v->state != LSDN_STATE_NEW)
+			if (pa->state != LSDN_STATE_NEW && v->state != LSDN_STATE_NEW)
 				continue;
 			struct lsdn_remote_virt *rvirt = malloc(sizeof(*rvirt));
 			if(!rvirt)
@@ -845,6 +844,24 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 	}
 }
 
+static void decommit_remote_virt(struct lsdn_remote_virt *rv)
+{
+	struct lsdn_net_ops *ops = rv->virt->network->settings->ops;
+	if (ops->remove_remote_virt) {
+		lsdn_log(LSDNL_NETOPS, "remove_remote_virt("
+				"net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
+				"local_pa = %p, remote_pa = %p, remote_pa_view = %p, virt = %p)\n",
+				lsdn_nullable(rv->virt->network->name.str), rv->virt->network,
+				lsdn_nullable(rv->pa->local->phys->name.str), rv->pa->local->phys,
+				lsdn_nullable(rv->pa->remote->phys->name.str), rv->pa->remote->phys,
+				rv->pa->local, rv->pa->local, rv->pa, rv->virt);
+		ops->remove_remote_virt(rv);
+	}
+	lsdn_list_remove(&rv->remote_virt_entry);
+	lsdn_list_remove(&rv->virt_view_entry);
+	free(rv);
+}
+
 static void decommit_virt(struct lsdn_virt *v)
 {
 	struct lsdn_net_ops *ops = v->network->settings->ops;
@@ -864,19 +881,7 @@ static void decommit_virt(struct lsdn_virt *v)
 	}
 
 	lsdn_foreach(v->virt_view_list, virt_view_entry, struct lsdn_remote_virt, rv) {
-		if (ops->remove_remote_virt) {
-			lsdn_log(LSDNL_NETOPS, "remove_remote_virt("
-				 "net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
-				 "local_pa = %p, remote_pa = %p, remote_pa_view = %p, virt = %p)\n",
-				 lsdn_nullable(rv->virt->network->name.str), rv->virt->network,
-				 lsdn_nullable(rv->pa->local->phys->name.str), rv->pa->local->phys,
-				 lsdn_nullable(rv->pa->remote->phys->name.str), rv->pa->remote->phys,
-				 rv->pa->local, rv->pa->local, rv->pa, rv->virt);
-			ops->remove_remote_virt(rv);
-		}
-		lsdn_list_remove(&rv->remote_virt_entry);
-		lsdn_list_remove(&rv->virt_view_entry);
-		free(rv);
+		decommit_remote_virt(rv);
 	}
 }
 
@@ -885,6 +890,11 @@ static void decommit_remote_pa(struct lsdn_remote_pa *rpa)
 	struct lsdn_phys_attachment *local = rpa->local;
 	struct lsdn_phys_attachment *remote = rpa->remote;
 	struct lsdn_net_ops *ops = local->net->settings->ops;
+
+	lsdn_foreach(rpa->remote_virt_list, remote_virt_entry, struct lsdn_remote_virt, rv) {
+		decommit_remote_virt(rv);
+	}
+
 	if (ops->remove_remote_pa) {
 		lsdn_log(LSDNL_NETOPS, "remove_remote_pa("
 			 "net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
