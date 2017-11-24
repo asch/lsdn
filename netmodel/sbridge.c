@@ -266,7 +266,7 @@ void lsdn_sbridge_phys_if_init(struct lsdn_context *ctx, struct lsdn_sbridge_phy
 	if(!prio_match)
 		abort();
 	prio_match->targets[0] = LSDN_MATCH_DST_MAC;
-	prio_match->masks[0].mac = lsdn_single_mac_mask;
+	prio_match->masks[0].mac = lsdn_multicast_mac_mask;
 	if (match_vni)
 		prio_match->targets[1]= LSDN_MATCH_ENC_KEY_ID;
 
