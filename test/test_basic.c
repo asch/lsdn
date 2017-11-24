@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "common.h"
 
 static struct lsdn_context *ctx;
 static struct lsdn_settings *settings;
@@ -15,25 +16,7 @@ int main(int argc, const char* argv[])
 
 	ctx = lsdn_context_new("ls");
 	lsdn_context_abort_on_nomem(ctx);
-
-	const char *nettype = getenv("LSCTL_NETTYPE");
-	if (!nettype) {
-		fprintf(stderr, "no LSCTL_NETTYPE\n");
-		abort();
-	} else if (!strcmp(nettype, "vlan")) {
-		settings = lsdn_settings_new_vlan(ctx);
-	} else if (!strcmp(nettype, "vxlan/e2e")) {
-		settings = lsdn_settings_new_vxlan_e2e(ctx, 0);
-	} else if (!strcmp(nettype, "vxlan/static")) {
-		settings = lsdn_settings_new_vxlan_static(ctx, 0);
-	} else if (!strcmp(nettype, "vxlan/mcast")) {
-		settings = lsdn_settings_new_vxlan_mcast(ctx, LSDN_MK_IPV4(239,239,239,239), 0);
-	} else if (!strcmp(nettype, "direct")) {
-		settings = lsdn_settings_new_direct(ctx);
-	} else {
-		fprintf(stderr, "Unknown nettype: %s\n", nettype);
-		abort();
-	}
+	settings = settings_from_env(ctx);
 
 
 	/* LSCTL: phys -if out -name a -ip 172.16.0.1 */

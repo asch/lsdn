@@ -5,6 +5,9 @@ endfunction(join_list)
 
 add_executable(halt halt.c)
 
+add_library(test_common SHARED common.c common.h)
+target_include_directories(test_common PRIVATE ../netmodel/include)
+
 file(GLOB TEST_SUPPORT tcl.supp run run-qemu)
 file(GLOB TEST_SUPPORT_PARTS parts/*.sh parts/*.lsctl)
 file(GLOB_RECURSE TEST_SUPPORT_LIB lib/common.sh lib/common.tcl)
@@ -28,7 +31,7 @@ endif()
 function(test_executable testname)
 	add_executable(test_${testname} test_${testname}.c)
 	target_include_directories(test_${testname} PRIVATE ../netmodel/include)
-	target_link_libraries(test_${testname} lsdn)
+	target_link_libraries(test_${testname} lsdn test_common)
 endfunction(test_executable)
 
 function(test_parts)
@@ -44,6 +47,7 @@ endfunction(test_simple)
 option(LARGE_TESTS "Disable larger tests" ON)
 
 test_executable(basic)
+test_executable(fw)
 test_simple(nettypes)
 # direct connection does not support multiple vnets, so no need to run the regular test
 test_parts(direct migrate ping)

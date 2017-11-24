@@ -6,6 +6,7 @@
 #include "nl.h"
 #include "idalloc.h"
 #include "../include/nettypes.h"
+#include "../include/rules.h"
 #include "list.h"
 
 typedef void (*lsdn_mkaction_fn)(struct lsdn_filter *filter, uint16_t order, void *user);
@@ -19,27 +20,8 @@ struct lsdn_action_desc {
 /* A helper for setting action fields */
 void lsdn_action_init(struct lsdn_action_desc *action, size_t count, lsdn_mkaction_fn fn, void *user);
 
-enum lsdn_rule_target{
-	LSDN_MATCH_NONE,
-	LSDN_MATCH_SRC_MAC,
-	LSDN_MATCH_DST_MAC,
-	LSDN_MATCH_SRC_IPV4,
-	LSDN_MATCH_DST_IPV4,
-	LSDN_MATCH_SRC_IPV6,
-	LSDN_MATCH_DST_IPV6,
-	LSDN_MATCH_ENC_KEY_ID,
-};
 
 bool lsdn_target_supports_masking(enum lsdn_rule_target);
-
-#define LSDN_MAX_MATCH_LEN 16
-union  lsdn_matchdata {
-	char bytes[LSDN_MAX_MATCH_LEN];
-	lsdn_mac_t mac;
-	lsdn_ipv4_t ipv4;
-	lsdn_ipv6_t ipv6;
-	uint32_t enc_key_id;
-};
 
 struct lsdn_flower_rule;
 
