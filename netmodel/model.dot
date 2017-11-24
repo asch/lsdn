@@ -1,0 +1,28 @@
+# view with xdot or use graphvixz
+
+# Dotted edges denote non-user visible objects implicitely constructed by the
+# netmodel for internal bookkeeping
+
+digraph G {
+    context -> settings;
+
+    context -> phys;
+
+    settings -> net;
+
+    net -> virt;
+
+    pa [ label = "pa\nwhere: phys attached to net" ];
+    phys -> pa [ style = "dotted" ];
+    net -> pa [ style = "dotted" ];
+
+    pa -> virt;
+
+    remote_pa [ label = "remote_pa\nwhere: local_pa is local\nwhere: local_pa != remote_pa"];
+    pa -> remote_pa [ style = "dotted", label = "local" ];
+    pa -> remote_pa [ style = "dotted", label = "remote" ];
+
+    remote_virt [label = "remote_virt\nwhere virt.pa == remote_pa.remote" ];
+    remote_pa -> remote_virt [ style = "dotted" ];
+    virt -> remote_virt [ style = "dotted"];
+}
