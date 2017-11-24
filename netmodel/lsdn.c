@@ -867,6 +867,10 @@ static void decommit_virt(struct lsdn_virt *v)
 	struct lsdn_net_ops *ops = v->network->settings->ops;
 	struct lsdn_phys_attachment *pa = v->committed_to;
 
+	lsdn_foreach(v->virt_view_list, virt_view_entry, struct lsdn_remote_virt, rv) {
+		decommit_remote_virt(rv);
+	}
+
 	if (pa) {
 		if (ops->remove_virt) {
 			lsdn_log(LSDNL_NETOPS, "remove_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
@@ -878,10 +882,6 @@ static void decommit_virt(struct lsdn_virt *v)
 		}
 		v->committed_to = NULL;
 		lsdn_if_reset(&v->committed_if);
-	}
-
-	lsdn_foreach(v->virt_view_list, virt_view_entry, struct lsdn_remote_virt, rv) {
-		decommit_remote_virt(rv);
 	}
 }
 
