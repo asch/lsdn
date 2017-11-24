@@ -266,7 +266,7 @@ lsdn_err_t lsdn_link_vxlan_create(
 		if (mcast_group->v == LSDN_IPv4) {
 			mnl_attr_put_u32(nlh, IFLA_VXLAN_GROUP, htonl(lsdn_ip4_u32(&mcast_group->v4)));
 		} else {
-			// TODO
+			mnl_attr_put(nlh, IFLA_VXLAN_GROUP6, sizeof(mcast_group->v6.bytes), mcast_group->v6.bytes);
 		}
 	}
 
@@ -312,12 +312,10 @@ static void fdb_set_keys(struct nlmsghdr *nlh, lsdn_mac_t mac, lsdn_ip_t ip)
 {
 	mnl_attr_put(nlh, NDA_LLADDR, sizeof(mac.bytes), mac.bytes);
 
-	if (ip.v == LSDN_IPv4) {
+	if (ip.v == LSDN_IPv4)
 		mnl_attr_put(nlh, NDA_DST, sizeof(ip.v4.bytes), ip.v4.bytes);
-	} else {
-		// TODO
-		abort();
-	}
+	else
+		mnl_attr_put(nlh, NDA_DST, sizeof(ip.v6.bytes), ip.v6.bytes);
 }
 
 lsdn_err_t lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
@@ -633,8 +631,8 @@ void lsdn_action_set_tunnel_key(
 		mnl_attr_put_u32(f->nlh, TCA_TUNNEL_KEY_ENC_IPV4_SRC, htonl(lsdn_ip4_u32(&src_ip->v4)));
 		mnl_attr_put_u32(f->nlh, TCA_TUNNEL_KEY_ENC_IPV4_DST, htonl(lsdn_ip4_u32(&dst_ip->v4)));
 	} else {
-		// TODO
-		abort();
+		mnl_attr_put(f->nlh, TCA_TUNNEL_KEY_ENC_IPV6_SRC, sizeof(src_ip->v6.bytes), src_ip->v6.bytes);
+		mnl_attr_put(f->nlh, TCA_TUNNEL_KEY_ENC_IPV6_DST, sizeof(dst_ip->v6.bytes), dst_ip->v6.bytes);
 	}
 
 	mnl_attr_put(f->nlh, TCA_TUNNEL_KEY_PARMS, sizeof(tunnel_key), &tunnel_key);

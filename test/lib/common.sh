@@ -44,7 +44,7 @@ mk_phys(){
 
 	mk_netns "$phys"
 	# cleanup the air by disabling IPv6 (and associated advertisements)
-	in_ns "$phys" sysctl net.ipv6.conf.all.disable_ipv6=1 > /dev/null
+	#in_ns "$phys" sysctl net.ipv6.conf.all.disable_ipv6=1 > /dev/null
 	mk_veth_pair "$phys" out "$net" "$phys"
 	set_ifattr "$phys" out "$@"
 	PHYS_LIST="$PHYS_LIST $phys"
@@ -62,7 +62,7 @@ mk_virt_common(){
 
 	mk_netns "$phys-$virt"
 	# cleanup the air by disabling IPv6 (and associated advertisements)
-	in_ns "$phys-$virt" sysctl net.ipv6.conf.all.disable_ipv6=1  > /dev/null
+	#in_ns "$phys-$virt" sysctl net.ipv6.conf.all.disable_ipv6=1  > /dev/null
 	in_ns "$phys-$virt" ip link set dev lo up
 }
 
@@ -168,6 +168,12 @@ enable_ipv4_forwarding(){
 	local ns="$1"
 	local if="$2"
 	in_ns "$ns-$if" sysctl -w net.ipv4.ip_forward=1
+}
+
+enable_ipv6_forwarding(){
+	local ns="$1"
+	local if="$2"
+	in_ns "$ns-$if" sysctl -w net.ipv6.ip_forward=1
 }
 
 add_default_route(){

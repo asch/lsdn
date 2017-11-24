@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <arpa/inet.h>
 #include "include/nettypes.h"
 
 const lsdn_mac_t lsdn_broadcast_mac = {
@@ -56,52 +57,27 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii)
 /** Parse IP address string into `lsdn_ip`. */
 lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii)
 {
+	int res = 0;
 	if(strchr(ascii, '.')) {
 		ip->v = LSDN_IPv4;
-		return lsdn_parse_ipv4(&ip->v4, ascii);
+		res = inet_pton(AF_INET, ascii, ip->v4.bytes);
 	}else if(strchr(ascii, ':')) {
 		ip->v = LSDN_IPv6;
-		return lsdn_parse_ipv6(&ip->v6, ascii);
-	}else
-		return LSDNE_PARSE;
-}
-
-/** Parse a single byte of IPv4 address from a string. */
-static lsdn_err_t parse_ipv4_byte(const char **ascii, uint8_t *dst) {
-	const char* start = *ascii;
-	while(isdigit(**ascii))
-		(*ascii)++;
-
-	if(*ascii - start > 3 || *ascii == start)
-		return LSDNE_PARSE;
-	*dst = atoi(start);
-	if(*dst > 0xFF)
-		return LSDNE_PARSE;
-	return LSDNE_OK;
-}
-
-/** Parse IPv4 address string into `lsdn_ipv4`. */
-lsdn_err_t lsdn_parse_ipv4(lsdn_ipv4_t *ip, const char *ascii)
-{
-	for(int i = 0; i<4; i++) {
-		if(parse_ipv4_byte(&ascii, &ip->bytes[i]) != LSDNE_OK)
-			return LSDNE_PARSE;
-		if(i < 3) {
-			if(*(ascii++) != '.')
-				return LSDNE_PARSE;
-		}
+		res = inet_pton(AF_INET6, ascii, ip->v6.bytes);
 	}
-	if(*ascii)
-		return LSDNE_PARSE;
-	return LSDNE_OK;
+	return res == 1 ? LSDNE_OK : LSDNE_PARSE;
 }
 
-/** Parse IPv6 address string into `lsdn_ipv6`. */
-lsdn_err_t lsdn_parse_ipv6(lsdn_ipv6_t *ip, const char *ascii)
+/** Compare two `lsdn_ipv4` for equality. */
+static bool lsdn_ipv4_eq(lsdn_ipv4_t a, lsdn_ipv4_t b)
 {
-	/* rfc5952 */
-	/* TODO: parse */
-	return LSDNE_PARSE;
+	return memcmp(a.bytes, b.bytes, 4) == 0;
+}
+
+/** Compare two `lsdn_ipv6` for equality. */
+static bool lsdn_ipv6_eq(lsdn_ipv6_t a, lsdn_ipv6_t b)
+{
+	return memcmp(a.bytes, b.bytes, 16) == 0;
 }
 
 /** Compare two `lsdn_ip` for equality. */
@@ -111,21 +87,9 @@ bool lsdn_ip_eq(lsdn_ip_t a, lsdn_ip_t b)
 		return false;
 
 	if(a.v == LSDN_IPv4)
-		return lsdn_ipv4_eq(a.v4, a.v4);
+		return lsdn_ipv4_eq(a.v4, b.v4);
 	else
-		return lsdn_ipv6_eq(a.v6, a.v6);
-}
-
-/** Compare two `lsdn_ipv4` for equality. */
-bool lsdn_ipv4_eq(lsdn_ipv4_t a, lsdn_ipv4_t b)
-{
-	return memcmp(a.bytes, b.bytes, 4) == 0;
-}
-
-/** Compare two `lsdn_ipv6` for equality. */
-bool lsdn_ipv6_eq(lsdn_ipv6_t a, lsdn_ipv6_t b)
-{
-	return memcmp(a.bytes, b.bytes, 16) == 0;
+		return lsdn_ipv6_eq(a.v6, b.v6);
 }
 
 /** Format `lsdn_mac` as ASCII string. */
@@ -139,8 +103,20 @@ void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf)
 void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf)
 {
 	if (ip->v == LSDN_IPv4)
-		sprintf(buf, "%d.%d.%d.%d", ip->v4.bytes[0], ip->v4.bytes[1], ip->v4.bytes[2],
-			ip->v4.bytes[3]);
+		sprintf(buf,
+			"%d.%d.%d.%d",
+			ip->v4.bytes[0], ip->v4.bytes[1],
+			ip->v4.bytes[2], ip->v4.bytes[3]);
 	else
-		; /* TODO */
+		sprintf(buf,
+			"%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
+			"%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+			ip->v6.bytes[0], ip->v6.bytes[1],
+			ip->v6.bytes[2], ip->v6.bytes[3],
+			ip->v6.bytes[4], ip->v6.bytes[5],
+			ip->v6.bytes[6], ip->v6.bytes[7],
+			ip->v6.bytes[8], ip->v6.bytes[9],
+			ip->v6.bytes[10], ip->v6.bytes[11],
+			ip->v6.bytes[12], ip->v6.bytes[13],
+			ip->v6.bytes[14], ip->v6.bytes[15]);
 }

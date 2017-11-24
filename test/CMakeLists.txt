@@ -83,3 +83,7 @@ endif(LARGE_TESTS)
 test_parts(vlan gateway ping)
 
 test_parts(msettings basic_msettings ping)
+
+test_parts(vlan basic_ip6 ping)
+test_parts(vxlan_static basic_ip6 ping)
+test_parts(vxlan_e2e basic_ip6 ping)
