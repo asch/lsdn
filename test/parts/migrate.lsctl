@@ -1,7 +1,7 @@
 source lib/common.tcl
 common::settings
 
-net 1 {
+net -vid 1 movingTarget {
 	phys -if out -name a -ip 172.16.0.1 {
 		virt -if 1 -mac 00:00:00:00:00:01
 		virt -if 2 -mac 00:00:00:00:00:02 -name migrator
@@ -17,7 +17,7 @@ commit
 puts "LSCTL: commit 1b"
 commit
 
-net 1 {
+net movingTarget  {
 	virt -name migrator -phys b -if 2
 }
 puts "LSCTL: commit 2a"
@@ -25,7 +25,7 @@ commit
 puts "LSCTL: commit 2b"
 commit
 
-net 1 {
+net movingTarget {
 	virt -name migrator -phys c -if 2
 }
 puts "LSCTL: commit 3a"

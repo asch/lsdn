@@ -6,7 +6,7 @@ phys -if out -name a -ip 172.16.0.1
 phys -if out -name b -ip 172.16.0.2
 phys -if out -name c -ip 172.16.0.3
 
-net 1 -settings A {
+net -vid 1 -settings A networkA {
 	attach a b c
 	virt -phys a -if 1 -mac 00:00:00:00:00:a1
 	virt -phys a -if 2 -mac 00:00:00:00:00:a2
@@ -14,7 +14,7 @@ net 1 -settings A {
 	virt -phys c -if 1 -mac 00:00:00:00:00:c1
 }
 
-net 2 -settings B {
+net -vid 1 -settings B networkB {
 	attach a b
 	virt -phys a -if 3 -mac 00:00:00:00:00:a3
 	virt -phys b -if 2 -mac 00:00:00:00:00:b2

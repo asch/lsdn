@@ -236,11 +236,14 @@ CMD(net)
 	if (ctx->net)
 		return tcl_error(interp, "net scopes ca not be nested");
 
+	// TODO net id range 0 .. 2**32 - 1
+	int vnet_id = 0;
 	const char *settings_name = NULL;
 	const char *phys = NULL;
 	struct lsdn_phys *phys_parsed = NULL;
 	Tcl_Obj **pos_args = NULL;
 	const Tcl_ArgvInfo opts[] = {
+		{TCL_ARGV_INT, "-vid", NULL, &vnet_id},
 		{TCL_ARGV_STRING, "-settings", NULL, &settings_name},
 		{TCL_ARGV_STRING, "-phys", NULL, &phys},
 		{TCL_ARGV_END}
@@ -253,14 +256,15 @@ CMD(net)
 		return TCL_ERROR;
 
 	if(argc != 3) {
-		Tcl_WrongNumArgs(interp, 1, argv, "net-id contents");
+		Tcl_WrongNumArgs(interp, 1, argv, "name contents");
 		ckfree(pos_args);
 		return TCL_ERROR;
 	}
 
+	if (!vnet_id)
+		vnet_id = strtol(Tcl_GetString(pos_args[1]), NULL, 10);
 	struct lsdn_net *net = lsdn_net_by_name(ctx->lsctx, Tcl_GetString(pos_args[1]));
 	if(!net) {
-
 		struct lsdn_settings *s;
 		if (!settings_name) {
 			s = lsdn_settings_by_name(ctx->lsctx, "default");
@@ -271,12 +275,8 @@ CMD(net)
 			if (!s)
 				return tcl_error(interp, "settings not found");
 		}
-		int netid;
-		if (Tcl_GetIntFromObj(interp, pos_args[1], &netid)) {
-			ckfree(pos_args);
-			return TCL_ERROR;
-		}
-		net = lsdn_net_new(s, netid);
+
+		net = lsdn_net_new(s, vnet_id);
 	}
 
 	if(phys_parsed)
@@ -379,7 +379,12 @@ CMD(phys)
 		}
 	}
 
-	struct lsdn_phys *phys = lsdn_phys_new(ctx->lsctx);
+	struct lsdn_phys *phys = NULL;
+	if (name)
+		phys = lsdn_phys_by_name(ctx->lsctx, name);
+
+	if (!phys)
+		phys = lsdn_phys_new(ctx->lsctx);
 	if(name)
 		lsdn_phys_set_name(phys, name);
 	if(iface)

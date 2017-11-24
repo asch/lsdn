@@ -54,6 +54,12 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii)
 	return LSDNE_OK;
 }
 
+/** Compare two `lsdn_mac_t` for equality. */
+bool lsdn_mac_eq(lsdn_mac_t a, lsdn_mac_t b)
+{
+	return memcmp(a.bytes, b.bytes, 6) == 0;
+}
+
 /** Parse IP address string into `lsdn_ip`. */
 lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii)
 {
@@ -91,6 +97,7 @@ bool lsdn_ip_eq(lsdn_ip_t a, lsdn_ip_t b)
 	else
 		return lsdn_ipv6_eq(a.v6, b.v6);
 }
+
 
 /** Format `lsdn_mac` as ASCII string. */
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf)

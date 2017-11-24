@@ -9,7 +9,7 @@ for40 i {
     phys -if out -name p$i -ip 172.16.0.$i
 }
 
-net 1 {
+net 10 {
 	for40 i {
 		attach p$i
 		virt -if virt -phys p$i -mac 00:00:00:00:00:[format %02x $i]

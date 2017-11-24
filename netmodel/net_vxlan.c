@@ -2,9 +2,10 @@
 #include "private/sbridge.h"
 #include "private/lbridge.h"
 #include "private/nl.h"
+#include "private/errors.h"
 #include "include/lsdn.h"
 #include "include/nettypes.h"
-#include "private/errors.h"
+#include "include/errors.h"
 #include <stdarg.h>
 
 static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
@@ -248,6 +249,17 @@ static void vxlan_static_remove_remote_virt(struct lsdn_remote_virt *virt)
 	lsdn_sbridge_remove_mac(&virt->sbridge_mac);
 }
 
+static void vxlan_static_validate_virt(struct lsdn_virt *virt)
+{
+	if (!virt->attr_mac)
+		lsdn_problem_report(
+			virt->network->ctx, LSDNP_VIRT_NOATTR,
+			LSDNS_ATTR, "mac",
+			LSDNS_VIRT, virt,
+			LSDNS_NET, virt->network,
+			LSDNS_END);
+}
+
 struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 	.create_pa = vxlan_static_create_pa,
 	.destroy_pa = vxlan_static_destroy_pa,
@@ -256,7 +268,8 @@ struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 	.add_remote_pa = vxlan_static_add_remote_pa,
 	.remove_remote_pa = vxlan_static_remove_remote_pa,
 	.add_remote_virt = vxlan_static_add_remote_virt,
-	.remove_remote_virt = vxlan_static_remove_remote_virt
+	.remove_remote_virt = vxlan_static_remove_remote_virt,
+	.validate_virt = vxlan_static_validate_virt
 };
 
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port)
