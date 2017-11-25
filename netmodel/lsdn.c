@@ -298,7 +298,7 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 	phys->attr_iface = NULL;
 	phys->attr_ip = NULL;
 	phys->is_local = false;
-	phys->commited_as_local = false;
+	phys->committed_as_local = false;
 	lsdn_name_init(&phys->name);
 	lsdn_list_init_add(&ctx->phys_list, &phys->phys_entry);
 	lsdn_list_init(&phys->attached_to_list);
@@ -685,7 +685,7 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	}
 	lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, n){
 		lsdn_foreach(n->virt_list, virt_entry, struct lsdn_virt, v) {
-			/* Does not matter if we use commited_through or connected_through, if they
+			/* Does not matter if we use committed_through or connected_through, if they
 			 * have changed, the virt must be renewed anyway */
 			if (v->connected_through)
 				propagate(&v->connected_through->state, &v->state);
@@ -924,7 +924,7 @@ static void decommit_pa(struct lsdn_phys_attachment *pa)
 		decommit_remote_pa(rpa);
 	}
 
-	if (pa->phys->commited_as_local) {
+	if (pa->phys->committed_as_local) {
 		if (ops->destroy_pa) {
 			lsdn_log(LSDNL_NETOPS, "destroy_pa(net = %s (%p), phys = %s (%p), pa = %p)\n",
 				 lsdn_nullable(pa->net->name.str), pa->net,
@@ -963,7 +963,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 
 	/* List of objects to process:
 	 *	setting, network, phys, physical attachment, virt
-	 * Settings, networks and attachments do not need to be commited in any way, but we must keep them
+	 * Settings, networks and attachments do not need to be committed in any way, but we must keep them
 	 * alive until PAs and virts are deleted. */
 
 	/********* Decommit phase **********/
@@ -999,7 +999,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 	 * them with virts, remote PAs and remote virts */
 	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p){
 		if (p->is_local) {
-			p->commited_as_local = p->is_local;
+			p->committed_as_local = p->is_local;
 			lsdn_foreach(
 				p->attached_to_list, attached_to_entry,
 				struct lsdn_phys_attachment, pa)

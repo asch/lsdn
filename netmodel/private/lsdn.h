@@ -12,13 +12,13 @@
 
 /** State of the LSDN object. */
 enum lsdn_state {
-	/** Object is being commited for a first time. */
+	/** Object is being committed for a first time. */
 	LSDN_STATE_NEW,
-	/** Object was already commited and needs to be recommited. */
+	/** Object was already committed and needs to be recommitted. */
 	LSDN_STATE_RENEW,
-	/** Object is already commited and needs to be deleted. */
+	/** Object is already committed and needs to be deleted. */
 	LSDN_STATE_DELETE,
-	/** Object is in commited state. */
+	/** Object is in committed state. */
 	LSDN_STATE_OK
 };
 
@@ -87,7 +87,7 @@ struct lsdn_phys {
 
 	struct lsdn_context* ctx;
 	bool is_local;
-	bool commited_as_local;
+	bool committed_as_local;
 	char *attr_iface;
 	lsdn_ip_t *attr_ip;
 };
