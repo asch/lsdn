@@ -181,7 +181,7 @@ void lsdn_settings_register_user_hooks(
  * @return #LSDNE_DUPLICATE if this name is already in use. */
 lsdn_err_t lsdn_settings_set_name(struct lsdn_settings *s, const char *name)
 {
-	return lsdn_name_set(&s->name, &s->ctx->setting_names, name);
+	ret_err(s->ctx, lsdn_name_set(&s->name, &s->ctx->setting_names, name));
 }
 
 /** Get settings name.
@@ -510,7 +510,7 @@ void lsdn_virt_free(struct lsdn_virt *virt)
 
 lsdn_err_t lsdn_virt_set_name(struct lsdn_virt *virt, const char *name)
 {
-	return lsdn_name_set(&virt->name, &virt->network->virt_names, name);
+	ret_err(virt->network->ctx, lsdn_name_set(&virt->name, &virt->network->virt_names, name));
 }
 
 const char* lsdn_virt_get_name(struct lsdn_virt *virt)
