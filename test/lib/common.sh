@@ -212,7 +212,7 @@ cleanup() {
 	#TODO remove all the test interfaces
 }
 
-qping="ping -c 2 -i 0.2 -w 1"
+qping="ping -c 2 -i 0.2 -w 4"
 
 fail() {
 	if trace_command "$@"; then

@@ -16,9 +16,9 @@ enum lsdn_ethertype_{
 /** IP protocol version. */
 enum lsdn_ipv {
 	/** IPv4 */
-	LSDN_IPv4,
+	LSDN_IPv4 = 4,
 	/** IPv6 */
-	LSDN_IPv6
+	LSDN_IPv6 = 6
 };
 
 /** MAC address. */

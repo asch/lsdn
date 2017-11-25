@@ -18,7 +18,6 @@
 	bzero(buf, sizeof(buf))
 #endif
 
-
 void lsdn_if_init(struct lsdn_if *lsdn_if)
 {
 	lsdn_if->ifindex = 0;
@@ -229,12 +228,13 @@ lsdn_err_t lsdn_link_vxlan_create(
 	struct mnl_socket *sock, struct lsdn_if* dst_if,
 	const char *if_name, const char *vxlan_name,
 	lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port,
-	bool learning, bool collect_metadata)
+	bool learning, bool collect_metadata, enum lsdn_ipv ipv)
 {
 	unsigned int seq = 0;
 	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
+	lsdn_ip_t dummy_ip;
 
 	unsigned int ifindex = 0;
 	if (if_name)
@@ -263,11 +263,16 @@ lsdn_err_t lsdn_link_vxlan_create(
 	mnl_attr_put_u8(nlh, IFLA_VXLAN_COLLECT_METADATA, collect_metadata);
 
 	if (mcast_group) {
-		if (mcast_group->v == LSDN_IPv4) {
+		if (mcast_group->v == LSDN_IPv4)
 			mnl_attr_put_u32(nlh, IFLA_VXLAN_GROUP, htonl(lsdn_ip4_u32(&mcast_group->v4)));
-		} else {
+		else
 			mnl_attr_put(nlh, IFLA_VXLAN_GROUP6, sizeof(mcast_group->v6.bytes), mcast_group->v6.bytes);
-		}
+	} else if (ipv == LSDN_IPv6) {
+		/* We need to explicitly notify the kernel we are using IPV6 tunneling
+		 * otherwise it defaults to IPv4, if neither group nor remote is
+		 * specified.
+		 */
+		mnl_attr_put(nlh, IFLA_VXLAN_GROUP6, sizeof(dummy_ip.v6.bytes), dummy_ip.v6.bytes);
 	}
 
 	mnl_attr_nest_end(nlh, vxlanid_linkinfo);
@@ -376,7 +381,10 @@ lsdn_err_t lsdn_link_set_ip(struct mnl_socket *sock,
 	nlh->nlmsg_seq = seq;
 
 	struct ifaddrmsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
-	ifm->ifa_family = AF_INET;
+	if (ip.v == LSDN_IPv4)
+		ifm->ifa_family = AF_INET;
+	else
+		ifm->ifa_family = AF_INET6;
 	ifm->ifa_prefixlen = 24;
 	ifm->ifa_index = ifindex;
 	ifm->ifa_scope = 0;

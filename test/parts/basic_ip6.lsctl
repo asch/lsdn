@@ -1,11 +1,11 @@
 source lib/common.tcl
 common::settings
 
-phys -if out -name a -ip 172.16.0.1
-phys -if out -name b -ip 172.16.0.2
-phys -if out -name c -ip 172.16.0.3
+phys -if out -name a -ip 1001:0db8:ac10:fe01:0000:0000:0000:000a
+phys -if out -name b -ip 1001:0db8:ac10:fe01:0000:0000:0000:000b
+phys -if out -name c -ip 1001:0db8:ac10:fe01:0000:0000:0000:000c
 
-net 1 {
+net -ipv 6 1 {
 	attach a b c
 	virt -phys a -if 1 -mac 00:00:00:00:00:a1
 	virt -phys a -if 2 -mac 00:00:00:00:00:a2
@@ -13,7 +13,7 @@ net 1 {
 	virt -phys c -if 1 -mac 00:00:00:00:00:c1
 }
 
-net 2 {
+net -ipv 6 2 {
 	attach a b
 	virt -phys a -if 3 -mac 00:00:00:00:00:a3
 	virt -phys b -if 2 -mac 00:00:00:00:00:b2

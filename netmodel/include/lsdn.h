@@ -108,7 +108,7 @@ struct lsdn_settings *lsdn_settings_by_name(struct lsdn_context *ctx, const char
  */
 struct lsdn_net;
 
-struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
+struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, enum lsdn_ipv ipv, uint32_t vnet_id);
 lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name);
 const char* lsdn_net_get_name(struct lsdn_net *net);
 struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name);

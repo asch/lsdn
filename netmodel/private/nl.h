@@ -88,7 +88,7 @@ lsdn_err_t lsdn_link_vlan_create(
 lsdn_err_t lsdn_link_vxlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if,
 		const char *if_name, const char *vxlan_name,
 		lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port,
-		bool learning, bool collect_metadata);
+		bool learning, bool collect_metadata, enum lsdn_ipv ipv);
 
 lsdn_err_t lsdn_link_veth_create(struct mnl_socket *sock,
 		struct lsdn_if *if1, const char *if_name1,

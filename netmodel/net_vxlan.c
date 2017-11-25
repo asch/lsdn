@@ -20,7 +20,8 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 		a->net->vnet_id,
 		s->vxlan.port,
 		true,
-		false);
+		false,
+		a->net->ipv);
 	if (err != LSDNE_OK)
 		abort();
 
@@ -78,7 +79,8 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 		a->net->vnet_id,
 		a->net->settings->vxlan.port,
 		true,
-		false);
+		false,
+		a->net->ipv);
 	if (err != LSDNE_OK)
 		abort();
 
@@ -149,7 +151,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
 }
 
 /* Make sure the VXLAN interface operating in metadata mode for that UDP port exists. */
-static void vxlan_use_stunnel(struct lsdn_settings *s)
+static void vxlan_use_stunnel(struct lsdn_settings *s, enum lsdn_ipv ipv)
 {
 	lsdn_err_t err;
 	struct lsdn_context *ctx = s->ctx;
@@ -164,7 +166,8 @@ static void vxlan_use_stunnel(struct lsdn_settings *s)
 			0,
 			s->vxlan.port,
 			false,
-			true);
+			true,
+			ipv);
 		if (err != LSDNE_OK)
 			abort();
 
@@ -191,7 +194,7 @@ static void vxlan_release_stunnel(struct lsdn_settings *s)
 
 static void vxlan_static_create_pa(struct lsdn_phys_attachment *pa)
 {
-	vxlan_use_stunnel(pa->net->settings);
+	vxlan_use_stunnel(pa->net->settings, pa->net->ipv);
 	lsdn_sbridge_init(pa->net->ctx, &pa->sbridge);
 	lsdn_sbridge_add_stunnel(
 		&pa->sbridge, &pa->sbridge_if,

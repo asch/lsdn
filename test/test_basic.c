@@ -53,7 +53,7 @@ int main(int argc, const char* argv[])
 	lsdn_phys_set_name(phys_c, "c");
 
 	/* LSCTL: net 1 { */
-	vlan1 = lsdn_net_new(settings, 1);
+	vlan1 = lsdn_net_new(settings, LSDN_IPv4, 1);
 		/* LSCTL: attach a b c */
 		lsdn_phys_attach(phys_a, vlan1);
 		lsdn_phys_attach(phys_b, vlan1);
@@ -77,7 +77,7 @@ int main(int argc, const char* argv[])
 	/* LSCTL: } */
 
 	/* LSCTL: net 2 { */
-	vlan2 = lsdn_net_new(settings, 2);
+	vlan2 = lsdn_net_new(settings, LSDN_IPv4, 2);
 		/* LSCTL: attach a b c */
 		lsdn_phys_attach(phys_a, vlan2);
 		lsdn_phys_attach(phys_b, vlan2);

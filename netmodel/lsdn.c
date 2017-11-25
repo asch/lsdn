@@ -226,7 +226,7 @@ void lsdn_settings_free(struct lsdn_settings *settings)
 	free_helper(settings, settings_do_free);
 }
 
-struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
+struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, enum lsdn_ipv ipv, uint32_t vnet_id)
 {
 	struct lsdn_net *net = malloc(sizeof(*net));
 	if(!net)
@@ -235,6 +235,7 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 	net->ctx = s->ctx;
 	net->state = LSDN_STATE_NEW;
 	net->settings = s;
+	net->ipv = ipv;
 	net->vnet_id = vnet_id;
 
 	lsdn_list_init_add(&s->setting_users_list, &net->settings_users_entry);
