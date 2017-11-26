@@ -118,6 +118,7 @@ void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_
 {
 	size_t pos = rule->pos++;
 	assert(pos < LSDN_MAX_MATCH_LEN);
+	assert(rule->state == LSDN_STATE_NEW);
 	rule->targets[pos] = LSDN_MATCH_SRC_MAC;
 	rule->masks[pos].mac = mask;
 	rule->rule.matches[pos].mac = value;
@@ -128,6 +129,7 @@ void lsdn_vr_add_masked_dst_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_
 {
 	size_t pos = rule->pos++;
 	assert(pos < LSDN_MAX_MATCH_LEN);
+	assert(rule->state == LSDN_STATE_NEW);
 	rule->targets[pos] = LSDN_MATCH_DST_MAC;
 	rule->masks[pos].mac = mask;
 	rule->rule.matches[pos].mac = value;
@@ -138,6 +140,7 @@ void lsdn_vr_add_masked_src_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t v
 {
 	size_t pos = rule->pos++;
 	assert(pos < LSDN_MAX_MATCH_LEN);
+	assert(rule->state == LSDN_STATE_NEW);
 	assert(mask.v == value.v);
 	if (value.v == LSDN_IPv4) {
 		rule->targets[pos] = LSDN_MATCH_SRC_IPV4;
@@ -155,6 +158,7 @@ void lsdn_vr_add_masked_dst_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t v
 {
 	size_t pos = rule->pos++;
 	assert(pos < LSDN_MAX_MATCH_LEN);
+	assert(rule->state == LSDN_STATE_NEW);
 	assert(mask.v == value.v);
 	if (value.v == LSDN_IPv4) {
 		rule->targets[pos] = LSDN_MATCH_DST_IPV4;
