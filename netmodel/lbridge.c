@@ -56,9 +56,12 @@ void lsdn_lbridge_add_virt(struct lsdn_virt *v)
 {
 	struct lsdn_phys_attachment *a = v->connected_through;
 	lsdn_lbridge_add(&a->lbridge, &v->lbridge_if, &v->committed_if);
+	lsdn_prepare_rulesets(v->network->ctx, &v->committed_if, &v->rules_in, &v->rules_out);
 }
 
 void lsdn_lbridge_remove_virt(struct lsdn_virt *v)
 {
+	lsdn_ruleset_free(&v->rules_in);
+	lsdn_ruleset_free(&v->rules_out);
 	lsdn_lbridge_remove(&v->lbridge_if);
 }

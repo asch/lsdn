@@ -59,6 +59,7 @@ test_parts(vlan migrate ping)
 test_parts(vlan basic cleanup)
 test_parts(vlan migrate cleanup)
 test_parts(vlan dhcp)
+test_parts(vlan firewall)
 
 test_parts(vxlan_mcast basic ping)
 test_parts(vxlan_mcast cbasic ping)
