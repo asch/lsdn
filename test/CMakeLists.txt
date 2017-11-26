@@ -5,7 +5,7 @@ endfunction(join_list)
 
 add_executable(halt halt.c)
 
-add_library(test_common SHARED common.c common.h)
+add_library(test_common STATIC common.c common.h)
 target_include_directories(test_common PRIVATE ../netmodel/include)
 
 file(GLOB TEST_SUPPORT tcl.supp run run-qemu)
@@ -78,6 +78,7 @@ test_parts(vxlan_static migrate ping)
 test_parts(vxlan_static basic cleanup)
 test_parts(vxlan_static migrate cleanup)
 test_parts(vxlan_static dhcp)
+test_parts(vxlan_static firewall)
 
 if(LARGE_TESTS)
 test_parts(vxlan_static large ping)

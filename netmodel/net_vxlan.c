@@ -156,6 +156,7 @@ static void vxlan_use_stunnel(struct lsdn_settings *s, enum lsdn_ipv ipv)
 	lsdn_err_t err;
 	struct lsdn_context *ctx = s->ctx;
 	struct lsdn_if *tunnel = &s->vxlan.e2e_static.tunnel;
+	struct lsdn_ruleset *rules_in = &s->vxlan.e2e_static.ruleset_in;
 	if (s->vxlan.e2e_static.refcount++ == 0) {
 		err = lsdn_link_vxlan_create(
 			ctx->nlsock,
@@ -175,7 +176,12 @@ static void vxlan_use_stunnel(struct lsdn_settings *s, enum lsdn_ipv ipv)
 		if (err != LSDNE_OK)
 			abort();
 
-		lsdn_sbridge_phys_if_init(ctx, &s->vxlan.e2e_static.tunnel_sbridge, tunnel, true);
+		err = lsdn_prepare_rulesets(ctx, tunnel, rules_in, NULL);
+		if (err != LSDNE_OK)
+			abort();
+
+		lsdn_sbridge_phys_if_init(
+			ctx, &s->vxlan.e2e_static.tunnel_sbridge, tunnel, true, rules_in);
 	}
 }
 
@@ -188,6 +194,7 @@ static void vxlan_release_stunnel(struct lsdn_settings *s)
 			if (err != LSDNE_OK)
 				abort();
 		}
+		lsdn_ruleset_free(&s->vxlan.e2e_static.ruleset_in);
 		lsdn_if_free(&s->vxlan.e2e_static.tunnel);
 	}
 }

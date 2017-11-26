@@ -30,19 +30,6 @@ static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 		*to = LSDN_STATE_RENEW;
 }
 
-/** Mark object for deletion.
- * If the object is in NEW state, so it's not in tc tables yet, delete it
- * immediately. Otherwise, set to DELETE state for later deletion sweep.
- * @param obj Object to delete, expected to have a `state` member.
- * @param free Deletion function to use. */
-#define free_helper(obj, free) \
-	do{ \
-		if (obj->state == LSDN_STATE_NEW) \
-			free(obj); \
-		else \
-			obj->state = LSDN_STATE_DELETE; \
-	} while(0)
-
 /** Create new LSDN context.
  * Initialize a `lsdn_context` struct, set its name to `name` and configure a netlink socket.
  * The returned struct must be freed by `lsdn_context_free` after use.
@@ -480,6 +467,8 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	virt->attr_mac = NULL;
 	virt->connected_through = NULL;
 	virt->committed_to = NULL;
+	virt->ht_in_rules = NULL;
+	virt->ht_out_rules = NULL;
 	lsdn_if_init(&virt->connected_if);
 	lsdn_if_init(&virt->committed_if);
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
@@ -490,6 +479,7 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 
 static void virt_do_free(struct lsdn_virt *virt)
 {
+	lsdn_virt_free_rules(virt);
 	if (virt->connected_through) {
 		lsdn_list_remove(&virt->connected_virt_entry);
 		free_pa_if_possible(virt->connected_through);
@@ -607,11 +597,120 @@ static void validate_virts_pa(struct lsdn_phys_attachment *pa)
 	}
 }
 
+static void validate_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio)
+{
+	struct vr_prio *prio, *tmp;
+	HASH_ITER(hh, ht_prio, prio, tmp) {
+		/* First check that matches are compatible */
+		struct lsdn_vr *first_rule = NULL;
+		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
+			if (first_rule) {
+				bool same =
+					(memcmp(first_rule->targets, r->targets, sizeof(r->targets)) == 0)
+					&& (memcmp(first_rule->masks, r->masks, sizeof(r->masks)) == 0);
+				if (!same) {
+					lsdn_problem_report(
+						virt->network->ctx, LSDNP_VR_INCOMPATIBLE_MATCH,
+						LSDNS_VR, first_rule,
+						LSDNS_VR, r,
+						LSDNS_VIRT, virt);
+					/* do not bother doing more checks */
+					return;
+				}
+			} else {
+				first_rule = r;
+			}
+		}
+
+		/* Optional todo:re use the hash table for commited rules that already exists.
+		 * This will reduce memory usage (we can reuse the hh from the rule) and we can
+		 * get the running time proportional to changed rules, not all rules. */
+
+		/* Then check for conflicting rules */
+		struct lsdn_vr *rule_ht = NULL;
+		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
+			struct lsdn_vr *duplicate;
+			lsdn_rule_apply_mask(&r->rule, r->targets, r->masks);
+			HASH_FIND(hh, rule_ht, r->rule.matches, sizeof(r->rule.matches), duplicate);
+			if (duplicate) {
+				lsdn_problem_report(
+					virt->network->ctx, LSDNP_VR_DUPLICATE_RULE,
+					LSDNS_VR, r,
+					LSDNS_VR, duplicate,
+					LSDNS_VIRT, virt);
+				HASH_CLEAR(hh, rule_ht);
+				return;
+			}
+			HASH_ADD(hh, rule_ht, rule.matches, sizeof(r->rule.matches), r);
+		}
+		HASH_CLEAR(hh, rule_ht);
+	}
+}
+
+static void commit_vr(
+	struct lsdn_virt *virt, struct vr_prio *prio,
+	struct lsdn_vr *vr, enum lsdn_direction dir)
+{
+	if (prio->commited_count == 0) {
+		assert(!prio->commited_prio);
+		/* This is not reversed: the egress from the virt is our ingress and vice versa */
+		struct lsdn_ruleset *rs = (dir == LSDN_IN ? &virt->rules_out : &virt->rules_in);
+		vr->rule.subprio = LSDN_VR_SUBPRIO;
+		prio->commited_prio = lsdn_ruleset_define_prio(rs, prio->prio_num);
+		if (!prio->commited_prio)
+			abort();
+		memcpy(prio->commited_prio->targets, vr->targets, sizeof(vr->targets));
+		memcpy(prio->commited_prio->masks, vr->masks, sizeof(vr->masks));
+	}
+
+	lsdn_err_t err = lsdn_ruleset_add(prio->commited_prio, &vr->rule);
+	if (err != LSDNE_OK)
+		abort();
+	prio->commited_count++;
+}
+
+static void commit_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio, enum lsdn_direction dir)
+{
+	struct vr_prio *prio, *tmp;
+	HASH_ITER(hh, ht_prio, prio, tmp) {
+		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
+			if (r->state == LSDN_STATE_NEW)
+				commit_vr(virt, prio, r, dir);
+			ack_state(&r->state);
+		}
+	}
+}
+
+static void decommit_vr(
+	struct lsdn_virt *virt, struct vr_prio *prio,
+	struct lsdn_vr *vr, enum lsdn_direction dir)
+{
+	lsdn_ruleset_remove(&vr->rule);
+	prio->commited_count--;
+	if (prio->commited_count == 0) {
+		lsdn_ruleset_remove_prio(prio->commited_prio);
+		prio->commited_prio = NULL;
+	}
+}
+
+static void decommit_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio, enum lsdn_direction dir)
+{
+	struct vr_prio *prio, *tmp;
+	HASH_ITER(hh, ht_prio, prio, tmp) {
+		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
+			if (r->state != LSDN_STATE_NEW)
+				decommit_vr(virt, prio, r, dir);
+		}
+	}
+}
+
 static void validate_virts_net(struct lsdn_net *net)
 {
 	lsdn_foreach(net->virt_list, virt_entry, struct lsdn_virt, v1) {
 		if (!should_be_validated(v1->state) || !v1->attr_mac)
 			continue;
+		validate_rules(v1, v1->ht_in_rules);
+		validate_rules(v1, v1->ht_out_rules);
 		lsdn_foreach(net->virt_list, virt_entry, struct lsdn_virt, v2) {
 			if (v1 == v2 || !should_be_validated(v2->state) || !v2->attr_mac)
 				continue;
@@ -741,30 +840,6 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	return (ctx->problem_count == 0) ? LSDNE_OK : LSDNE_VALIDATE;
 }
 
-static void ack_state(enum lsdn_state *s)
-{
-	if (*s == LSDN_STATE_NEW || *s == LSDN_STATE_RENEW)
-		*s = LSDN_STATE_OK;
-}
-
-static bool ack_uncommit(enum lsdn_state *s)
-{
-	switch(*s) {
-	case LSDN_STATE_DELETE:
-		return true;
-	case LSDN_STATE_RENEW:
-		*s = LSDN_STATE_NEW;
-		return true;
-	default:
-		return false;
-	}
-}
-
-#define ack_delete(obj, free) { \
-		if (obj->state == LSDN_STATE_DELETE) \
-			free(obj); \
-	}while(0);
-
 static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
 {
 	LSDN_UNUSED(cb); LSDN_UNUSED(user);
@@ -792,6 +867,8 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 				ops->add_virt(v);
 			}
 		}
+		commit_rules(v, v->ht_in_rules, LSDN_IN);
+		commit_rules(v, v->ht_out_rules, LSDN_OUT);
 	}
 
 	lsdn_foreach(pa->net->attached_list, attached_entry, struct lsdn_phys_attachment, remote) {
@@ -873,6 +950,8 @@ static void decommit_virt(struct lsdn_virt *v)
 	}
 
 	if (pa) {
+		decommit_rules(v, v->ht_in_rules, LSDN_IN);
+		decommit_rules(v, v->ht_out_rules, LSDN_OUT);
 		if (ops->remove_virt) {
 			lsdn_log(LSDNL_NETOPS, "remove_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
 				 lsdn_nullable(pa->net->name.str), pa->net,

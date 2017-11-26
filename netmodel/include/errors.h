@@ -43,7 +43,9 @@ typedef enum lsdn_err lsdn_err_t;
 	x(VIRT_NOATTR, "An attribute %o must be defined on virt %o connected to net %o.") \
 	x(VIRT_DUPATTR, "Duplicate attribute %o specified for virt %o and virt %o connected to net %o.") \
 	x(NET_BAD_NETTYPE, "Trying to create net %o and net %o of incompatible network types on the same machine.") \
-	x(NET_DUPID, "Trying to create net %o and net %o with the same net id %o.")
+	x(NET_DUPID, "Trying to create net %o and net %o with the same net id %o.") \
+	x(VR_INCOMPATIBLE_MATCH, "Rules %o and %o on virt %o share the same priority, but have different match targets or masks.")\
+	x(VR_DUPLICATE_RULE, "Rules %o and %o on virt %o share the same priority and are completely equal")
 
 #define lsdn_mk_problem_enum(name, string) LSDNP_##name,
 
@@ -66,6 +68,8 @@ enum lsdn_problem_ref_type {
 	LSDNS_IF,
 	/** Problem with `vnet_id`. */
 	LSDNS_NETID,
+	/** Problem with `lsdn_vr`. */
+	LSDNS_VR,
 	/** End of problem list. */
 	LSDNS_END
 };

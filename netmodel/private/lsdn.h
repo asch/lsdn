@@ -8,19 +8,7 @@
 #include "idalloc.h"
 #include "sbridge.h"
 #include "lbridge.h"
-
-
-/** State of the LSDN object. */
-enum lsdn_state {
-	/** Object is being committed for a first time. */
-	LSDN_STATE_NEW,
-	/** Object was already committed and needs to be recommitted. */
-	LSDN_STATE_RENEW,
-	/** Object is already committed and needs to be deleted. */
-	LSDN_STATE_DELETE,
-	/** Object is in committed state. */
-	LSDN_STATE_OK
-};
+#include "state.h"
 
 struct lsdn_context{
 	/** Context name. Determines the prefix for interfaces created in the context. */
@@ -71,6 +59,7 @@ struct lsdn_settings {
 					size_t refcount;
 					struct lsdn_if tunnel;
 					struct lsdn_sbridge_phys_if tunnel_sbridge;
+					struct lsdn_ruleset ruleset_in;
 				} e2e_static;
 			};
 		} vxlan;
@@ -154,10 +143,21 @@ struct lsdn_virt {
 	lsdn_mac_t *attr_mac;
 	/*lsdn_ip_t *attr_ip; */
 
-	struct lsdn_lbridge_if lbridge_if;
+	union {
+		struct {
+			struct lsdn_lbridge_if lbridge_if;
+		};
 
-	struct lsdn_sbridge_if sbridge_if;
-	struct lsdn_sbridge_phys_if sbridge_phys_if;
-	struct lsdn_sbridge_route sbridge_route;
-	struct lsdn_sbridge_mac sbridge_mac;
+		struct {
+			struct lsdn_sbridge_if sbridge_if;
+			struct lsdn_sbridge_phys_if sbridge_phys_if;
+			struct lsdn_sbridge_route sbridge_route;
+			struct lsdn_sbridge_mac sbridge_mac;
+		};
+	};
+
+	struct lsdn_ruleset rules_in;
+	struct lsdn_ruleset rules_out;
+	struct vr_prio *ht_in_rules;
+	struct vr_prio *ht_out_rules;
 };

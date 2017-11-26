@@ -30,11 +30,13 @@ typedef union lsdn_mac {
 /** IPv4 address. */
 typedef union lsdn_ipv4 {
 	uint8_t bytes[4];
+	char chr[4];
 } lsdn_ipv4_t;
 
 /** IPv6 address. */
 typedef union lsdn_ipv6 {
 	uint8_t bytes[16];
+	char chr[16];
 } lsdn_ipv6_t;
 
 /** IP address (any version). */

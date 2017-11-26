@@ -107,7 +107,9 @@ void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
 
 	br->bridge_if = sbridge_if;
 	br->ctx = ctx;
-	lsdn_ruleset_init(&br->bridge_ruleset_main, ctx, &br->bridge_if, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY, 1);
+	lsdn_ruleset_init(
+		&br->bridge_ruleset_main, ctx, &br->bridge_if,
+		LSDN_INGRESS_HANDLE, LSDN_DEFAULT_CHAIN, LSDN_DEFAULT_PRIORITY, 1);
 	struct lsdn_ruleset_prio *prio = br->bridge_ruleset =
 			lsdn_ruleset_define_prio(&br->bridge_ruleset_main, 0);
 	if (!prio)
@@ -249,20 +251,18 @@ void lsdn_sbridge_remove_mac(struct lsdn_sbridge_mac *mac)
 	lsdn_clist_flush(&mac->cl_dest);
 }
 
-void lsdn_sbridge_phys_if_init(struct lsdn_context *ctx, struct lsdn_sbridge_phys_if *sbridge_if, struct lsdn_if* iface, bool match_vni)
+void lsdn_sbridge_phys_if_init(
+	struct lsdn_context *ctx, struct lsdn_sbridge_phys_if *sbridge_if,
+	struct lsdn_if* iface, bool match_vni,
+	struct lsdn_ruleset *rules_in)
 {
 	sbridge_if->iface = iface;
 	lsdn_idalloc_init(&sbridge_if->br_chain_ids, 1, 0xFFFF);
 
-	lsdn_err_t err = lsdn_qdisc_ingress_create(ctx->nlsock, iface->ifindex);
-	if (err != LSDNE_OK)
-		abort();
-
 	// define the ruleset with priorities for match and fallback and subpriorities for us.
-	// Someone else (the firewall can share the priorities with us).
-	lsdn_ruleset_init(&sbridge_if->rules, ctx, iface, LSDN_DEFAULT_CHAIN, 1, UINT32_MAX);
+	// Someone else (the firewall) can share the priorities with us.
 	struct lsdn_ruleset_prio *prio_match = sbridge_if->rules_match_mac =
-		lsdn_ruleset_define_prio(&sbridge_if->rules, LSDN_SBRIDGE_IF_PRIO_MATCH);
+		lsdn_ruleset_define_prio(rules_in, LSDN_SBRIDGE_IF_PRIO_MATCH);
 	if(!prio_match)
 		abort();
 	prio_match->targets[0] = LSDN_MATCH_DST_MAC;
@@ -271,7 +271,7 @@ void lsdn_sbridge_phys_if_init(struct lsdn_context *ctx, struct lsdn_sbridge_phy
 		prio_match->targets[1]= LSDN_MATCH_ENC_KEY_ID;
 
 	struct lsdn_ruleset_prio *prio_fallback = sbridge_if->rules_fallback =
-		lsdn_ruleset_define_prio(&sbridge_if->rules, LSDN_SBRIDGE_IF_PRIO_FALLBACK);
+		lsdn_ruleset_define_prio(rules_in, LSDN_SBRIDGE_IF_PRIO_FALLBACK);
 	if(!prio_fallback)
 		abort();
 	if (match_vni)
@@ -281,7 +281,6 @@ void lsdn_sbridge_phys_if_init(struct lsdn_context *ctx, struct lsdn_sbridge_phy
 void lsdn_sbridge_phys_if_free(struct lsdn_sbridge_phys_if *iface)
 {
 	lsdn_idalloc_free(&iface->br_chain_ids);
-	lsdn_ruleset_free(&iface->rules);
 }
 
 /* This are chain and priority numbers for rules on virts and shared tunnels. */
@@ -290,8 +289,13 @@ void lsdn_sbridge_phys_if_free(struct lsdn_sbridge_phys_if *iface)
 
 void lsdn_sbridge_add_virt(struct lsdn_sbridge *br, struct lsdn_virt *virt)
 {
+	lsdn_err_t err;
 	struct lsdn_context *ctx = virt->network->ctx;
-	lsdn_sbridge_phys_if_init(ctx, &virt->sbridge_phys_if, &virt->committed_if, false);
+	err = lsdn_prepare_rulesets(ctx, &virt->committed_if, &virt->rules_in, &virt->rules_out);
+	if (err != LSDNE_OK)
+		abort();
+
+	lsdn_sbridge_phys_if_init(ctx, &virt->sbridge_phys_if, &virt->committed_if, false, &virt->rules_in);
 
 	struct lsdn_sbridge_if *iface = &virt->sbridge_if;
 	iface->phys_if = &virt->sbridge_phys_if;
@@ -309,6 +313,9 @@ void lsdn_sbridge_remove_virt(struct lsdn_virt *virt)
 	lsdn_sbridge_remove_route(&virt->sbridge_route);
 	lsdn_sbridge_remove_if(&virt->sbridge_if);
 	lsdn_sbridge_phys_if_free(&virt->sbridge_phys_if);
+	// TODO: also remove the qdiscs
+	lsdn_ruleset_free(&virt->rules_in);
+	lsdn_ruleset_free(&virt->rules_out);
 }
 
 

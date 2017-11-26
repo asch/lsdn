@@ -55,7 +55,6 @@ struct lsdn_sbridge_if {
 struct lsdn_sbridge_phys_if {
 	struct lsdn_if *iface;
 	struct lsdn_idalloc br_chain_ids;
-	struct lsdn_ruleset rules;
 	struct lsdn_ruleset_prio *rules_match_mac;
 	struct lsdn_ruleset_prio *rules_fallback;
 };
@@ -95,7 +94,8 @@ void lsdn_sbridge_add_mac(
 void lsdn_sbridge_remove_mac(struct lsdn_sbridge_mac *mac);
 void lsdn_sbridge_phys_if_init(
 	struct lsdn_context *ctx, struct lsdn_sbridge_phys_if *sbridge_if,
-	struct lsdn_if* iface, bool match_vni);
+	struct lsdn_if* iface, bool match_vni,
+	struct lsdn_ruleset *rules_in);
 void lsdn_sbridge_phys_if_free(struct lsdn_sbridge_phys_if *iface);
 
 struct lsdn_virt;

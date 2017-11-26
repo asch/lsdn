@@ -2,9 +2,144 @@
 #include "include/lsdn.h"
 #include "private/log.h"
 #include "private/lsdn.h"
+#include "private/errors.h"
+#include "include/util.h"
+#include <uthash.h>
 #include <string.h>
 
 /* TODO: convert Uthash OOM to something "safe" */
+
+#define rule_target_name(y, z) #z
+
+static const char *match_target_names[] = {
+	lsdn_foreach_rule_target(rule_target_name)
+};
+
+const char* lsdn_rule_target_name(enum lsdn_rule_target t)
+{
+	assert(t < LSDN_MATCH_COUNT);
+	return match_target_names[t];
+}
+
+static void callback_drop(struct lsdn_filter *f, uint16_t order, void *user) {
+	LSDN_UNUSED(user);
+	lsdn_action_drop(f, order);
+}
+
+struct lsdn_vr_action lsdn_vr_drop = {
+	.desc = {
+		.actions_count = 1,
+		.fn = callback_drop,
+		.user = NULL
+	}
+};
+
+struct lsdn_vr *lsdn_vr_new(struct lsdn_virt *virt, uint16_t prio_num, enum lsdn_direction dir)
+{
+	struct vr_prio **ht = (dir == LSDN_IN) ? &virt->ht_in_rules : &virt->ht_out_rules;
+	struct lsdn_vr *vr = malloc(sizeof(*vr));
+	if (!vr)
+		ret_ptr(virt->network->ctx, vr);
+
+	struct vr_prio *prio;
+	HASH_FIND(hh, *ht, &prio_num, sizeof(prio_num), prio);
+	if (!prio) {
+		prio = malloc(sizeof(*prio));
+		if (!prio) {
+			free(vr);
+			ret_ptr(virt->network->ctx, vr);
+		}
+		prio->commited_prio = NULL;
+		prio->commited_count = 0;
+		prio->prio_num = prio_num;
+		lsdn_list_init(&prio->rules_list);
+		HASH_ADD(hh, *ht, prio_num, sizeof(prio->prio_num), prio);
+	}
+
+	vr->pos = 0;
+	vr->state = LSDN_STATE_NEW;
+	for(size_t i = 0; i<LSDN_MAX_MATCHES; i++) {
+		vr->targets[i] = LSDN_MATCH_NONE;
+		bzero(vr->masks[i].bytes, sizeof(vr->masks[i].bytes));
+	}
+	lsdn_list_init_add(&prio->rules_list, &vr->rules_entry);
+	return vr;
+}
+
+static void free_vr_prio(struct vr_prio **ht, struct vr_prio *prio)
+{
+	lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
+		free(r);
+	}
+	HASH_DELETE(hh, *ht, prio);
+	free(prio);
+}
+
+void lsdn_virt_free_rules(struct lsdn_virt *virt)
+{
+	struct vr_prio *prio, *tmp;
+	HASH_ITER(hh, virt->ht_in_rules, prio, tmp)
+		free_vr_prio(&virt->ht_in_rules, prio);
+	assert(virt->ht_in_rules == NULL);
+
+	HASH_ITER(hh, virt->ht_out_rules, prio, tmp)
+		free_vr_prio(&virt->ht_out_rules, prio);
+	assert(virt->ht_out_rules == NULL);
+}
+
+void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value, struct lsdn_vr_action *action)
+{
+	size_t pos = rule->pos++;
+	assert(pos < LSDN_MAX_MATCH_LEN);
+	rule->targets[pos] = LSDN_MATCH_SRC_MAC;
+	rule->masks[pos].mac = mask;
+	rule->rule.matches[pos].mac = value;
+	rule->rule.action = action->desc;
+}
+
+void lsdn_vr_add_masked_dst_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value, struct lsdn_vr_action *action)
+{
+	size_t pos = rule->pos++;
+	assert(pos < LSDN_MAX_MATCH_LEN);
+	rule->targets[pos] = LSDN_MATCH_DST_MAC;
+	rule->masks[pos].mac = mask;
+	rule->rule.matches[pos].mac = value;
+	rule->rule.action = action->desc;
+}
+
+void lsdn_vr_add_masked_src_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value, struct lsdn_vr_action *action)
+{
+	size_t pos = rule->pos++;
+	assert(pos < LSDN_MAX_MATCH_LEN);
+	assert(mask.v == value.v);
+	if (value.v == LSDN_IPv4) {
+		rule->targets[pos] = LSDN_MATCH_SRC_IPV4;
+		rule->masks[pos].ipv4 = mask.v4;
+		rule->rule.matches[pos].ipv4 = value.v4;
+	} else {
+		rule->targets[pos] = LSDN_MATCH_SRC_IPV6;
+		rule->masks[pos].ipv6 = mask.v6;
+		rule->rule.matches[pos].ipv6 = value.v6;
+	}
+	rule->rule.action = action->desc;
+}
+
+void lsdn_vr_add_masked_dst_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value, struct lsdn_vr_action *action)
+{
+	size_t pos = rule->pos++;
+	assert(pos < LSDN_MAX_MATCH_LEN);
+	assert(mask.v == value.v);
+	if (value.v == LSDN_IPv4) {
+		rule->targets[pos] = LSDN_MATCH_DST_IPV4;
+		rule->masks[pos].ipv4 = mask.v4;
+		rule->rule.matches[pos].ipv4 = value.v4;
+	} else {
+		rule->targets[pos] = LSDN_MATCH_DST_IPV6;
+		rule->masks[pos].ipv6 = mask.v6;
+		rule->rule.matches[pos].ipv6 = value.v6;
+	}
+	rule->rule.action = action->desc;
+}
 
 void lsdn_action_init(struct lsdn_action_desc *action, size_t count, lsdn_mkaction_fn fn, void *user)
 {
@@ -13,11 +148,11 @@ void lsdn_action_init(struct lsdn_action_desc *action, size_t count, lsdn_mkacti
 	action->user = user;
 }
 
-void lsdn_ruleset_init(
-	struct lsdn_ruleset *ruleset, struct lsdn_context *ctx,
-	struct lsdn_if *iface, uint32_t chain, uint32_t prio_start, uint32_t prio_count)
+void lsdn_ruleset_init(struct lsdn_ruleset *ruleset, struct lsdn_context *ctx,
+	struct lsdn_if *iface, uint32_t parent_handle, uint32_t chain, uint32_t prio_start, uint32_t prio_count)
 {
 	ruleset->iface = iface;
+	ruleset->parent_handle = parent_handle;
 	ruleset->chain = chain;
 	ruleset->prio_start = prio_start;
 	ruleset->prio_count = prio_count;
@@ -47,9 +182,10 @@ static void dump_rule(struct lsdn_rule *rule)
 	for(int i = 0; i<LSDN_MAX_MATCHES; i++) {
 		char value[LSDN_MAX_MATCH_LEN*2 + 1];
 		char mask[LSDN_MAX_MATCH_LEN*2 + 1];
+		const char* target_name = lsdn_rule_target_name(rule->prio->targets[i]);
 		hexdump(value, (uint8_t*) rule->matches[i].bytes, LSDN_MAX_MATCH_LEN);
 		hexdump(mask, (uint8_t*) rule->prio->masks[i].bytes, LSDN_MAX_MATCH_LEN);
-		lsdn_log(LSDNL_RULES, " %3d: %s & %s\n", rule->prio->targets[i], value, mask);
+		lsdn_log(LSDNL_RULES, " %13s: %s & %s\n", target_name, value, mask);
 	}
 }
 
@@ -102,12 +238,50 @@ void lsdn_ruleset_free(struct lsdn_ruleset *ruleset)
 	}
 }
 
+static uint16_t key_ethtype(enum lsdn_rule_target t)
+{
+	switch(t) {
+	case LSDN_MATCH_DST_MAC:
+		return ETH_P_ALL;
+	case LSDN_MATCH_SRC_MAC:
+		return ETH_P_ALL;
+	case LSDN_MATCH_SRC_IPV4:
+		return ETH_P_IP;
+	case LSDN_MATCH_DST_IPV4:
+		return ETH_P_IP;
+	case LSDN_MATCH_SRC_IPV6:
+		return ETH_P_IPV6;
+	case LSDN_MATCH_DST_IPV6:
+		return ETH_P_IPV6;
+	case LSDN_MATCH_ENC_KEY_ID:
+		return ETH_P_ALL;
+	case LSDN_MATCH_NONE:
+		return ETH_P_ALL;
+	default:
+		abort();
+	}
+}
+
+static bool find_common_ethtype(struct lsdn_flower_rule *fl, struct lsdn_ruleset_prio *prio, uint16_t *eth_out) {
+	*eth_out = ETH_P_ALL;
+	for(int i = 0; i<LSDN_MAX_MATCHES; i++) {
+		uint16_t eth = key_ethtype(prio->targets[i]);
+		if (eth != ETH_P_ALL) {
+			if (*eth_out != ETH_P_ALL && *eth_out != eth)
+				return false;
+			else
+				*eth_out = eth;
+		}
+	}
+	return true;
+}
+
 /* Update the flower rule in TC */
 static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset_prio *prio, bool update)
 {
 	struct lsdn_ruleset *ruleset = prio->parent;
 	struct lsdn_filter *filter = lsdn_filter_flower_init(
-		ruleset->iface->ifindex, fl->fl_handle, LSDN_INGRESS_HANDLE,
+		ruleset->iface->ifindex, fl->fl_handle, ruleset->parent_handle,
 		ruleset->chain, prio->prio + ruleset->prio_start);
 	if (update)
 		lsdn_filter_set_update(filter);
@@ -118,13 +292,35 @@ static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset
 		return LSDNE_NETLINK;
 	}
 
+	uint16_t ethtype;
+	if (!find_common_ethtype(fl, prio, &ethtype))
+		// TODO: also do the validation on VR layer and report the problem correctly there
+		abort();
+
+	if (ethtype != ETH_P_ALL)
+		lsdn_flower_set_eth_type(filter, htons(ethtype));
+
 	for(int i = 0; i<LSDN_MAX_MATCHES; i++) {
+		union lsdn_matchdata *match = &fl->matches[i];
+		union lsdn_matchdata *mask = &prio->masks[i];
 		switch(prio->targets[i]) {
 		case LSDN_MATCH_DST_MAC:
-			lsdn_flower_set_dst_mac(filter, fl->matches[i].mac.chr, prio->masks[i].mac.chr);
+			lsdn_flower_set_dst_mac(filter, match->mac.chr, mask->mac.chr);
 			break;
 		case LSDN_MATCH_SRC_MAC:
-			lsdn_flower_set_src_mac(filter, fl->matches[i].mac.chr, prio->masks[i].mac.chr);
+			lsdn_flower_set_src_mac(filter, match->mac.chr, mask->mac.chr);
+			break;
+		case LSDN_MATCH_SRC_IPV4:
+			lsdn_flower_set_src_ipv4(filter, match->ipv4.chr, mask->ipv4.chr);
+			break;
+		case LSDN_MATCH_DST_IPV4:
+			lsdn_flower_set_dst_ipv4(filter, match->ipv4.chr, mask->ipv4.chr);
+			break;
+		case LSDN_MATCH_SRC_IPV6:
+			lsdn_flower_set_src_ipv6(filter, match->ipv6.chr, mask->ipv6.chr);
+			break;
+		case LSDN_MATCH_DST_IPV6:
+			lsdn_flower_set_dst_ipv6(filter, match->ipv6.chr, mask->ipv6.chr);
 			break;
 		case LSDN_MATCH_ENC_KEY_ID:
 			lsdn_flower_set_enc_key_id(filter, fl->matches[i].enc_key_id);
@@ -132,7 +328,6 @@ static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset
 		case LSDN_MATCH_NONE:
 			break;
 		default:
-			// TODO: obvious
 			abort();
 		}
 	}
@@ -140,7 +335,7 @@ static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset
 	lsdn_flower_actions_start(filter);
 	size_t order = 1;
 	lsdn_foreach(fl->sources_list, sources_entry, struct lsdn_rule, r) {
-		assert (order + r->action.actions_count <= LSDN_MAX_PRIO);
+		assert (order + r->action.actions_count <= LSDN_MAX_ACT_PRIO);
 		r->action.fn(filter, order, r->action.user);
 		order += r->action.actions_count;
 	}
@@ -157,15 +352,15 @@ static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset
 	return LSDNE_OK;
 }
 
-static void free_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset_prio *prio)
+static void free_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset_prio *prio, bool may_fail)
 {
 	struct lsdn_ruleset *rs = prio->parent;
 	lsdn_log(LSDNL_RULES, "fl_delete(handle=0x%x)\n", fl->fl_handle);
 	if (!prio->parent->ctx->disable_decommit) {
 		lsdn_err_t err = lsdn_filter_delete(
 			rs->ctx->nlsock, rs->iface->ifindex, fl->fl_handle,
-			LSDN_INGRESS_HANDLE, rs->chain, prio->prio + rs->prio_start);
-		if (err != LSDNE_OK)
+			rs->parent_handle, rs->chain, prio->prio + rs->prio_start);
+		if (err != LSDNE_OK && !may_fail)
 			abort();
 	}
 
@@ -180,11 +375,18 @@ void lsdn_ruleset_remove(struct lsdn_rule *rule)
 		rule->fl_rule->fl_handle);
 	lsdn_list_remove(&rule->sources_entry);
 	if (lsdn_is_list_empty(&rule->fl_rule->sources_list)) {
-		free_fl_rule(rule->fl_rule, rule->prio);
+		free_fl_rule(rule->fl_rule, rule->prio, false);
 	} else {
 		flush_fl_rule(rule->fl_rule, rule->prio, true);
 	}
 	rule->fl_rule = NULL;
+}
+
+void lsdn_ruleset_remove_prio(struct lsdn_ruleset_prio *prio)
+{
+	assert(HASH_COUNT(prio->hash_fl_rules) == 0);
+	HASH_DELETE(hh, prio->parent->hash_prios, prio);
+	free(prio);
 }
 
 static void hard_mask(char *value, size_t valsize)
@@ -193,12 +395,12 @@ static void hard_mask(char *value, size_t valsize)
 	bzero(value + valsize, LSDN_MAX_MATCH_LEN - valsize);
 }
 
-static void mask_key(struct lsdn_rule *r)
+void lsdn_rule_apply_mask(
+	struct lsdn_rule *r, enum lsdn_rule_target targets[], union lsdn_matchdata masks[])
 {
-	struct lsdn_ruleset_prio *p = r->prio;
 	for(int i = 0; i<LSDN_MAX_MATCHES; i++) {
-		if (!lsdn_target_supports_masking(p->targets[i])) {
-			switch (p->targets[i]) {
+		if (!lsdn_target_supports_masking(targets[i])) {
+			switch (targets[i]) {
 			case LSDN_MATCH_NONE:
 				hard_mask(r->matches[i].bytes, 0);
 			break;
@@ -210,7 +412,7 @@ static void mask_key(struct lsdn_rule *r)
 			}
 		} else {
 			for(int j = 0; j<LSDN_MAX_MATCH_LEN; j++) {
-				r->matches[i].bytes[j] &= p->masks[i].bytes[j];
+				r->matches[i].bytes[j] &= masks[i].bytes[j];
 			}
 		}
 	}
@@ -222,7 +424,7 @@ lsdn_err_t lsdn_ruleset_add(struct lsdn_ruleset_prio *prio, struct lsdn_rule *ru
 	lsdn_err_t err = LSDNE_OK;
 	rule->prio = prio;
 	rule->ruleset = prio->parent;
-	mask_key(rule);
+	lsdn_rule_apply_mask(rule, prio->targets, prio->masks);
 	lsdn_log(LSDNL_RULES, "ruleset_add(iface=%s, chain=%d, prio=0x%x)\n",
 		rule->ruleset->iface->ifname, rule->ruleset->chain, prio->prio);
 	dump_rule(rule);
@@ -263,7 +465,7 @@ lsdn_err_t lsdn_ruleset_add(struct lsdn_ruleset_prio *prio, struct lsdn_rule *ru
 	err = flush_fl_rule(fl, prio, update);
 	if (err != LSDNE_OK) {
 		lsdn_list_remove(&rule->sources_entry);
-		free_fl_rule(fl, prio);
+		free_fl_rule(fl, prio, true);
 		return err;
 	}
 
@@ -285,7 +487,7 @@ static bool lsdn_find_free_action(
 {
 	lsdn_foreach(br->filters_list, filters_entry, struct lsdn_broadcast_filter, f) {
 		if (f->free_actions >= actions) {
-			for(size_t i = 0; i<LSDN_MAX_PRIO - 1; i++) {
+			for(size_t i = 0; i<LSDN_MAX_ACT_PRIO - 1; i++) {
 				struct lsdn_broadcast_action **a = &f->actions[i];
 				if(!*a) {
 					*out_filter = f;
@@ -306,9 +508,9 @@ static bool lsdn_find_free_action(
 
 	lsdn_list_init_add(&br->filters_list, &f->filters_entry);
 	f->broadcast = br;
-	f->free_actions = LSDN_MAX_PRIO - 1;
+	f->free_actions = LSDN_MAX_ACT_PRIO - 1;
 	f->prio = br->free_prio++;
-	for(size_t i = 0; i<LSDN_MAX_PRIO - 1; i++) {
+	for(size_t i = 0; i<LSDN_MAX_ACT_PRIO - 1; i++) {
 		f->actions[i] = NULL;
 	}
 	*out_filter = f;
@@ -331,7 +533,7 @@ static void lsdn_flush_action_list(struct lsdn_broadcast_filter* br_filter)
 	int err;
 
 	lsdn_flower_actions_start(filter);
-	for(size_t i = 0; i < LSDN_MAX_PRIO - 1; i++) {
+	for(size_t i = 0; i < LSDN_MAX_ACT_PRIO - 1; i++) {
 		struct lsdn_broadcast_action *action = br_filter->actions[i];
 		if (!action)
 			continue;

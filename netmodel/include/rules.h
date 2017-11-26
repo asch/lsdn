@@ -16,10 +16,11 @@
 #define lsdn_rule_target_id(z, y) z,
 enum lsdn_rule_target{
 	lsdn_foreach_rule_target(lsdn_rule_target_id)
+	LSDN_MATCH_COUNT
 };
 #undef lsdn_rule_target_id
 
-const char* lsdn_rule_target_get_name(enum lsdn_rule_target t);
+const char* lsdn_rule_target_name(enum lsdn_rule_target t);
 
 #define LSDN_MAX_MATCH_LEN 16
 union lsdn_matchdata {

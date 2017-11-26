@@ -17,6 +17,7 @@
 
 /* Pseudo-handle for the linux ingress qdiscs */
 #define LSDN_INGRESS_HANDLE 0xffff0000
+#define LSDN_ROOT_HANDLE 0x00010000
 
 /* Default priority for our fixed-function filters
  * (like those who catch ingress trafic and redirect to appropriate internal if)
@@ -110,6 +111,7 @@ lsdn_err_t lsdn_link_set_ip(struct mnl_socket *sock,
 lsdn_err_t lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up);
 
 lsdn_err_t lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex);
+lsdn_err_t lsdn_qdisc_egress_create(struct mnl_socket *sock, unsigned int ifindex);
 
 lsdn_err_t lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 		lsdn_mac_t mac, lsdn_ip_t ip);
@@ -162,6 +164,18 @@ void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask);
 
 void lsdn_flower_set_dst_mac(struct lsdn_filter *f, const char *addr,
+		const char *addr_mask);
+
+void lsdn_flower_set_src_ipv4(struct lsdn_filter *f, const char *addr,
+		const char *addr_mask);
+
+void lsdn_flower_set_dst_ipv4(struct lsdn_filter *f, const char *addr,
+		const char *addr_mask);
+
+void lsdn_flower_set_src_ipv6(struct lsdn_filter *f, const char *addr,
+		const char *addr_mask);
+
+void lsdn_flower_set_dst_ipv6(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask);
 
 void lsdn_flower_set_enc_key_id(struct lsdn_filter *f, uint32_t vni);

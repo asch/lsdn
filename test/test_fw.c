@@ -18,7 +18,7 @@ int main(int argc, const char* argv[])
 	ctx = lsdn_context_new("ls");
 	lsdn_context_abort_on_nomem(ctx);
 	settings = settings_from_env(ctx);
-	net = lsdn_net_new(settings, 1);
+	net = lsdn_net_new(settings, LSDN_IPv4, 1);
 	phys = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys, net);
 	lsdn_phys_set_iface(phys, "out");
@@ -29,8 +29,8 @@ int main(int argc, const char* argv[])
 	lsdn_virt_set_mac(v1, LSDN_MK_MAC(0x00, 0x00, 0x00, 0x00, 0x00, 0xa1));
 	lsdn_virt_connect(v1, phys, "1");
 
-	lsdn_vr_new_dst_ip(v1, 0, LSDN_IN, LSDN_MK_IPV4(192, 168, 99, 3), &lsdn_vr_drop);
-	lsdn_vr_new_dst_ip(v1, 0, LSDN_OUT, LSDN_MK_IPV4(192, 168, 99, 4), &lsdn_vr_drop);
+	lsdn_vr_new_src_ip(v1, 0, LSDN_IN, LSDN_MK_IPV4(192, 168, 99, 2), &lsdn_vr_drop);
+	lsdn_vr_new_dst_ip(v1, 0, LSDN_OUT, LSDN_MK_IPV4(192, 168, 99, 3), &lsdn_vr_drop);
 
 	v2 = lsdn_virt_new(net);
 	lsdn_virt_set_mac(v2, LSDN_MK_MAC(0x00, 0x00, 0x00, 0x00, 0x00, 0xa2));
