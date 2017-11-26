@@ -81,6 +81,7 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii);
 bool lsdn_mac_eq(lsdn_mac_t a, lsdn_mac_t b);
 lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii);
 bool lsdn_ip_eq(lsdn_ip_t a, lsdn_ip_t b);
+bool lsdn_ipv_eq(lsdn_ip_t a, lsdn_ip_t b);
 
 /* Five colons, six octets */
 #define LSDN_MAC_STRING_LEN (5 + 6 *2)

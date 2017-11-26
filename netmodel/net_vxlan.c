@@ -21,7 +21,8 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 		s->vxlan.port,
 		true,
 		false,
-		a->net->ipv);
+		/* don't really care */
+		a->phys->attr_ip ? a->phys->attr_ip->v : LSDN_IPv4);
 	if (err != LSDNE_OK)
 		abort();
 
@@ -80,7 +81,7 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 		a->net->settings->vxlan.port,
 		true,
 		false,
-		a->net->ipv);
+		a->phys->attr_ip->v);
 	if (err != LSDNE_OK)
 		abort();
 
@@ -126,13 +127,25 @@ static void vxlan_e2e_remove_remote_pa(struct lsdn_remote_pa *remote)
 		abort();
 }
 
+static void vxlan_e2e_validate_pa(struct lsdn_phys_attachment *a)
+{
+	if (!a->phys->attr_ip)
+		lsdn_problem_report(
+			a->phys->ctx, LSDNP_PHYS_NOATTR,
+			LSDNS_ATTR, "ip",
+			LSDNS_PHYS, a->phys,
+			LSDNS_NET, a->net,
+			LSDNS_END);
+}
+
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 	.create_pa = vxlan_e2e_create_pa,
 	.destroy_pa = vxlan_e2e_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
 	.remove_virt = lsdn_lbridge_remove_virt,
 	.add_remote_pa = vxlan_e2e_add_remote_pa,
-	.remove_remote_pa = vxlan_e2e_remove_remote_pa
+	.remove_remote_pa = vxlan_e2e_remove_remote_pa,
+	.validate_pa = vxlan_e2e_validate_pa
 };
 
 
@@ -151,9 +164,10 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
 }
 
 /* Make sure the VXLAN interface operating in metadata mode for that UDP port exists. */
-static void vxlan_use_stunnel(struct lsdn_settings *s, enum lsdn_ipv ipv)
+static void vxlan_use_stunnel(struct lsdn_phys_attachment *a)
 {
 	lsdn_err_t err;
+	struct lsdn_settings *s = a->net->settings;
 	struct lsdn_context *ctx = s->ctx;
 	struct lsdn_if *tunnel = &s->vxlan.e2e_static.tunnel;
 	struct lsdn_ruleset *rules_in = &s->vxlan.e2e_static.ruleset_in;
@@ -168,7 +182,7 @@ static void vxlan_use_stunnel(struct lsdn_settings *s, enum lsdn_ipv ipv)
 			s->vxlan.port,
 			false,
 			true,
-			ipv);
+			a->phys->attr_ip->v);
 		if (err != LSDNE_OK)
 			abort();
 
@@ -201,7 +215,7 @@ static void vxlan_release_stunnel(struct lsdn_settings *s)
 
 static void vxlan_static_create_pa(struct lsdn_phys_attachment *pa)
 {
-	vxlan_use_stunnel(pa->net->settings, pa->net->ipv);
+	vxlan_use_stunnel(pa);
 	lsdn_sbridge_init(pa->net->ctx, &pa->sbridge);
 	lsdn_sbridge_add_stunnel(
 		&pa->sbridge, &pa->sbridge_if,
@@ -259,6 +273,17 @@ static void vxlan_static_remove_remote_virt(struct lsdn_remote_virt *virt)
 	lsdn_sbridge_remove_mac(&virt->sbridge_mac);
 }
 
+static void vxlan_static_validate_pa(struct lsdn_phys_attachment *a)
+{
+	if (!a->phys->attr_ip)
+		lsdn_problem_report(
+			a->phys->ctx, LSDNP_PHYS_NOATTR,
+			LSDNS_ATTR, "ip",
+			LSDNS_PHYS, a->phys,
+			LSDNS_NET, a->net,
+			LSDNS_END);
+}
+
 static void vxlan_static_validate_virt(struct lsdn_virt *virt)
 {
 	if (!virt->attr_mac)
@@ -279,6 +304,7 @@ struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 	.remove_remote_pa = vxlan_static_remove_remote_pa,
 	.add_remote_virt = vxlan_static_add_remote_virt,
 	.remove_remote_virt = vxlan_static_remove_remote_virt,
+	.validate_pa = vxlan_static_validate_pa,
 	.validate_virt = vxlan_static_validate_virt
 };
 

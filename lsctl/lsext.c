@@ -236,7 +236,6 @@ CMD(net)
 	if (ctx->net)
 		return tcl_error(interp, "net scopes ca not be nested");
 
-	int ipv = LSDN_IPv4;
 	// TODO net id range 0 .. 2**32 - 1
 	int vnet_id = 0;
 	const char *settings_name = NULL;
@@ -244,7 +243,6 @@ CMD(net)
 	struct lsdn_phys *phys_parsed = NULL;
 	Tcl_Obj **pos_args = NULL;
 	const Tcl_ArgvInfo opts[] = {
-		{TCL_ARGV_INT, "-ipv", NULL, &ipv},
 		{TCL_ARGV_INT, "-vid", NULL, &vnet_id},
 		{TCL_ARGV_STRING, "-settings", NULL, &settings_name},
 		{TCL_ARGV_STRING, "-phys", NULL, &phys},
@@ -263,9 +261,6 @@ CMD(net)
 		return TCL_ERROR;
 	}
 
-	if (ipv != LSDN_IPv4 && ipv != LSDN_IPv6)
-		return tcl_error(interp, "IP version not supported");
-
 	if (!vnet_id)
 		vnet_id = strtol(Tcl_GetString(pos_args[1]), NULL, 10);
 	struct lsdn_net *net = lsdn_net_by_name(ctx->lsctx, Tcl_GetString(pos_args[1]));
@@ -281,7 +276,7 @@ CMD(net)
 				return tcl_error(interp, "settings not found");
 		}
 
-		net = lsdn_net_new(s, ipv, vnet_id);
+		net = lsdn_net_new(s, vnet_id);
 	}
 
 	if(phys_parsed)

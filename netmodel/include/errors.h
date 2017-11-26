@@ -38,6 +38,7 @@ typedef enum lsdn_err lsdn_err_t;
 #define lsdn_foreach_problem(x) \
 	x(PHYS_NOATTR, "An attribute %o must be defined on phys %o for attachment to net %o.") \
 	x(PHYS_DUPATTR, "Duplicate attribute %o specified for phys %o and phys %o.") \
+	x(PHYS_INCOMPATIBLE_IPV, "Phys %o and phys %o attached to net %o have incompatible ip versions.") \
 	x(PHYS_NOT_ATTACHED, "Trying to connect virt %o to a network %o on phys %o, but the phys is not attached to that network.") \
 	x(VIRT_NOIF, "The interface %o specified for virt %o does not exist.") \
 	x(VIRT_NOATTR, "An attribute %o must be defined on virt %o connected to net %o.") \

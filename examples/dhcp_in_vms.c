@@ -64,7 +64,7 @@ int main(int argc, const char* argv[])
 	};
 	lsdn_settings_register_user_hooks(settings, &hooks);
 
-	vlan = lsdn_net_new(settings, LSDN_IPv4, 0x0B0B);
+	vlan = lsdn_net_new(settings, 0x0B0B);
 
 	phys_a = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys_a, vlan);

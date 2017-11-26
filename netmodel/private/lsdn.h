@@ -89,7 +89,6 @@ struct lsdn_net {
 	struct lsdn_settings *settings;
 	struct lsdn_name name;
 
-	enum lsdn_ipv ipv;
 	uint32_t vnet_id;
 	struct lsdn_list_entry virt_list;
 	/* List of lsdn_phys_attachement attached to this network */

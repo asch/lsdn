@@ -18,7 +18,7 @@ int main(int argc, const char* argv[])
 	ctx = lsdn_context_new("ls");
 	lsdn_context_abort_on_nomem(ctx);
 	settings = settings_from_env(ctx);
-	net = lsdn_net_new(settings, LSDN_IPv4, 1);
+	net = lsdn_net_new(settings, 1);
 	phys = lsdn_phys_new(ctx);
 	lsdn_phys_attach(phys, net);
 	lsdn_phys_set_iface(phys, "out");

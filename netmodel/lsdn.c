@@ -213,7 +213,7 @@ void lsdn_settings_free(struct lsdn_settings *settings)
 	free_helper(settings, settings_do_free);
 }
 
-struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, enum lsdn_ipv ipv, uint32_t vnet_id)
+struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 {
 	struct lsdn_net *net = malloc(sizeof(*net));
 	if(!net)
@@ -222,7 +222,6 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, enum lsdn_ipv ipv, uint32
 	net->ctx = s->ctx;
 	net->state = LSDN_STATE_NEW;
 	net->settings = s;
-	net->ipv = ipv;
 	net->vnet_id = vnet_id;
 
 	lsdn_list_init_add(&s->setting_users_list, &net->settings_users_entry);
@@ -836,6 +835,30 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 						LSDNS_PHYS, p,
 						LSDNS_PHYS, p_other,
 						LSDNS_END);
+		}
+	}
+
+	lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, n) {
+		lsdn_foreach(
+			n->attached_list, attached_entry,
+			struct lsdn_phys_attachment, a) {
+			if (will_be_deleted(a->phys->state))
+				continue;
+			lsdn_foreach(
+				n->attached_list, attached_entry,
+				struct lsdn_phys_attachment, a_other) {
+				if (a == a_other || will_be_deleted(a_other->phys->state))
+					continue;
+				if (a->phys->attr_ip && a_other->phys->attr_ip) {
+					if (!lsdn_ipv_eq(*a->phys->attr_ip, *a_other->phys->attr_ip))
+						lsdn_problem_report(
+							ctx, LSDNP_PHYS_INCOMPATIBLE_IPV,
+							LSDNS_PHYS, a->phys,
+							LSDNS_PHYS, a_other->phys,
+							LSDNS_NET, n,
+							LSDNS_END);
+				}
+			}
 		}
 	}
 

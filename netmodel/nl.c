@@ -268,7 +268,7 @@ lsdn_err_t lsdn_link_vxlan_create(
 		else
 			mnl_attr_put(nlh, IFLA_VXLAN_GROUP6, sizeof(mcast_group->v6.bytes), mcast_group->v6.bytes);
 	} else if (ipv == LSDN_IPv6) {
-		/* We need to explicitly notify the kernel we are using IPV6 tunneling
+		/* We need to explicitly notify the kernel we are using IPv6 tunneling
 		 * otherwise it defaults to IPv4, if neither group nor remote is
 		 * specified.
 		 */

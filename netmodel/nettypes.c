@@ -95,6 +95,11 @@ bool lsdn_ip_eq(lsdn_ip_t a, lsdn_ip_t b)
 		return lsdn_ipv6_eq(a.v6, b.v6);
 }
 
+/** Compare two `lsdn_ip` for ip version equality. */
+bool lsdn_ipv_eq(lsdn_ip_t a, lsdn_ip_t b)
+{
+	return a.v == b.v;
+}
 
 /** Format `lsdn_mac` as ASCII string. */
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf)
