@@ -50,19 +50,25 @@ typedef struct lsdn_ip {
 
 /** Construct a `lsdn_ip` IPv4 address from a 4-tuple. */
 #define LSDN_MK_IPV4(a, b, c, d)\
-	(struct lsdn_ip) { .v = LSDN_IPv4, .v4 = { .bytes = { (a), (b), (c), (d) } } }
+	(struct lsdn_ip) LSDN_INITIALIZER_IPV4(a, b, c, d)
+#define LSDN_INITIALIZER_IPV4(a, b, c, d)\
+	{ .v = LSDN_IPv4, .v4 = { .bytes = { (a), (b), (c), (d) } } }
 
 /** Construct a `lsdn_ip` IPv6 address from a 16-tuple. */
 #define LSDN_MK_IPV6(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)\
-	(struct lsdn_ip) { .v = LSDN_IPv6, .v6 = { .bytes = { \
-	(a), (b), (c), (d), \
-	(e), (f), (g), (h), \
-	(i), (j), (k), (l), \
-	(m), (n), (o), (p) } } }
+	(struct lsdn_ip) LSDN_INITIALIZER_IPV6(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
+#define LSDN_INITIALIZER_IPV6(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) \
+	{ .v = LSDN_IPv6, .v6 = { .bytes = { \
+		(a), (b), (c), (d), \
+		(e), (f), (g), (h), \
+		(i), (j), (k), (l), \
+		(m), (n), (o), (p) } } }
 
 /** Construct a lsdn_mac_t from a 6-tuple. */
 #define LSDN_MK_MAC(a, b, c, d, e, f) \
-	(union lsdn_mac) { .bytes = {(a), (b), (c), (d), (e), (f)}}
+	(union lsdn_mac) LSDN_INITIALIZER_MAC(a, b, c, d, e, f)
+#define LSDN_INITIALIZER_MAC(a, b, c, d, e, f) \
+	{ .bytes = {(a), (b), (c), (d), (e), (f)}}
 
 extern const lsdn_mac_t lsdn_broadcast_mac;
 extern const lsdn_mac_t lsdn_all_zeroes_mac;
