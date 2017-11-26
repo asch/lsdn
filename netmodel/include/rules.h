@@ -43,6 +43,8 @@ enum lsdn_direction {
 /* lsdn virt's rule */
 struct lsdn_vr;
 struct lsdn_vr *lsdn_vr_new(struct lsdn_virt *virt, uint16_t prio, enum lsdn_direction dir);
+void lsdn_vr_free(struct lsdn_vr *vr);
+void lsdn_vrs_free_all(struct lsdn_virt *virt);
 struct lsdn_vr_action;
 
 extern struct lsdn_vr_action lsdn_vr_drop;

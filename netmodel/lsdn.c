@@ -479,7 +479,7 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 
 static void virt_do_free(struct lsdn_virt *virt)
 {
-	lsdn_virt_free_rules(virt);
+	lsdn_vr_do_free_all_rules(virt);
 	if (virt->connected_through) {
 		lsdn_list_remove(&virt->connected_virt_entry);
 		free_pa_if_possible(virt->connected_through);
@@ -495,6 +495,7 @@ static void virt_do_free(struct lsdn_virt *virt)
 
 void lsdn_virt_free(struct lsdn_virt *virt)
 {
+	lsdn_vrs_free_all(virt);
 	free_helper(virt, virt_do_free);
 }
 
@@ -698,7 +699,8 @@ static void decommit_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio, enum
 	struct vr_prio *prio, *tmp;
 	HASH_ITER(hh, ht_prio, prio, tmp) {
 		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
-			if (r->state != LSDN_STATE_NEW)
+			propagate(&virt->state, &r->state);
+			if (ack_uncommit(&r->state))
 				decommit_vr(virt, prio, r, dir);
 		}
 	}
@@ -950,8 +952,6 @@ static void decommit_virt(struct lsdn_virt *v)
 	}
 
 	if (pa) {
-		decommit_rules(v, v->ht_in_rules, LSDN_IN);
-		decommit_rules(v, v->ht_out_rules, LSDN_OUT);
 		if (ops->remove_virt) {
 			lsdn_log(LSDNL_NETOPS, "remove_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
 				 lsdn_nullable(pa->net->name.str), pa->net,
@@ -1048,6 +1048,8 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 	/********* Decommit phase **********/
 	lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, n) {
 		lsdn_foreach(n->virt_list, virt_entry, struct lsdn_virt, v) {
+			decommit_rules(v, v->ht_in_rules, LSDN_IN);
+			decommit_rules(v, v->ht_out_rules, LSDN_OUT);
 			if (ack_uncommit(&v->state)) {
 				decommit_virt(v);
 				ack_delete(v, virt_do_free);

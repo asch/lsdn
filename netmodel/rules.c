@@ -66,25 +66,52 @@ struct lsdn_vr *lsdn_vr_new(struct lsdn_virt *virt, uint16_t prio_num, enum lsdn
 	return vr;
 }
 
-static void free_vr_prio(struct vr_prio **ht, struct vr_prio *prio)
+static void do_free_vr(struct lsdn_vr *vr)
+{
+	lsdn_list_remove(&vr->rules_entry);
+	free(vr);
+}
+
+static void do_free_vr_prio(struct vr_prio **ht, struct vr_prio *prio)
 {
 	lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
-		free(r);
+		do_free_vr(r);
 	}
 	HASH_DELETE(hh, *ht, prio);
 	free(prio);
 }
 
-void lsdn_virt_free_rules(struct lsdn_virt *virt)
+void lsdn_vr_do_free_all_rules(struct lsdn_virt *virt)
 {
 	struct vr_prio *prio, *tmp;
 	HASH_ITER(hh, virt->ht_in_rules, prio, tmp)
-		free_vr_prio(&virt->ht_in_rules, prio);
+		do_free_vr_prio(&virt->ht_in_rules, prio);
 	assert(virt->ht_in_rules == NULL);
 
 	HASH_ITER(hh, virt->ht_out_rules, prio, tmp)
-		free_vr_prio(&virt->ht_out_rules, prio);
+		do_free_vr_prio(&virt->ht_out_rules, prio);
 	assert(virt->ht_out_rules == NULL);
+}
+
+void lsdn_vr_free(struct lsdn_vr *vr)
+{
+	free_helper(vr, do_free_vr);
+}
+
+void lsdn_vrs_free_all(struct lsdn_virt *virt)
+{
+	struct vr_prio *prio, *tmp;
+	HASH_ITER(hh, virt->ht_in_rules, prio, tmp) {
+		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
+			lsdn_vr_free(r);
+		}
+	}
+	HASH_ITER(hh, virt->ht_out_rules, prio, tmp) {
+		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
+			lsdn_vr_free(r);
+		}
+	}
+
 }
 
 void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value, struct lsdn_vr_action *action)

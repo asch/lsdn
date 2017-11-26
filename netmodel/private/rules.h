@@ -181,4 +181,4 @@ struct lsdn_vr_action {
 	struct lsdn_action_desc desc;
 };
 
-void lsdn_virt_free_rules(struct lsdn_virt *virt);
+void lsdn_vr_do_free_all_rules(struct lsdn_virt *virt);
