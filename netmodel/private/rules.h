@@ -114,7 +114,6 @@ lsdn_err_t lsdn_ruleset_add(struct lsdn_ruleset_prio *prio, struct lsdn_rule *ru
 void lsdn_rule_apply_mask(
 	struct lsdn_rule *r, enum lsdn_rule_target targets[], union lsdn_matchdata masks[]);
 void lsdn_ruleset_remove(struct lsdn_rule *rule);
-void lsdn_ruleset_flush(struct lsdn_ruleset *ruleset);
 void lsdn_ruleset_free(struct lsdn_ruleset *ruleset);
 
 #define LSDN_MAX_ACT_PRIO 32
