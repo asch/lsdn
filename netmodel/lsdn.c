@@ -842,22 +842,22 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 		lsdn_foreach(
 			n->attached_list, attached_entry,
 			struct lsdn_phys_attachment, a) {
-			if (will_be_deleted(a->phys->state))
+			if (!a->phys->attr_ip || will_be_deleted(a->phys->state))
 				continue;
 			lsdn_foreach(
 				n->attached_list, attached_entry,
 				struct lsdn_phys_attachment, a_other) {
-				if (a == a_other || will_be_deleted(a_other->phys->state))
+				if (a == a_other)
 					continue;
-				if (a->phys->attr_ip && a_other->phys->attr_ip) {
-					if (!lsdn_ipv_eq(*a->phys->attr_ip, *a_other->phys->attr_ip))
-						lsdn_problem_report(
-							ctx, LSDNP_PHYS_INCOMPATIBLE_IPV,
-							LSDNS_PHYS, a->phys,
-							LSDNS_PHYS, a_other->phys,
-							LSDNS_NET, n,
-							LSDNS_END);
-				}
+				if (!a_other->phys->attr_ip || will_be_deleted(a_other->phys->state))
+					continue;
+				if (!lsdn_ipv_eq(*a->phys->attr_ip, *a_other->phys->attr_ip))
+					lsdn_problem_report(
+						ctx, LSDNP_PHYS_INCOMPATIBLE_IPV,
+						LSDNS_PHYS, a->phys,
+						LSDNS_PHYS, a_other->phys,
+						LSDNS_NET, n,
+						LSDNS_END);
 			}
 		}
 	}
