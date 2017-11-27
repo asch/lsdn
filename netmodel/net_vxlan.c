@@ -21,8 +21,7 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 		s->vxlan.port,
 		true,
 		false,
-		/* don't really care */
-		a->phys->attr_ip ? a->phys->attr_ip->v : LSDN_IPv4);
+		s->vxlan.mcast.mcast_ip.v);
 	if (err != LSDNE_OK)
 		abort();
 
