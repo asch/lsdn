@@ -16,6 +16,7 @@ static void pa_do_free(struct lsdn_phys_attachment *pa);
 static void phys_do_free(struct lsdn_phys *pa);
 
 /** Move from OK to a RENEW state.
+ * \private
  * Only switch state to RENEW if the state is OK, not NEW. */
 static void renew(enum lsdn_state *state) {
 	assert (*state != LSDN_STATE_DELETE);
@@ -24,6 +25,7 @@ static void renew(enum lsdn_state *state) {
 }
 
 /** Propagate RENEW state.
+ * \private
  * If `from` is slated for renewal and `to` is OK, switch to RENEW too. */
 static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 	if (*from == LSDN_STATE_RENEW && *to == LSDN_STATE_OK)
