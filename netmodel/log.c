@@ -13,7 +13,7 @@
  * Valid values... XXX */
 typedef uint32_t log_mask_t;
 
-#define lsdn_netops_name(id, string, comment) string,
+#define lsdn_netops_name(id, string) string,
 /** Names for each log category.
  * @see lsdn_log_category */
 static const char* netops_names[] = {
