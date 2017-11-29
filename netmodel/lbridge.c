@@ -1,7 +1,10 @@
+/** \file
+ * Linux Bridge management functions */
 #include "private/lbridge.h"
 #include "private/net.h"
 #include "include/lsdn.h"
 
+/** Set up a Linux Bridge and associate it with a context. */
 void lsdn_lbridge_init(struct lsdn_context *ctx, struct lsdn_lbridge *br)
 {
 	struct lsdn_if bridge_if;
@@ -19,6 +22,7 @@ void lsdn_lbridge_init(struct lsdn_context *ctx, struct lsdn_lbridge *br)
 	br->bridge_if = bridge_if;
 }
 
+/** Free the `lsdn_lbridge` structure. */
 void lsdn_lbridge_free(struct lsdn_lbridge *br)
 {
 	if (!br->ctx->disable_decommit) {
@@ -29,6 +33,10 @@ void lsdn_lbridge_free(struct lsdn_lbridge *br)
 	lsdn_if_free(&br->bridge_if);
 }
 
+/** Add an interface to the bridge.
+ * @param br Bridge.
+ * @param br_if Resulting bridge interface structure.
+ * @param iface Interface to connect. */
 void lsdn_lbridge_add(struct lsdn_lbridge *br, struct lsdn_lbridge_if *br_if, struct lsdn_if *iface)
 {
 	lsdn_err_t err = lsdn_link_set_master(br->ctx->nlsock, br->bridge_if.ifindex, iface->ifindex);
@@ -43,6 +51,7 @@ void lsdn_lbridge_add(struct lsdn_lbridge *br, struct lsdn_lbridge_if *br_if, st
 	br_if->iface = iface;
 }
 
+/** Remove an interface from the bridge. */
 void lsdn_lbridge_remove(struct lsdn_lbridge_if *iface)
 {
 	if (!iface->br->ctx->disable_decommit) {
@@ -52,6 +61,7 @@ void lsdn_lbridge_remove(struct lsdn_lbridge_if *iface)
 	}
 }
 
+/** Connect a virt to the Linux Bridge. */
 void lsdn_lbridge_add_virt(struct lsdn_virt *v)
 {
 	struct lsdn_phys_attachment *a = v->connected_through;
@@ -59,6 +69,7 @@ void lsdn_lbridge_add_virt(struct lsdn_virt *v)
 	lsdn_prepare_rulesets(v->network->ctx, &v->committed_if, &v->rules_in, &v->rules_out);
 }
 
+/** Disconnect a virt from the Linux Bridge. */
 void lsdn_lbridge_remove_virt(struct lsdn_virt *v)
 {
 	lsdn_ruleset_free(&v->rules_in);

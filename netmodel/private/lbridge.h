@@ -1,16 +1,28 @@
+/** \file
+ * Linux bridge related structs and definitions. */
 #pragma once
 
 #include "nl.h"
 
 struct lsdn_virt;
 
+/** Linux Bridge.
+ * Currently only holds a reference to the context
+ * and to the bridge interface. */
 struct lsdn_lbridge {
+	/** LSDN context */
 	struct lsdn_context *ctx;
+	/** Underlying bridge interface */
 	struct lsdn_if bridge_if;
 };
 
+/** Linux Bridge interface.
+ * Currently only holds a reference to the `lsdn_lbridge` structure
+ * and to the connected interface. */
 struct lsdn_lbridge_if {
+	/** LSDN Linux Bridge */
 	struct lsdn_lbridge *br;
+	/** Connected interface. */
 	struct lsdn_if *iface;
 };
 

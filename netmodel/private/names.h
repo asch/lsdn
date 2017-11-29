@@ -1,14 +1,23 @@
+/** \file
+ * Name-related structs and definitions. */
 #pragma once
 
 #include "list.h"
 #include "../include/errors.h"
 
+/** List of names.
+ * Contains a collection of names that should be unique over their domain.
+ * E.g., names of all networks (physes, virts) in a context. */
 struct lsdn_names {
+	/** Head of the list. */
 	struct lsdn_list_entry head;
 };
 
+/** Individual name entry. */
 struct lsdn_name {
+	/** Name. */
 	char* str;
+	/** List membership. */
 	struct lsdn_list_entry entry;
 };
 
