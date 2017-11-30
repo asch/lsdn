@@ -1,24 +1,34 @@
+/** \file
+ * Virt Rules engine related definitions and structs. */
 #pragma once
 
 #include "lsdn.h"
 #include "nettypes.h"
+#include "util.h"
 
-#define lsdn_foreach_rule_target(x) \
-	x(LSDN_MATCH_NONE, none) \
-	x(LSDN_MATCH_SRC_MAC, src_mac) \
-	x(LSDN_MATCH_DST_MAC, dst_mac) \
-	x(LSDN_MATCH_SRC_IPV4, src_ipv4) \
-	x(LSDN_MATCH_DST_IPV4, dst_ipv4) \
-	x(LSDN_MATCH_SRC_IPV6, src_ipv6) \
-	x(LSDN_MATCH_DST_IPV6, dst_ipv6) \
-	x(LSDN_MATCH_ENC_KEY_ID, enc_key_id)
+/** Generator for `lsdn_rule_target`.
+ * @see LSDN_ENUM
+ * @see lsdn_rule_target */
+#define lsdn_enumgen_rule_target(x) \
+	/** Do not match. */ \
+	x(LSDN_MATCH_NONE, "none") \
+	/** Match source MAC. */ \
+	x(LSDN_MATCH_SRC_MAC, "src_mac") \
+	/** Match destination MAC. */ \
+	x(LSDN_MATCH_DST_MAC, "dst_mac") \
+	/** Match source IPv4 address. */ \
+	x(LSDN_MATCH_SRC_IPV4, "src_ipv4") \
+	/** Match destination IPv4 address. */ \
+	x(LSDN_MATCH_DST_IPV4, "dst_ipv4") \
+	/** Match source IPv6 address. */ \
+	x(LSDN_MATCH_SRC_IPV6, "src_ipv6") \
+	/** Match destination IPv6 address. */ \
+	x(LSDN_MATCH_DST_IPV6, "dst_ipv6") \
+	/** Match tunnel key ID. */ \
+	x(LSDN_MATCH_ENC_KEY_ID, "enc_key_id")
 
-#define lsdn_rule_target_id(z, y) z,
-enum lsdn_rule_target{
-	lsdn_foreach_rule_target(lsdn_rule_target_id)
-	LSDN_MATCH_COUNT
-};
-#undef lsdn_rule_target_id
+/** Rule target. */
+LSDN_ENUM(rule_target, LSDN_MATCH);
 
 const char* lsdn_rule_target_name(enum lsdn_rule_target t);
 

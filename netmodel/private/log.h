@@ -2,27 +2,22 @@
  * Logging related structs and definitions. */
 #pragma once
 
+#include "../include/util.h"
+
 #include <stdarg.h>
 #include <stdbool.h>
 
-#define lsdn_foreach_log_category(x) \
+/** Generator macro for log categories.
+ * Used to keep consistency between possible values of `lsdn_log_category`
+ * and their string names in `netops_names`. */
+#define lsdn_enumgen_log_category(x) \
 	/** Network operations. */ \
-	x(NETOPS, "netops") \
+	x(LSDNL_NETOPS, "netops") \
 	/** TC rules. */ \
-	x(RULES, "rules") \
-	/** Guard value. */ \
-	x(MAX, NULL)
-
-/** \var LSDNL_MAX
- * By placing the MAX definition at end, an `int` conversion of this value
- * will yield the number of defined categories. XXX do not use. */
-
-#define lsdn_netops_enum(id, string) LSDNL_##id ,
+	x(LSDNL_RULES, "rules")
 
 /** Log category. */
-enum lsdn_log_category {
-	lsdn_foreach_log_category(lsdn_netops_enum)
-};
+LSDN_ENUM(log_category, LSDNL);
 
 
 void lsdn_log_init();

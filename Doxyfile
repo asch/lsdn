@@ -2027,7 +2027,8 @@ PREDEFINED             =
 # definition found in the source code.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-EXPAND_AS_DEFINED      = lsdn_foreach_log_category lsdn_netops_enum
+EXPAND_AS_DEFINED      = LSDN_ENUM LSDN_ENUM_NAMES _LSDN_DUMP_ENUM _LSDN_DUMP_NAMES \
+                         lsdn_enumgen_rule_target lsdn_enumgen_problem_code lsdn_enumgen_log_category
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES then doxygen's preprocessor will
 # remove all references to function-like macros that are alone on a line, have

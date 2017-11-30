@@ -13,9 +13,7 @@
 #define mk_diag_fmt(x, fmt) fmt,
 
 /** List of errors and their format strings. */
-static const char* error_fmt[] = {
-	lsdn_foreach_problem(mk_diag_fmt)
-};
+LSDN_ENUM_NAMES(problem_code);
 
 #define CAST(x) ((x)subj->ptr)
 /** Convert subject name to string. */
@@ -60,7 +58,7 @@ static void format_subject(FILE* out, const struct lsdn_problem_ref *subj)
 void lsdn_problem_format(FILE* out, const struct lsdn_problem *problem)
 {
 	size_t i = 0;
-	const char* fmt = error_fmt[problem->code];
+	const char* fmt = problem_code_names[problem->code];
 	while(*fmt){
 		if (*fmt == '%'){
 			fmt++;

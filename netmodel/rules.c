@@ -9,16 +9,12 @@
 
 /* TODO: convert Uthash OOM to something "safe" */
 
-#define rule_target_name(y, z) #z
-
-static const char *match_target_names[] = {
-	lsdn_foreach_rule_target(rule_target_name)
-};
+LSDN_ENUM_NAMES(rule_target);
 
 const char* lsdn_rule_target_name(enum lsdn_rule_target t)
 {
 	assert(t < LSDN_MATCH_COUNT);
-	return match_target_names[t];
+	return rule_target_names[t];
 }
 
 static void callback_drop(struct lsdn_filter *f, uint16_t order, void *user) {

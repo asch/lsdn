@@ -3,6 +3,8 @@
  */
 #pragma once
 
+#include "util.h"
+
 #include <stddef.h>
 #include <stdio.h>
 
@@ -35,25 +37,35 @@ enum lsdn_err {
 };
 typedef enum lsdn_err lsdn_err_t;
 
-#define lsdn_foreach_problem(x) \
-	x(PHYS_NOATTR, "An attribute %o must be defined on phys %o for attachment to net %o.") \
-	x(PHYS_DUPATTR, "Duplicate attribute %o specified for phys %o and phys %o.") \
-	x(PHYS_INCOMPATIBLE_IPV, "Phys %o and phys %o attached to net %o have incompatible ip versions.") \
-	x(PHYS_NOT_ATTACHED, "Trying to connect virt %o to a network %o on phys %o, but the phys is not attached to that network.") \
-	x(VIRT_NOIF, "The interface %o specified for virt %o does not exist.") \
-	x(VIRT_NOATTR, "An attribute %o must be defined on virt %o connected to net %o.") \
-	x(VIRT_DUPATTR, "Duplicate attribute %o specified for virt %o and virt %o connected to net %o.") \
-	x(NET_BAD_NETTYPE, "Trying to create net %o and net %o of incompatible network types on the same machine.") \
-	x(NET_DUPID, "Trying to create net %o and net %o with the same net id %o.") \
-	x(VR_INCOMPATIBLE_MATCH, "Rules %o and %o on virt %o share the same priority, but have different match targets or masks.")\
-	x(VR_DUPLICATE_RULE, "Rules %o and %o on virt %o share the same priority and are completely equal")
+/** Generator for `lsdn_problem_code`.
+ * @see LSDN_ENUM
+ * @see lsdn_problem_code */
+#define lsdn_enumgen_problem_code(x) \
+	/** Missing attribute on a phys. */ \
+	x(LSDNP_PHYS_NOATTR, "An attribute %o must be defined on phys %o for attachment to net %o.") \
+	/** Duplicate attribute on two phys's in the same network. */ \
+	x(LSDNP_PHYS_DUPATTR, "Duplicate attribute %o specified for phys %o and phys %o.") \
+	/** Incompatible IP versions in the same network. */ \
+	x(LSDNP_PHYS_INCOMPATIBLE_IPV, "Phys %o and phys %o attached to net %o have incompatible ip versions.") \
+	/** Connecting a virt from a phys that is not attached to a network. */ \
+	x(LSDNP_PHYS_NOT_ATTACHED, "Trying to connect virt %o to a network %o on phys %o, but the phys is not attached to that network.") \
+	/** Interface specified for a virt does not exist. */ \
+	x(LSDNP_VIRT_NOIF, "The interface %o specified for virt %o does not exist.") \
+	/** Missing attribute on a virt. */ \
+	x(LSDNP_VIRT_NOATTR, "An attribute %o must be defined on virt %o connected to net %o.") \
+	/** Duplicate attribute on two virts in the same network. */ \
+	x(LSDNP_VIRT_DUPATTR, "Duplicate attribute %o specified for virt %o and virt %o connected to net %o.") \
+	/** Incompatible networks on the same machine. */ \
+	x(LSDNP_NET_BAD_NETTYPE, "Trying to create net %o and net %o of incompatible network types on the same machine.") \
+	/** Duplicate network ID. */ \
+	x(LSDNP_NET_DUPID, "Trying to create net %o and net %o with the same net id %o.") \
+	/** Two incompatible virt rules with the same priority. */ \
+	x(LSDNP_VR_INCOMPATIBLE_MATCH, "Rules %o and %o on virt %o share the same priority, but have different match targets or masks.")\
+	/** Duplicate virt rules. */ \
+	x(LSDNP_VR_DUPLICATE_RULE, "Rules %o and %o on virt %o share the same priority and are completely equal")
 
-#define lsdn_mk_problem_enum(name, string) LSDNP_##name,
-
-/* Information about validation or commit error */
-enum lsdn_problem_code {
-	lsdn_foreach_problem(lsdn_mk_problem_enum)
-};
+/** Validation and commit errors. */
+LSDN_ENUM(problem_code, LSDNP);
 
 /** Problem reference type. */
 enum lsdn_problem_ref_type {

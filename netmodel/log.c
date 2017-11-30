@@ -16,9 +16,7 @@ typedef uint32_t log_mask_t;
 #define lsdn_netops_name(id, string) string,
 /** Names for each log category.
  * @see lsdn_log_category */
-static const char* netops_names[] = {
-	lsdn_foreach_log_category(lsdn_netops_name)
-};
+LSDN_ENUM_NAMES(log_category);
 
 /** Mutex for logging. */
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -54,11 +52,11 @@ static void log_mask_from_env()
 	while (tok) {
 		bool found = false;
 		if (strcmp(tok, "all") == 0) {
-			mask |= (1 << LSDNL_MAX) - 1;
+			mask |= (1 << LSDNL_COUNT) - 1;
 			found  = true;
 		}
-		for(size_t i = 0; i<LSDNL_MAX && !found; i++) {
-			if (strcmp(netops_names[i], tok) == 0) {
+		for(size_t i = 0; i<LSDNL_COUNT && !found; i++) {
+			if (strcmp(log_category_names[i], tok) == 0) {
 				mask |= 1 << i;
 				found = true;
 			}
@@ -86,7 +84,7 @@ void lsdn_log_init()
  * @return Constant string containing the name of the category. */
 const char* lsdn_log_category_name(enum lsdn_log_category category)
 {
-	return netops_names[category];
+	return log_category_names[category];
 }
 
 /** Log an event.
