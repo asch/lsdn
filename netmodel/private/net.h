@@ -105,4 +105,7 @@ struct lsdn_net_ops {
 	 * You can validate attributes relevant to the network implementation
 	 * and use `lsdn_problem_report` to indicate problems. */
 	void (*validate_virt) (struct lsdn_virt *virt);
+
+	/** Compute the overhead of network packets incurred by the tunneling. */
+	unsigned int (*compute_tunneling_overhead)(struct lsdn_phys_attachment *pa);
 };

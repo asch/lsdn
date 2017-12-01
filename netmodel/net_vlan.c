@@ -24,6 +24,12 @@ static void vlan_create_pa(struct lsdn_phys_attachment *p)
 	lsdn_lbridge_add(&p->lbridge, &p->lbridge_if, &p->tunnel_if);
 }
 
+/** Compute tunneling overhead of VLAN tunnels. */
+static unsigned int vlan_tunneling_overhead(struct lsdn_phys_attachment *pa)
+{
+	return 4;
+}
+
 /** Callbacks for VLAN network.
  * Adding and removing local virts entails adding to the local Linux Bridge,
  * so we are using functions from `lbridge.c`. */
@@ -32,6 +38,7 @@ static struct lsdn_net_ops lsdn_net_vlan_ops = {
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
 	.remove_virt = lsdn_lbridge_remove_virt,
+	.compute_tunneling_overhead = vlan_tunneling_overhead
 };
 
 /** Create settings for a new VLAN network.

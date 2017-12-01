@@ -1,3 +1,5 @@
+/** \file
+ * LSCTL shell main code (simple tclsh frontend). */
 #include <stdlib.h>
 #include <tcl.h>
 #include <getopt.h>

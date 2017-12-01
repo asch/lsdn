@@ -1,3 +1,6 @@
+/** \file
+ * TCL extensions for lsctl language. */
+
 #include "lsext.h"
 #include <stdlib.h>
 #include "../netmodel/include/lsdn.h"
@@ -8,7 +11,10 @@ static int tcl_error(Tcl_Interp *interp, const char *err) {
 }
 
 enum scope {
-	S_NONE, S_NET, S_PHYS
+	S_ROOT = 1,
+	S_NET = 2,
+	S_PHYS = 4,
+	S_VIRT = 8
 };
 #define MAX_SCOPE_NESTING 3
 
@@ -16,6 +22,7 @@ struct tcl_ctx{
 	struct lsdn_context *lsctx;
 	struct lsdn_net *net;
 	struct lsdn_phys *phys;
+	struct lsdn_virt *virt;
 	size_t stack_pos;
 	enum scope scope_stack[MAX_SCOPE_NESTING];
 };
@@ -37,15 +44,39 @@ static enum scope get_scope(struct tcl_ctx *ctx)
 	return ctx->scope_stack[ctx->stack_pos];
 }
 
-static int check_no_scope(Tcl_Interp *interp, struct tcl_ctx *ctx)
+/** Check that command has valid scoping.
+ *
+ * Only the direct enclosing scope is checked.
+ *
+ * @param allowed List of scopes that are allowed for this command.
+ * @return Tcl status.
+ */
+static int check_scope(Tcl_Interp *interp, struct tcl_ctx *ctx, enum scope allowed)
 {
-	if (ctx->net)
-		return tcl_error(interp, "commands is not allowed inside 'net' scope");
-	if (ctx->phys)
-		return tcl_error(interp, "commands is not allowed inside 'phys' scope");
+	enum scope current = get_scope(ctx);
+	if ((current == S_ROOT) && !(allowed & S_ROOT))
+		return tcl_error(interp, "command is not allowed inside root scope");
+	if ((current == S_NET) && !(allowed & S_NET))
+		return tcl_error(interp, "command is not allowed inside 'net' scope");
+	if ((current == S_PHYS) && !(allowed & S_PHYS))
+		return tcl_error(interp, "command is not allowed inside 'phys' scope");
+	if ((current == S_VIRT) && !(allowed & S_VIRT))
+		return tcl_error(interp, "command is not allowed inside 'virt' scope");
 	return TCL_OK;
 }
 
+/** Get a net argument, either explicit or from scope.
+ * Find out if the command is either nested inside a `net {}` scope or if it has explicit
+ * `-net` keyword argument.
+ *
+ * The caller is still responsible for parsing the keyword arguments using `Tcl_ParseArgsObjv` and
+ * only passes in the extracted value for `-net`.
+ *
+ * @param arg The `-net` keyword argument value.
+ * @param net Output value. Undefined if `TCL_ERROR` is returned. May be null if `needed` is `false`.
+ * @param needed Cause a `TCL_ERROR` if neither the `-net` argument is given or scope is active.
+ * @return Tcl status.
+ */
 static int resolve_net_arg(
 	Tcl_Interp *interp, struct tcl_ctx *ctx,
 	const char *arg, struct lsdn_net **net, bool needed)
@@ -65,7 +96,9 @@ static int resolve_net_arg(
 		return tcl_error(interp, "network must be specified, either using -net argument or from net scope");
 	return TCL_OK;
 }
-
+/** Get a phys argument, either explicit or from scope.
+ * @see resolve_phys_arg
+ */
 static int resolve_phys_arg(
 	Tcl_Interp *interp, struct tcl_ctx *ctx,
 	const char *arg, struct lsdn_phys **phys, bool needed)
@@ -138,7 +171,7 @@ CMD(settings_vlan)
 CMD(settings_vxlan_e2e)
 {
 	const char *name = NULL;
-	int port = 0;
+	int port = 4789;
 
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_INT, "-port", NULL, &port},
@@ -181,7 +214,7 @@ CMD(settings_vxlan_mcast)
 
 CMD(settings_vxlan_static)
 {
-	int port = 0;
+	int port = 4789;
 	const char *name = NULL;
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_INT, "-port", NULL, &port},
@@ -208,7 +241,7 @@ CMD(settings)
 		return TCL_ERROR;
 	}
 
-	if(check_no_scope(interp, ctx))
+	if(check_scope(interp, ctx, S_ROOT))
 		return TCL_ERROR;
 
 	if(Tcl_GetIndexFromObj(interp, argv[1], type_names, "type", 0, &type) != TCL_OK)
@@ -233,8 +266,8 @@ CMD(settings)
 
 CMD(net)
 {
-	if (ctx->net)
-		return tcl_error(interp, "net scopes ca not be nested");
+	if (check_scope(interp, ctx, S_PHYS | S_ROOT) != TCL_OK)
+		return TCL_ERROR;
 
 	// TODO net id range 0 .. 2**32 - 1
 	int vnet_id = 0;
@@ -277,6 +310,9 @@ CMD(net)
 		}
 
 		net = lsdn_net_new(s, vnet_id);
+	} else {
+		if (settings_name)
+			return tcl_error(interp, "Can not change settings, the network already exists");
 	}
 
 	if(phys_parsed)
@@ -295,6 +331,9 @@ CMD(net)
 
 CMD(virt)
 {
+	if (check_scope(interp, ctx, S_PHYS | S_NET | S_ROOT) != TCL_OK)
+		return TCL_ERROR;
+
 	const char *mac = NULL;
 	lsdn_mac_t mac_parsed;
 	const char *net = NULL;
@@ -346,8 +385,8 @@ CMD(virt)
 
 CMD(phys)
 {
-	if(ctx->phys)
-		return tcl_error(interp, "phys scopes can not be nested");
+	if (check_scope(interp, ctx, S_NET | S_ROOT) != TCL_OK)
+		return TCL_ERROR;
 
 	const char *name = NULL;
 	const char *iface = NULL;
@@ -411,7 +450,7 @@ CMD(phys)
 
 CMD(commit)
 {
-	if(check_no_scope(interp, ctx))
+	if(check_scope(interp, ctx, S_ROOT))
 		return TCL_ERROR;
 
 	if(lsdn_commit(ctx->lsctx, lsdn_problem_stderr_handler, NULL) != LSDNE_OK)
@@ -421,7 +460,7 @@ CMD(commit)
 
 CMD(validate)
 {
-	if(check_no_scope(interp, ctx))
+	if(check_scope(interp, ctx, S_ROOT))
 		return TCL_ERROR;
 
 	if(lsdn_validate(ctx->lsctx, lsdn_problem_stderr_handler, NULL) != LSDNE_OK)
@@ -431,8 +470,8 @@ CMD(validate)
 
 CMD(claimLocal)
 {
-	if (!(get_scope(ctx) == S_NONE || get_scope(ctx) == S_PHYS))
-		return tcl_error(interp, "claimLocal commands must be directly in phys scope or none at all");
+	if (check_scope(interp, ctx, S_ROOT | S_PHYS))
+		return TCL_ERROR;
 
 	const char *phys = NULL;
 	struct lsdn_phys *phys_parsed = NULL;
@@ -486,7 +525,7 @@ CMD(claimLocal)
 
 CMD(cleanup)
 {
-	if(check_no_scope(interp, ctx))
+	if(check_scope(interp, ctx, S_ROOT) != TCL_OK)
 		return TCL_ERROR;
 
 	if(argc != 1) {
@@ -500,7 +539,7 @@ CMD(cleanup)
 
 CMD(free)
 {
-	if(check_no_scope(interp, ctx))
+	if(check_scope(interp, ctx, S_ROOT) != TCL_OK)
 		return TCL_ERROR;
 
 	if(argc != 1) {
@@ -516,6 +555,9 @@ static int attach_or_detach(
 	Tcl_Interp* interp, struct tcl_ctx *ctx, int argc, Tcl_Obj *const argv[],
 	lsdn_err_t (*cb)(struct lsdn_phys*, struct lsdn_net*))
 {
+	if(check_scope(interp, ctx, S_ROOT | S_PHYS | S_NET) != TCL_OK)
+		return TCL_ERROR;
+
 	const char *phys = NULL;
 	struct lsdn_phys *phys_parsed = NULL;
 	const char *net = NULL;
@@ -609,7 +651,7 @@ int register_lsdn_tcl(Tcl_Interp *interp)
 	struct tcl_ctx *ctx = &default_ctx;
 	ctx->lsctx = lsdn_context_new("lsdn");
 	ctx->stack_pos = 0;
-	ctx->scope_stack[0] = S_NONE;
+	ctx->scope_stack[0] = S_ROOT;
 	lsdn_context_abort_on_nomem(ctx->lsctx);
 	REGISTER(settings);
 	REGISTER(net);
