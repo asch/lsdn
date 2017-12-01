@@ -557,6 +557,30 @@ lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 	ret_err(virt->network->ctx, LSDNE_OK);
 }
 
+lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu)
+{
+	struct lsdn_context *ctx = virt->network->ctx;
+	struct lsdn_net_ops *ops = virt->network->settings->ops;
+	if (!virt->committed_to)
+		ret_err(ctx, LSDNE_NOIF);
+	struct lsdn_phys *phys = virt->committed_to->phys;
+	struct lsdn_if phys_if = {0};
+	lsdn_err_t ret;
+	if (phys && phys->attr_iface) {
+		phys_if.ifname = phys->attr_iface;
+		ret = lsdn_if_resolve(&phys_if);
+		if (ret != LSDNE_OK)
+			ret_err(ctx, ret);
+		ret = lsdn_link_get_mtu(ctx->nlsock, phys_if.ifindex, mtu);
+		if (ret != LSDNE_OK)
+			ret_err(ctx, ret);
+	} else {
+		ret_err(ctx, LSDNE_NOIF);
+	}
+	*mtu -= ops->compute_tunneling_overhead(virt->committed_to);
+	ret_err(ctx, LSDNE_OK);
+}
+
 static bool should_be_validated(enum lsdn_state state) {
 	return state == LSDN_STATE_NEW || state == LSDN_STATE_RENEW;
 }

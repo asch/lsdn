@@ -1,7 +1,5 @@
 #include "private/nl.h"
 #include "include/util.h"
-#include <linux/if_link.h>
-#include <linux/rtnetlink.h>
 #include <linux/pkt_sched.h>
 #include <linux/pkt_cls.h>
 #include <linux/tc_act/tc_mirred.h>
@@ -471,7 +469,11 @@ static int ifindex_mtu_cb(const struct nlmsghdr *nlh, void *data)
 	struct ifinfomsg *ifm = mnl_nlmsg_get_payload(nlh);
 	struct nlattr *attr;
 
-	ifindex_mtu[0] = ifm->ifi_index;
+	if (ifm->ifi_index != ifindex_mtu[0])
+		return MNL_CB_OK;
+
+	ifindex_mtu[1] = ifm->ifi_index;
+	ifindex_mtu[2] = 0;
 
 	mnl_attr_for_each(attr, nlh, sizeof(*ifm)) {
 		type = mnl_attr_get_type(attr);
@@ -480,11 +482,11 @@ static int ifindex_mtu_cb(const struct nlmsghdr *nlh, void *data)
 		if (mnl_attr_type_valid(attr, IFLA_MAX) < 0)
 			continue;
 
-		if (type == IFLA_MTU)
+		if (type == IFLA_MTU) {
 			if (mnl_attr_validate(attr, MNL_TYPE_U32) < 0)
 				return MNL_CB_ERROR;
-
-		ifindex_mtu[1] = mnl_attr_get_u32(attr);
+			ifindex_mtu[2] = mnl_attr_get_u32(attr);
+		}
 	}
 
 	return MNL_CB_OK;
@@ -497,7 +499,8 @@ lsdn_err_t lsdn_link_get_mtu(struct mnl_socket *sock, unsigned int ifindex,
 	unsigned int seq = 0, portid;
 	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
-	unsigned int ifindex_mtu[2];
+	unsigned int ifindex_mtu[3] = {0};
+	ifindex_mtu[0] = ifindex;
 
 	nlh->nlmsg_type = RTM_GETLINK;
 	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
@@ -515,12 +518,12 @@ lsdn_err_t lsdn_link_get_mtu(struct mnl_socket *sock, unsigned int ifindex,
 	ret = mnl_socket_recvfrom(sock, (void *) nlh, MNL_SOCKET_BUFFER_SIZE);
 	while (ret > 0) {
 		ret = mnl_cb_run(buf, ret, seq, portid, ifindex_mtu_cb, ifindex_mtu);
-		if (ret <= MNL_CB_STOP)
-			break;
-		if (ifindex_mtu[0] == ifindex) {
-			*mtu = ifindex_mtu[1];
+		if (ifindex_mtu[1] == ifindex) {
+			*mtu = ifindex_mtu[2];
 			return LSDNE_OK;
 		}
+		if (ret <= MNL_CB_STOP)
+			break;
 		ret = mnl_socket_recvfrom(sock, (void *) nlh, MNL_SOCKET_BUFFER_SIZE);
 	}
 	if (ret == -1)

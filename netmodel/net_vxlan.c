@@ -8,6 +8,20 @@
 #include "include/errors.h"
 #include <stdarg.h>
 
+#define UDP_HEADER_LEN 8
+#define VXLAN_HEADER_LEN 8
+#define ETHERNET_FRAME_LEN 14
+#define IPv4_HEADER_LEN 20
+#define IPv6_HEADER_LEN 40
+
+static unsigned int vxlan_tunneling_overhead(enum lsdn_ipv ipv)
+{
+	if (ipv == LSDN_IPv4)
+		return ETHERNET_FRAME_LEN + IPv4_HEADER_LEN + UDP_HEADER_LEN + VXLAN_HEADER_LEN;
+	else
+		return ETHERNET_FRAME_LEN + IPv6_HEADER_LEN + UDP_HEADER_LEN + VXLAN_HEADER_LEN;
+}
+
 static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_settings *s = a->net->settings;
@@ -41,11 +55,19 @@ static void vxlan_mcast_destroy_pa(struct lsdn_phys_attachment *a)
 	lsdn_if_free(&a->tunnel_if);
 }
 
+static unsigned int vxlan_mcast_tunneling_overhead(struct lsdn_phys_attachment *pa)
+{
+	struct lsdn_settings *s = pa->net->settings;
+	enum lsdn_ipv ipv = s->vxlan.mcast.mcast_ip.v;
+	return vxlan_tunneling_overhead(ipv);
+}
+
 struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
 	.create_pa = vxlan_mcast_create_pa,
 	.destroy_pa = vxlan_mcast_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
-	.remove_virt = lsdn_lbridge_remove_virt
+	.remove_virt = lsdn_lbridge_remove_virt,
+	.compute_tunneling_overhead = vxlan_mcast_tunneling_overhead
 };
 
 struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
@@ -137,6 +159,12 @@ static void vxlan_e2e_validate_pa(struct lsdn_phys_attachment *a)
 			LSDNS_END);
 }
 
+static unsigned int vxlan_e2e_tunneling_overhead(struct lsdn_phys_attachment *pa)
+{
+	enum lsdn_ipv ipv = pa->phys->attr_ip->v;
+	return vxlan_tunneling_overhead(ipv);
+}
+
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 	.create_pa = vxlan_e2e_create_pa,
 	.destroy_pa = vxlan_e2e_destroy_pa,
@@ -144,7 +172,8 @@ struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 	.remove_virt = lsdn_lbridge_remove_virt,
 	.add_remote_pa = vxlan_e2e_add_remote_pa,
 	.remove_remote_pa = vxlan_e2e_remove_remote_pa,
-	.validate_pa = vxlan_e2e_validate_pa
+	.validate_pa = vxlan_e2e_validate_pa,
+	.compute_tunneling_overhead = vxlan_e2e_tunneling_overhead
 };
 
 
@@ -294,6 +323,12 @@ static void vxlan_static_validate_virt(struct lsdn_virt *virt)
 			LSDNS_END);
 }
 
+static unsigned int vxlan_static_tunneling_overhead(struct lsdn_phys_attachment *pa)
+{
+	enum lsdn_ipv ipv = pa->phys->attr_ip->v;
+	return vxlan_tunneling_overhead(ipv);
+}
+
 struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 	.create_pa = vxlan_static_create_pa,
 	.destroy_pa = vxlan_static_destroy_pa,
@@ -304,7 +339,8 @@ struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 	.add_remote_virt = vxlan_static_add_remote_virt,
 	.remove_remote_virt = vxlan_static_remove_remote_virt,
 	.validate_pa = vxlan_static_validate_pa,
-	.validate_virt = vxlan_static_validate_virt
+	.validate_virt = vxlan_static_validate_virt,
+	.compute_tunneling_overhead = vxlan_static_tunneling_overhead
 };
 
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port)

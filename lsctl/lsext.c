@@ -171,7 +171,7 @@ CMD(settings_vlan)
 CMD(settings_vxlan_e2e)
 {
 	const char *name = NULL;
-	int port = 0;
+	int port = 4789;
 
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_INT, "-port", NULL, &port},
@@ -214,7 +214,7 @@ CMD(settings_vxlan_mcast)
 
 CMD(settings_vxlan_static)
 {
-	int port = 0;
+	int port = 4789;
 	const char *name = NULL;
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_INT, "-port", NULL, &port},

@@ -42,6 +42,11 @@ static void direct_destroy_pa(struct lsdn_phys_attachment *a)
 	lsdn_if_free(&a->tunnel_if);
 }
 
+static unsigned int direct_tunneling_overhead(struct lsdn_phys_attachment *pa)
+{
+	return 0;
+}
+
 /** Callbacks for direct network.
  * Adding and removing local virts entails adding to the local Linux Bridge,
  * so we are using functions from `lbridge.c`. */
@@ -50,6 +55,7 @@ static struct lsdn_net_ops lsdn_net_direct_ops = {
 	.add_virt = lsdn_lbridge_add_virt,
 	.remove_virt = lsdn_lbridge_remove_virt,
 	.destroy_pa = direct_destroy_pa,
+	.compute_tunneling_overhead = direct_tunneling_overhead
 };
 
 /** Create settings for a new direct network.

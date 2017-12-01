@@ -106,7 +106,6 @@ struct lsdn_net_ops {
 	 * and use `lsdn_problem_report` to indicate problems. */
 	void (*validate_virt) (struct lsdn_virt *virt);
 
-	/** Get the recommended MTU.
-	 * Get the recommended MTU for a virt on a given phys attachment. */
-	unsigned int (*get_recommended_mtu) (struct lsdn_phys_attachment *pa);
+	/** Compute the overhead of network packets incurred by the tunneling. */
+	unsigned int (*compute_tunneling_overhead)(struct lsdn_phys_attachment *pa);
 };
