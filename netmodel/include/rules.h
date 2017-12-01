@@ -30,6 +30,8 @@
 /** Rule target. */
 LSDN_ENUM(rule_target, LSDN_MATCH);
 
+#define LSDN_MAX_MATCHES 2
+
 const char* lsdn_rule_target_name(enum lsdn_rule_target t);
 
 #define LSDN_MAX_MATCH_LEN 16
@@ -52,44 +54,45 @@ enum lsdn_direction {
 
 /* lsdn virt's rule */
 struct lsdn_vr;
-struct lsdn_vr *lsdn_vr_new(struct lsdn_virt *virt, uint16_t prio, enum lsdn_direction dir);
+struct lsdn_vr_action;
+
+struct lsdn_vr *lsdn_vr_new(
+	struct lsdn_virt *virt, uint16_t prio, enum lsdn_direction dir, struct lsdn_vr_action *a);
 void lsdn_vr_free(struct lsdn_vr *vr);
 void lsdn_vrs_free_all(struct lsdn_virt *virt);
-struct lsdn_vr_action;
 
 extern struct lsdn_vr_action lsdn_vr_drop;
 
 #define lsdn_vr_shortcuts(name, type, fullmask) \
-	static inline void lsdn_vr_add_##name( \
-		struct lsdn_vr *rule, type value, struct lsdn_vr_action *action) \
+	static inline void lsdn_vr_add_##name(struct lsdn_vr *rule, type value) \
 	{ \
-		lsdn_vr_add_masked_##name(rule, (fullmask), value, action); \
+		lsdn_vr_add_masked_##name(rule, value, (fullmask)); \
 	} \
 	static inline struct lsdn_vr *lsdn_vr_new_masked_##name( \
 		struct lsdn_virt *virt, enum lsdn_direction dir, uint16_t prio, \
-		type mask, type value, struct lsdn_vr_action *action) \
+		type value, type mask, struct lsdn_vr_action *action) \
 	{ \
-		struct lsdn_vr *vr = lsdn_vr_new(virt, prio, dir); \
-		lsdn_vr_add_masked_##name(vr, mask, value, action); \
+		struct lsdn_vr *vr = lsdn_vr_new(virt, prio, dir, action); \
+		lsdn_vr_add_masked_##name(vr, value, mask); \
 		return vr; \
 	} \
 	static inline struct lsdn_vr *lsdn_vr_new_##name( \
 		struct lsdn_virt *virt, enum lsdn_direction dir, \
 		uint16_t prio, type value, struct lsdn_vr_action *action)  \
 	{ \
-		return lsdn_vr_new_masked_##name(virt, prio, dir, (fullmask), value, action); \
+		return lsdn_vr_new_masked_##name(virt, prio, dir, value, (fullmask), action); \
 	}
 
-void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value, struct lsdn_vr_action *action);
+void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value);
 lsdn_vr_shortcuts(src_mac, lsdn_mac_t, lsdn_single_mac_mask)
 
-void lsdn_vr_add_masked_dst_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value, struct lsdn_vr_action *action);
+void lsdn_vr_add_masked_dst_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value);
 lsdn_vr_shortcuts(dst_mac, lsdn_mac_t, lsdn_single_mac_mask)
 
-void lsdn_vr_add_masked_src_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value, struct lsdn_vr_action *action);
+void lsdn_vr_add_masked_src_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value);
 lsdn_vr_shortcuts(src_ip, lsdn_ip_t, (value.v == LSDN_IPv4) ? lsdn_single_ipv4_mask : lsdn_single_ipv6_mask)
 
-void lsdn_vr_add_masked_dst_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value, struct lsdn_vr_action *action);
+void lsdn_vr_add_masked_dst_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value);
 lsdn_vr_shortcuts(dst_ip, lsdn_ip_t, (value.v == LSDN_IPv4) ? lsdn_single_ipv4_mask : lsdn_single_ipv6_mask)
 
 #undef lsdn_vr_shortcuts

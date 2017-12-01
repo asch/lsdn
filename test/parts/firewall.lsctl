@@ -1,0 +1,20 @@
+source lib/common.tcl
+common::settings
+
+phys -if out -name a -ip 172.16.0.1
+
+net 1 {
+	attach a
+	virt -phys a -if 1 -mac 00:00:00:00:00:a1 {
+		rule in  1 drop -srcIp 192.168.98.0/24
+		rule in  2 drop -srcIp 192.168.99.2
+
+		rule out 2 drop -dstIp 192.168.99.3
+	}
+	virt -phys a -if 2 -mac 00:00:00:00:00:a2
+}
+
+
+common::claimLocal
+commit
+common::free
