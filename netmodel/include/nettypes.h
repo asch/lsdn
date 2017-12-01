@@ -88,6 +88,8 @@ bool lsdn_ipv_eq(lsdn_ip_t a, lsdn_ip_t b);
 
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf);
 void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf);
+lsdn_ip_t lsdn_ip_prefix_mask(enum lsdn_ipv v, int prefix);
+bool lsdn_is_prefix_valid(enum lsdn_ipv ipv, int prefix);
 
 /** Convert `lsdn_ipv4` to `uint32_t`. */
 static inline uint32_t lsdn_ip4_u32(const lsdn_ipv4_t *v4)

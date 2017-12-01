@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 #include <arpa/inet.h>
 #include "include/nettypes.h"
 
@@ -128,4 +129,51 @@ void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf)
 			ip->v6.bytes[10], ip->v6.bytes[11],
 			ip->v6.bytes[12], ip->v6.bytes[13],
 			ip->v6.bytes[14], ip->v6.bytes[15]);
+}
+
+static void gen_prefix(uint8_t *dst, int prefix)
+{
+	for (; prefix > 0; prefix -= 8, dst++) {
+		int byte_prefix = prefix;
+		if (byte_prefix > 8)
+			byte_prefix = 8;
+		int zero_suffix = (8 - byte_prefix);
+		*dst = ~((1 << zero_suffix) - 1);
+	}
+}
+
+/** Return an IPv4/6 address mask for the given network prefix.
+ *
+ * For example, `lsdn_ipv4_prefix_mask(LSDN_IPV4)` generates ip `255.255.255.0`.
+ */
+lsdn_ip_t lsdn_ip_prefix_mask(enum lsdn_ipv v, int prefix)
+{
+	lsdn_ip_t ip;
+	bzero(&ip, sizeof(ip));
+	ip.v = v;
+	assert(lsdn_is_prefix_valid(v, prefix));
+	switch (v) {
+	case LSDN_IPv4:
+		gen_prefix(ip.v4.bytes, prefix);
+		break;
+	case LSDN_IPv6:
+		gen_prefix(ip.v6.bytes, prefix);
+		break;
+	default:
+		abort();
+	}
+	return ip;
+}
+
+/** Check if the size of network prefix makes sense for given ip version */
+bool lsdn_is_prefix_valid(enum lsdn_ipv ipv, int prefix)
+{
+	switch (ipv) {
+		case LSDN_IPv4:
+			return prefix >= 0 && prefix <= 32;
+		case LSDN_IPv6:
+			return prefix >= 0 && prefix <= 128;
+		default:
+			abort();
+	}
 }

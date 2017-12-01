@@ -25,7 +25,6 @@ bool lsdn_target_supports_masking(enum lsdn_rule_target);
 
 struct lsdn_flower_rule;
 
-#define LSDN_MAX_MATCHES 2
 #define LSDN_KEY_SIZE (LSDN_MAX_MATCH_LEN * LSDN_MAX_MATCHES)
 /* A single rule in lsdn_ruleset. Fill in the priority, match conditions and action. */
 struct lsdn_rule{
