@@ -1,3 +1,6 @@
+/** \file
+ * TCL extensions for lsctl language. */
+
 #include "lsext.h"
 #include <stdlib.h>
 #include "../netmodel/include/lsdn.h"
