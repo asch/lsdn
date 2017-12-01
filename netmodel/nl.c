@@ -1,5 +1,7 @@
 #include "private/nl.h"
 #include "include/util.h"
+#include <linux/if_link.h>
+#include <linux/rtnetlink.h>
 #include <linux/pkt_sched.h>
 #include <linux/pkt_cls.h>
 #include <linux/tc_act/tc_mirred.h>
@@ -459,6 +461,72 @@ lsdn_err_t lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface)
 	ifm->ifi_index = iface->ifindex;
 
 	return send_await_response(sock, nlh);
+}
+
+static int ifindex_mtu_cb(const struct nlmsghdr *nlh, void *data)
+{
+	int type;
+	unsigned int *ifindex_mtu = (unsigned int *) data;
+
+	struct ifinfomsg *ifm = mnl_nlmsg_get_payload(nlh);
+	struct nlattr *attr;
+
+	ifindex_mtu[0] = ifm->ifi_index;
+
+	mnl_attr_for_each(attr, nlh, sizeof(*ifm)) {
+		type = mnl_attr_get_type(attr);
+
+		/* skip unsupported attribute in user-space */
+		if (mnl_attr_type_valid(attr, IFLA_MAX) < 0)
+			continue;
+
+		if (type == IFLA_MTU)
+			if (mnl_attr_validate(attr, MNL_TYPE_U32) < 0)
+				return MNL_CB_ERROR;
+
+		ifindex_mtu[1] = mnl_attr_get_u32(attr);
+	}
+
+	return MNL_CB_OK;
+}
+
+
+lsdn_err_t lsdn_link_get_mtu(struct mnl_socket *sock, unsigned int ifindex,
+	unsigned int *mtu)
+{
+	unsigned int seq = 0, portid;
+	nl_buf(buf);
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	unsigned int ifindex_mtu[2];
+
+	nlh->nlmsg_type = RTM_GETLINK;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+	nlh->nlmsg_seq = seq;
+
+	struct rtgenmsg *rt = mnl_nlmsg_put_extra_header(nlh, sizeof(*rt));
+	rt->rtgen_family = AF_PACKET;
+
+	portid = mnl_socket_get_portid(sock);
+
+	int ret = mnl_socket_sendto(sock, (void *) nlh, nlh->nlmsg_len);
+	if (ret == -1)
+		return LSDNE_NETLINK;
+
+	ret = mnl_socket_recvfrom(sock, (void *) nlh, MNL_SOCKET_BUFFER_SIZE);
+	while (ret > 0) {
+		ret = mnl_cb_run(buf, ret, seq, portid, ifindex_mtu_cb, ifindex_mtu);
+		if (ret <= MNL_CB_STOP)
+			break;
+		if (ifindex_mtu[0] == ifindex) {
+			*mtu = ifindex_mtu[1];
+			return LSDNE_OK;
+		}
+		ret = mnl_socket_recvfrom(sock, (void *) nlh, MNL_SOCKET_BUFFER_SIZE);
+	}
+	if (ret == -1)
+		return LSDNE_NETLINK;
+
+	return LSDNE_NOIF;
 }
 
 lsdn_err_t lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up)

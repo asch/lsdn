@@ -102,6 +102,9 @@ lsdn_err_t lsdn_link_bridge_create(
 
 lsdn_err_t lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface);
 
+lsdn_err_t lsdn_link_get_mtu(struct mnl_socket *sock,
+		unsigned int ifindex, unsigned int *mtu);
+
 lsdn_err_t lsdn_link_set_master(struct mnl_socket *sock,
 		unsigned int master, unsigned int slave);
 

@@ -105,4 +105,8 @@ struct lsdn_net_ops {
 	 * You can validate attributes relevant to the network implementation
 	 * and use `lsdn_problem_report` to indicate problems. */
 	void (*validate_virt) (struct lsdn_virt *virt);
+
+	/** Get the recommended MTU.
+	 * Get the recommended MTU for a virt on a given phys attachment. */
+	unsigned int (*get_recommended_mtu) (struct lsdn_phys_attachment *pa);
 };
