@@ -19,6 +19,7 @@ endif()
 add_subdirectory(netmodel)
 add_subdirectory(test)
 add_subdirectory(lsctl)
+add_subdirectory(daemon)
 
 if (LIBVIRT_FOUND)
 	add_subdirectory(hooks)
