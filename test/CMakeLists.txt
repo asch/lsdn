@@ -49,6 +49,7 @@ option(LARGE_TESTS "Disable larger tests" ON)
 test_executable(basic)
 test_executable(fw)
 test_simple(nettypes)
+test_simple(mtu)
 # direct connection does not support multiple vnets, so no need to run the regular test
 test_parts(direct migrate ping)
 test_parts(direct migrate cleanup)
