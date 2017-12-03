@@ -561,9 +561,9 @@ lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *m
 {
 	struct lsdn_context *ctx = virt->network->ctx;
 	struct lsdn_net_ops *ops = virt->network->settings->ops;
-	if (!virt->committed_to)
+	if (!virt->connected_through)
 		ret_err(ctx, LSDNE_NOIF);
-	struct lsdn_phys *phys = virt->committed_to->phys;
+	struct lsdn_phys *phys = virt->connected_through->phys;
 	struct lsdn_if phys_if = {0};
 	lsdn_err_t ret;
 	if (phys && phys->attr_iface) {
@@ -577,7 +577,7 @@ lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *m
 	} else {
 		ret_err(ctx, LSDNE_NOIF);
 	}
-	*mtu -= ops->compute_tunneling_overhead(virt->committed_to);
+	*mtu -= ops->compute_tunneling_overhead(virt->connected_through);
 	ret_err(ctx, LSDNE_OK);
 }
 
