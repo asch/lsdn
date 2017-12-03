@@ -35,6 +35,47 @@
 #include <libdaemon/dpid.h>
 #include <libdaemon/dexec.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#include <tcl.h>
+#include "../lsctl/lsext.h"
+
+#define LISTEN_BACKLOG 10
+
+// TODO: Make it nicer, join with get_unix_socket
+const char *get_socket_path()
+{
+	static char fn[256] = { 0 };
+	static char buf[128];
+	getcwd(buf, sizeof(buf));
+	if (fn[0] == 0) {
+		snprintf(fn, sizeof(fn), "%s/%s.socket", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown");
+	}
+	return fn;
+}
+
+int get_unix_socket()
+{
+	// TODO do it properly
+	unlink(get_socket_path());
+
+	struct sockaddr_un server_addr;
+
+	memset(&server_addr, 0, sizeof(server_addr));
+	server_addr.sun_family = AF_UNIX;
+	strncpy(server_addr.sun_path, get_socket_path(), sizeof(server_addr.sun_path) - 1);
+
+	int s = socket(AF_UNIX, SOCK_STREAM, 0);
+
+	if (bind(s, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un)) != 0)
+		return -1;
+	listen(s, LISTEN_BACKLOG);
+
+	return s;
+}
+
 const char *get_name()
 {
 	static char fn[256] = { 0 };
@@ -93,36 +134,36 @@ int main(int argc, char *argv[]) {
     }
 
     /* Do the fork */
-    if ((pid = daemon_fork()) < 0) {
-
-        /* Exit on error */
-        daemon_retval_done();
-        return 1;
-
-    } else if (pid) { /* The parent */
-        int ret;
-
-        /* Wait for 20 seconds for the return value passed from the daemon process */
-        if ((ret = daemon_retval_wait(20)) < 0) {
-            daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
-            return 255;
-        }
-
-        daemon_log(ret != 0 ? LOG_ERR : LOG_INFO, "Daemon returned %i as return value.", ret);
-        return ret;
-
-    } else { /* The daemon */
+//    if ((pid = daemon_fork()) < 0) {
+//
+//        /* Exit on error */
+//        daemon_retval_done();
+//        return 1;
+//
+//    } else if (pid) { /* The parent */
+//        int ret;
+//
+//        /* Wait for 20 seconds for the return value passed from the daemon process */
+//        if ((ret = daemon_retval_wait(20)) < 0) {
+//            daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
+//            return 255;
+//        }
+//
+//        daemon_log(ret != 0 ? LOG_ERR : LOG_INFO, "Daemon returned %i as return value.", ret);
+//        return ret;
+//
+//    } else { /* The daemon */
         int fd, quit = 0;
         fd_set fds;
 
         /* Close FDs */
-        if (daemon_close_all(-1) < 0) {
-            daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
-
-            /* Send the error condition to the parent process */
-            daemon_retval_send(1);
-            goto finish;
-        }
+//        if (daemon_close_all(-1) < 0) {
+//            daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
+//
+//            /* Send the error condition to the parent process */
+//            daemon_retval_send(1);
+//            goto finish;
+//        }
 
         /* Create the PID file */
         if (daemon_pid_file_create() < 0) {
@@ -150,7 +191,11 @@ int main(int argc, char *argv[]) {
         /* Prepare for select() on the signal fd */
         FD_ZERO(&fds);
         fd = daemon_signal_fd();
+		int fd2 = get_unix_socket();
         FD_SET(fd, &fds);
+        FD_SET(fd2, &fds);
+
+		/* Get socket for communication with client */
 
         while (!quit) {
             fd_set fds2 = fds;
@@ -191,7 +236,54 @@ int main(int argc, char *argv[]) {
                         break;
 
                 }
-            }
+            } else if (FD_ISSET(fd2, &fds2)) {
+				struct sockaddr_un client_addr;
+				socklen_t client_addr_size = sizeof(struct sockaddr_un);
+				int fdc = accept(fd2, (struct sockaddr *) &client_addr, &client_addr_size);
+				char buf[1024];
+				ssize_t n = read(fdc, buf, 1024);
+
+				int ret;
+				int exitcode = 0;
+				Tcl_FindExecutable(argv[0]);
+				Tcl_Interp* interp = Tcl_CreateInterp();
+				if (Tcl_Init(interp) != TCL_OK)
+					return 1;
+
+				register_lsdn_tcl(interp);
+				printf("lsdn commands registered\n");
+
+				/* process remaining arguments (taken from expect) */
+				//char argc_rep[20];
+				//snprintf(argc_rep, sizeof(argc_rep), "%d", argc - 1);
+				//Tcl_SetVar(interp, "argc", argc_rep, 0);
+				//Tcl_SetVar(interp, "argv0", argv[1] ,0);
+				//char *tcl_argv = Tcl_Merge(argc - 1, argv + 1);
+				//Tcl_SetVar(interp,"argv", tcl_argv, 0);
+				//Tcl_Free(tcl_argv);
+
+
+				//if( (ret = Tcl_EvalFile(interp, argv[1])) ) {
+				if( (ret = Tcl_Eval(interp, buf)) != TCL_OK ) {
+					Tcl_Obj *options = Tcl_GetReturnOptions(interp, ret);
+					Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+					Tcl_Obj *stackTrace;
+					Tcl_IncrRefCount(key);
+					Tcl_DictObjGet(NULL, options, key, &stackTrace);
+					Tcl_DecrRefCount(key);
+					fprintf(stderr, "error: %s\n", Tcl_GetString(stackTrace));
+					Tcl_DecrRefCount(options);
+					exitcode = 1;
+				}
+
+				Tcl_Finalize();
+				
+				//printf("Testing\n");
+
+				daemon_log(LOG_INFO, "Exit code = %d", exitcode);
+				//write(fdc, "Closing...", 10);
+				close(fdc);
+			}
         }
 
         /* Do a cleanup */
@@ -203,4 +295,4 @@ finish:
 
         return 0;
     }
-}
+//}
