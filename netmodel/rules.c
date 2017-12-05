@@ -480,7 +480,7 @@ lsdn_err_t lsdn_ruleset_add(struct lsdn_ruleset_prio *prio, struct lsdn_rule *ru
 			/* there is no need to free `fl`, we won't be here if it is newly allocated */
 			return LSDNE_DUPLICATE;
 		}
-		if (r->subprio >= rule->subprio)
+		if (r->subprio > rule->subprio)
 			break;
 		nearest_lower = &r->sources_entry;
 	}
