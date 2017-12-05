@@ -308,14 +308,13 @@ static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset
 	struct lsdn_filter *filter = lsdn_filter_flower_init(
 		ruleset->iface->ifindex, fl->fl_handle, ruleset->parent_handle,
 		ruleset->chain, prio->prio + ruleset->prio_start);
+	if (!filter)
+		return LSDNE_NOMEM;
+
 	if (update)
 		lsdn_filter_set_update(filter);
 
 	lsdn_log(LSDNL_RULES, "fl_%s(handle=0x%x)\n", update ? "update" : "create", fl->fl_handle);
-
-	if (!filter) {
-		return LSDNE_NETLINK;
-	}
 
 	uint16_t ethtype;
 	if (!find_common_ethtype(fl, prio, &ethtype))
