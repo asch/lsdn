@@ -17,7 +17,7 @@
 #define IPv6_HEADER_LEN 40
 
 /** Calculate tunneling overhead for VXLAN networks.
- * Basis for VXLAN variants of `lsdn_net_ops.calculate_tunneling_overhead`.
+ * Basis for VXLAN variants of `lsdn_net_ops.compute_tunneling_overhead`.
  *
  * Returns different results based on whether the network is IPv4 or IPv6,
  * because of different IP header sizes. */
@@ -58,7 +58,7 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 }
 
 /** Calculate tunneling overhead for VXLAN-multicast network.
- * Implements `lsdn_net_ops.calculate_tunneling_overhead`. */
+ * Implements `lsdn_net_ops.compute_tunneling_overhead`. */
 static unsigned int vxlan_mcast_tunneling_overhead(struct lsdn_phys_attachment *pa)
 {
 	struct lsdn_settings *s = pa->net->settings;
@@ -177,7 +177,7 @@ static void vxlan_e2e_validate_pa(struct lsdn_phys_attachment *a)
 }
 
 /** Calculate tunneling overhead for VXLAN-e2e network.
- * Implements `lsdn_net_ops.calculate_tunneling_overhead`. */
+ * Implements `lsdn_net_ops.compute_tunneling_overhead`. */
 static unsigned int vxlan_e2e_tunneling_overhead(struct lsdn_phys_attachment *pa)
 {
 	enum lsdn_ipv ipv = pa->phys->attr_ip->v;
@@ -400,8 +400,8 @@ static void vxlan_static_validate_virt(struct lsdn_virt *virt)
 			LSDNS_END);
 }
 
-/** Calculate tunneling overhead for VXLAN-multicast network.
- * Implements `lsdn_net_ops.calculate_tunneling_overhead`. */
+/** Calculate tunneling overhead for VXLAN-static network.
+ * Implements `lsdn_net_ops.compute_tunneling_overhead`. */
 static unsigned int vxlan_static_tunneling_overhead(struct lsdn_phys_attachment *pa)
 {
 	enum lsdn_ipv ipv = pa->phys->attr_ip->v;
