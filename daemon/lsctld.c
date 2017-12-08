@@ -195,7 +195,15 @@ int main(int argc, char *argv[]) {
         FD_SET(fd, &fds);
         FD_SET(fd2, &fds);
 
-		/* Get socket for communication with client */
+		int ret;
+		int exitcode = 0;
+		Tcl_FindExecutable(argv[0]);
+		Tcl_Interp* interp = Tcl_CreateInterp();
+		if (Tcl_Init(interp) != TCL_OK)
+			return 1;
+
+		register_lsdn_tcl(interp);
+		printf("lsdn commands registered\n");
 
         while (!quit) {
             fd_set fds2 = fds;
@@ -243,27 +251,6 @@ int main(int argc, char *argv[]) {
 				char buf[1024];
 				ssize_t n = read(fdc, buf, 1024);
 
-				int ret;
-				int exitcode = 0;
-				Tcl_FindExecutable(argv[0]);
-				Tcl_Interp* interp = Tcl_CreateInterp();
-				if (Tcl_Init(interp) != TCL_OK)
-					return 1;
-
-				register_lsdn_tcl(interp);
-				printf("lsdn commands registered\n");
-
-				/* process remaining arguments (taken from expect) */
-				//char argc_rep[20];
-				//snprintf(argc_rep, sizeof(argc_rep), "%d", argc - 1);
-				//Tcl_SetVar(interp, "argc", argc_rep, 0);
-				//Tcl_SetVar(interp, "argv0", argv[1] ,0);
-				//char *tcl_argv = Tcl_Merge(argc - 1, argv + 1);
-				//Tcl_SetVar(interp,"argv", tcl_argv, 0);
-				//Tcl_Free(tcl_argv);
-
-
-				//if( (ret = Tcl_EvalFile(interp, argv[1])) ) {
 				if( (ret = Tcl_Eval(interp, buf)) != TCL_OK ) {
 					Tcl_Obj *options = Tcl_GetReturnOptions(interp, ret);
 					Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
@@ -276,17 +263,14 @@ int main(int argc, char *argv[]) {
 					exitcode = 1;
 				}
 
-				Tcl_Finalize();
-				
-				//printf("Testing\n");
-
 				daemon_log(LOG_INFO, "Exit code = %d", exitcode);
 				//write(fdc, "Closing...", 10);
 				close(fdc);
 			}
         }
 
-        /* Do a cleanup */
+		/* Do a cleanup */
+		Tcl_Finalize();
 finish:
         daemon_log(LOG_INFO, "Exiting...");
         daemon_retval_send(255);
