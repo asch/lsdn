@@ -251,11 +251,31 @@ CMD(settings_vxlan_static)
 	return settings_common(interp, settings, name);
 }
 
+CMD(settings_geneve)
+{
+	int port = 6081;
+	const char *name = NULL;
+	const Tcl_ArgvInfo opts[] = {
+		{TCL_ARGV_INT, "-port", NULL, &port},
+		{TCL_ARGV_STRING, "-name", NULL, &name},
+		{TCL_ARGV_END}
+	};
+	argc--; argv++;
+
+	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
+		return TCL_ERROR;
+
+	struct lsdn_settings * settings = lsdn_settings_new_geneve(ctx->lsctx, port);
+	return settings_common(interp, settings, name);
+}
+
 CMD(settings)
 {
 	int type;
-	static const char *type_names[] = {"direct", "vlan", "vxlan/mcast", "vxlan/static", "vxlan/e2e", NULL};
-	enum types {T_DIRECT, T_VLAN, T_VXLAN_MCAST, T_VXLAN_STATIC, T_VXLAN_E2E};
+	static const char *type_names[] = {
+		"direct", "vlan", "vxlan/mcast", "vxlan/static", "vxlan/e2e", "geneve", NULL};
+	enum types {
+		T_DIRECT, T_VLAN, T_VXLAN_MCAST, T_VXLAN_STATIC, T_VXLAN_E2E, T_GENEVE};
 
 	if(argc < 2) {
 		Tcl_WrongNumArgs(interp, 1, argv, "type");
@@ -279,6 +299,8 @@ CMD(settings)
 			return tcl_settings_vxlan_static(ctx, interp, argc, argv);
 		case T_VXLAN_E2E:
 			return tcl_settings_vxlan_e2e(ctx, interp, argc, argv);
+		case T_GENEVE:
+			return tcl_settings_geneve(ctx, interp, argc, argv);
 		default: abort();
 	}
 
