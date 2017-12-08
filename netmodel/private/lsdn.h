@@ -92,6 +92,13 @@ struct lsdn_settings {
 				} e2e_static;
 			};
 		} vxlan;
+		struct{
+			uint16_t port;
+			size_t refcount;
+			struct lsdn_if tunnel;
+			struct lsdn_sbridge_phys_if tunnel_sbridge;
+			struct lsdn_ruleset ruleset_in;
+		} geneve;
 	};
 
 	struct lsdn_user_hooks *user_hooks;

@@ -84,6 +84,8 @@ test_parts(vxlan_static dhcp)
 test_parts(vxlan_static cfirewall)
 test_parts(vxlan_static firewall)
 
+test_parts(geneve cbasic ping)
+
 if(LARGE_TESTS)
 test_parts(vxlan_static large ping)
 test_parts(vxlan_static large cleanup)
