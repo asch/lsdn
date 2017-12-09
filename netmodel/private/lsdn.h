@@ -13,7 +13,7 @@
 #include "state.h"
 
 struct lsdn_context{
-	/** Context name. Determines the prefix for interfaces created in the context. */
+	/** Context name. Determines the prefix for objects created in the context. */
 	char* name;
 	/** Out-of-memory callback. */
 	lsdn_nomem_cb nomem_cb;
@@ -58,13 +58,13 @@ struct lsdn_context{
 	 * so the networks stop working. */
 	bool disable_decommit;
 
-	/** Number of generated interfaces.
-	 * Used to assign unique names to generated interfaces. */
-	int ifcount;
+	/** Number of created LSDN objects.
+	 * Used to assign unique names to created objects. */
+	int obj_count;
 
 	/** Name buffer.
-	 * Space for rendering unique interface names. */
-	char namebuf[IF_NAMESIZE + 1];
+	 * Space for rendering unique LSDN object names. */
+	char namebuf[64 + 1];
 };
 
 struct lsdn_settings {

@@ -5,11 +5,11 @@
 #include "../include/lsdn.h"
 #include "lsdn.h"
 
-const char *lsdn_mk_ifname(struct lsdn_context* ctx);
 lsdn_err_t lsdn_prepare_rulesets(
 	struct lsdn_context *ctx, struct lsdn_if *iface,
 	struct lsdn_ruleset* in, struct lsdn_ruleset* out);
-void lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx);
+lsdn_err_t lsdn_settings_init_common(
+	struct lsdn_settings *settings, struct lsdn_context *ctx);
 
 /** Per-local PA view of a remote PA. TODO
  * This structure exists for each combination

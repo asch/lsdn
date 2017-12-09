@@ -47,7 +47,12 @@ struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx)
 	struct lsdn_settings *s = malloc(sizeof(*s));
 	if(!s)
 		ret_ptr(ctx, NULL);
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->ops = &lsdn_net_direct_ops;
 	s->nettype = LSDN_NET_DIRECT;
 	s->switch_type = LSDN_LEARNING;

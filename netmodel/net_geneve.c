@@ -17,7 +17,7 @@ static void geneve_use_stunnel(struct lsdn_phys_attachment *a)
 	struct lsdn_ruleset *rules_in = &s->geneve.ruleset_in;
 	if (s->geneve.refcount++ == 0) {
 		err = lsdn_link_geneve_create(
-			ctx->nlsock, tunnel, lsdn_mk_ifname(ctx), s->geneve.port, true);
+			ctx->nlsock, tunnel, lsdn_mk_iface_name(ctx), s->geneve.port, true);
 		if (err != LSDNE_OK)
 			abort();
 
@@ -149,7 +149,12 @@ struct lsdn_settings *lsdn_settings_new_geneve(struct lsdn_context *ctx, uint16_
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->switch_type = LSDN_STATIC_E2E;
 	s->nettype = LSDN_NET_GENEVE;
 	s->ops = &lsdn_net_geneve_ops;

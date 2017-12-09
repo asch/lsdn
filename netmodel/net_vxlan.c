@@ -44,7 +44,7 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 		a->net->ctx->nlsock,
 		&a->tunnel_if,
 		a->phys->attr_iface,
-		lsdn_mk_ifname(a->net->ctx),
+		lsdn_mk_iface_name(a->net->ctx),
 		&s->vxlan.mcast.mcast_ip,
 		a->net->vnet_id,
 		s->vxlan.port,
@@ -89,7 +89,12 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->ops = &lsdn_net_vxlan_mcast_ops;
 	s->nettype = LSDN_NET_VXLAN;
 	s->switch_type = LSDN_LEARNING;
@@ -114,7 +119,7 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 		a->net->ctx->nlsock,
 		&a->tunnel_if,
 		a->phys->attr_iface,
-		lsdn_mk_ifname(a->net->ctx),
+		lsdn_mk_iface_name(a->net->ctx),
 		NULL,
 		a->net->vnet_id,
 		a->net->settings->vxlan.port,
@@ -207,7 +212,12 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->ops = &lsdn_net_vxlan_e2e_ops;
 	s->nettype = LSDN_NET_VXLAN;
 	s->switch_type = LSDN_LEARNING_E2E;
@@ -237,7 +247,7 @@ static void vxlan_use_stunnel(struct lsdn_phys_attachment *a)
 			ctx->nlsock,
 			tunnel,
 			NULL,
-			lsdn_mk_ifname(ctx),
+			lsdn_mk_iface_name(ctx),
 			NULL,
 			0,
 			s->vxlan.port,
@@ -431,7 +441,12 @@ struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, u
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->switch_type = LSDN_STATIC_E2E;
 	s->nettype = LSDN_NET_VXLAN;
 	s->ops = &lsdn_net_vxlan_static_ops;

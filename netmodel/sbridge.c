@@ -93,7 +93,7 @@ void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
 {
 	struct lsdn_if sbridge_if;
 	lsdn_if_init(&sbridge_if);
-	lsdn_err_t err = lsdn_link_dummy_create(ctx->nlsock, &sbridge_if, lsdn_mk_ifname(ctx));
+	lsdn_err_t err = lsdn_link_dummy_create(ctx->nlsock, &sbridge_if, lsdn_mk_iface_name(ctx));
 	if (err != LSDNE_OK)
 		abort();
 

@@ -173,3 +173,20 @@ LSDN_DECLARE_ATTR(virt, mac, lsdn_mac_t);
 
 lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
+
+/** Make a unique lsdn name.
+ * Creates a new name for a given context. The name is in the form
+ * `"ctxname-type-12"`, where "ctxname" is `name` for the context, type is
+ * the name of the type of object being created and "12" is the number of
+ * already created names.
+ * The generated name is stored in `namebuf` field of `ctx`, so repeated calls
+ * to `lsdn_mk_ifname` overwrite it. You should make a private copy if you need it.
+ * @param ctx LSDN context.
+ * @return Pointer to the name string. */
+const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type);
+
+#define lsdn_mk_net_name(ctx) lsdn_mk_name(ctx, "net")
+#define lsdn_mk_phys_name(ctx) lsdn_mk_name(ctx, "phys")
+#define lsdn_mk_virt_name(ctx) lsdn_mk_name(ctx, "virt")
+#define lsdn_mk_iface_name(ctx) lsdn_mk_name(ctx, "iface")
+#define lsdn_mk_settings_name(ctx) lsdn_mk_name(ctx, "settings")

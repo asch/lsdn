@@ -7,6 +7,7 @@ option(BUILD_SHARED_LIBS "Build lsdn library as shared" ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package(PkgConfig)
 find_package(Uthash REQUIRED)
+find_package(jsonc REQUIRED)
 pkg_check_modules(MNL libmnl REQUIRED)
 pkg_check_modules(LIBVIRT libvirt)
 

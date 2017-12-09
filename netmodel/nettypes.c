@@ -40,7 +40,7 @@ static lsdn_err_t parse_octet(const char ** ascii, uint8_t *dst)
 /** Parse MAC address string into `lsdn_mac`. */
 lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii)
 {
-	for (int i = 0; i<6; i++) {
+	for (int i = 0; i < LSDN_MAC_LEN; i++) {
 		if (parse_octet(&ascii, &mac->bytes[i]) != LSDNE_OK)
 			return LSDNE_PARSE;
 
@@ -55,7 +55,7 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii)
 /** Compare two `lsdn_mac_t` for equality. */
 bool lsdn_mac_eq(lsdn_mac_t a, lsdn_mac_t b)
 {
-	return memcmp(a.bytes, b.bytes, 6) == 0;
+	return memcmp(a.bytes, b.bytes, LSDN_MAC_LEN) == 0;
 }
 
 /** Parse IP address string into `lsdn_ip`. */
@@ -75,13 +75,13 @@ lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii)
 /** Compare two `lsdn_ipv4` for equality. */
 static bool lsdn_ipv4_eq(lsdn_ipv4_t a, lsdn_ipv4_t b)
 {
-	return memcmp(a.bytes, b.bytes, 4) == 0;
+	return memcmp(a.bytes, b.bytes, LSDN_IPv4_LEN) == 0;
 }
 
 /** Compare two `lsdn_ipv6` for equality. */
 static bool lsdn_ipv6_eq(lsdn_ipv6_t a, lsdn_ipv6_t b)
 {
-	return memcmp(a.bytes, b.bytes, 16) == 0;
+	return memcmp(a.bytes, b.bytes, LSDN_IPv6_LEN) == 0;
 }
 
 /** Compare two `lsdn_ip` for equality. */
