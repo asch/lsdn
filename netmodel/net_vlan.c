@@ -34,6 +34,7 @@ static unsigned int vlan_tunneling_overhead(struct lsdn_phys_attachment *pa)
  * Adding and removing local virts entails adding to the local Linux Bridge,
  * so we are using functions from `lbridge.c`. */
 static struct lsdn_net_ops lsdn_net_vlan_ops = {
+	.type = "vlan",
 	.create_pa = vlan_create_pa,
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,

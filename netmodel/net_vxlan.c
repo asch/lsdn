@@ -29,6 +29,16 @@ static unsigned int vxlan_tunneling_overhead(enum lsdn_ipv ipv)
 		return ETHERNET_FRAME_LEN + IPv6_HEADER_LEN + UDP_HEADER_LEN + VXLAN_HEADER_LEN;
 }
 
+static uint16_t vxlan_get_port(struct lsdn_settings *s)
+{
+	return s->vxlan.port;
+}
+
+static lsdn_ip_t vxlan_mcast_get_ip(struct lsdn_settings *s)
+{
+	return s->vxlan.mcast.mcast_ip;
+}
+
 /** \name Multicast VXLAN network.
  * This should describe what is mcast TODO. */
 /** @{ */
@@ -69,6 +79,9 @@ static unsigned int vxlan_mcast_tunneling_overhead(struct lsdn_phys_attachment *
 /** Callbacks for VXLAN-multicast network.
  * Reuses network functions from `lbridge.c`. */
 struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
+	.type = "vxlan/mcast",
+	.get_port = vxlan_get_port,
+	.get_ip = vxlan_mcast_get_ip,
 	.create_pa = vxlan_mcast_create_pa,
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
@@ -194,6 +207,8 @@ static unsigned int vxlan_e2e_tunneling_overhead(struct lsdn_phys_attachment *pa
  * and for tearing down the network. Adding remote physes is implemented
  * specifically for VXLAN-e2e. */
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
+	.type = "vxlan/e2e",
+	.get_port = vxlan_get_port,
 	.create_pa = vxlan_e2e_create_pa,
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
@@ -420,6 +435,8 @@ static unsigned int vxlan_static_tunneling_overhead(struct lsdn_phys_attachment 
 
 /** Callbacks for VXLAN-static network. */
 struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
+	.type = "vxlan/static",
+	.get_port = vxlan_get_port,
 	.create_pa = vxlan_static_create_pa,
 	.destroy_pa = vxlan_static_destroy_pa,
 	.add_virt = vxlan_static_add_virt,

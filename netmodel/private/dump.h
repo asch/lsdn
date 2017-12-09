@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../private/lsdn.h"
+#include "../private/net.h"
 
 /** Dump the internal LSDN network model in JSON format.
 */

@@ -130,7 +130,14 @@ static void geneve_remove_remote_virt(struct lsdn_remote_virt *virt)
 	lsdn_sbridge_remove_mac(&virt->sbridge_mac);
 }
 
+static uint16_t geneve_get_port(struct lsdn_settings *s)
+{
+	return s->geneve.port;
+}
+
 struct lsdn_net_ops lsdn_net_geneve_ops = {
+	.type = "geneve",
+	.get_port = geneve_get_port,
 	.create_pa = geneve_create_pa,
 	.destroy_pa = geneve_destroy_pa,
 	.add_virt = geneve_add_virt,

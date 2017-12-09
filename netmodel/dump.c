@@ -9,39 +9,15 @@ static struct json_object *jsonify_lsdn_settings(struct lsdn_settings *s)
 	char ip[LSDN_IP_STRING_LEN + 1];
 
 	json_object_object_add(jobj_settings, "settingsName", json_object_new_string(s->name.str));
-
-	struct json_object *jobj_nettype;
-	switch (s->nettype) {
-	case LSDN_NET_DIRECT:
-		jobj_nettype = json_object_new_string("direct");
-		break;
-	case LSDN_NET_GENEVE:
-		jobj_nettype = json_object_new_string("geneve");
-		json_object_object_add(jobj_settings, "port", json_object_new_int(s->geneve.port));
-		break;
-	case LSDN_NET_VLAN:
-		jobj_nettype = json_object_new_string("vlan");
-		break;
-	case LSDN_NET_VXLAN:
-		switch (s->switch_type) {
-		case LSDN_LEARNING:
-			jobj_nettype = json_object_new_string("vxlan/mcast");
-			lsdn_ip_to_string(&s->vxlan.mcast.mcast_ip, ip);
-			struct json_object *jobj_mcastIp = json_object_new_string(ip);
-			json_object_object_add(jobj_settings, "mcastIp", jobj_mcastIp);
-			break;
-		case LSDN_LEARNING_E2E:
-			jobj_nettype = json_object_new_string("vxlan/e2e");
-			break;
-		case LSDN_STATIC_E2E:
-			jobj_nettype = json_object_new_string("vxlan/static");
-			break;
-		}
-		json_object_object_add(jobj_settings, "port", json_object_new_int(s->vxlan.port));
-		break;
+	json_object_object_add(jobj_settings, "settingsType", json_object_new_string(s->ops->type));
+	if (s->ops->get_port)
+		json_object_object_add(jobj_settings, "port", json_object_new_int(s->ops->get_port(s)));
+	if (s->ops->get_ip) {
+		lsdn_ip_t ip_addr = s->ops->get_ip(s);
+		lsdn_ip_to_string(&ip_addr, ip);
+		struct json_object *jobj_ip = json_object_new_string(ip);
+		json_object_object_add(jobj_settings, "ip", jobj_ip);
 	}
-	json_object_object_add(jobj_settings, "settingsType", jobj_nettype);
-
 	// TODO add settings rules
 
 	return jobj_settings;

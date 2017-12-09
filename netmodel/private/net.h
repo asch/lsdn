@@ -43,6 +43,15 @@ struct lsdn_remote_virt {
  * The documentation at each callback should be taken as a hint as to what actions
  * you might want to take, in order to make the network work. */
 struct lsdn_net_ops {
+	/** Get network tunnel type. */
+	char *type;
+
+	/** Get network tunnel port. */
+	uint16_t (*get_port) (struct lsdn_settings *s);
+
+	/** Get network ip address. */
+	lsdn_ip_t (*get_ip) (struct lsdn_settings *s);
+
 	/** Create a local phys attachment.
 	 * Called when the local machine connects to a network.
 	 *
