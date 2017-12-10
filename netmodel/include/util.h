@@ -45,7 +45,7 @@
 #define LSDN_ENUM(name, prefix) \
 enum lsdn_ ## name { \
 	lsdn_enumgen_ ## name (_LSDN_DUMP_ENUM) \
-	/** Guard value. See \ref LSDN_ENUM for details. */ \
+	/** Guard value. See #LSDN_ENUM for details. */ \
 	prefix ## _COUNT \
 };
 

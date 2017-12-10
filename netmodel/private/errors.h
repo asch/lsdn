@@ -7,7 +7,7 @@
 #include "lsdn.h"
 
 /** Return error code and/or call OoM callback.
- * Checks if the error is \ref LSDNE_NOMEM and invokes `lsdn_context.nomem_cb`
+ * Checks if the error is #LSDNE_NOMEM and invokes `lsdn_context.nomem_cb`
  * if specified. Then it returns the error. */
 static inline lsdn_err_t ret_err(struct lsdn_context *ctx, lsdn_err_t err)
 {
