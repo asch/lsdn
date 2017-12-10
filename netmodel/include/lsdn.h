@@ -1,13 +1,18 @@
 /** \file
  * Main LSDN header file.
- * Contains definitions of structs and enums, and most of the API functions.
- */
+ * Contains definitions of structs and enums, and most of the API functions. */
 #pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
 #include "nettypes.h"
 
+/** Attribute generator.
+ * Declares a setter, getter and a "clearer" functions for attribute `name` of type `type.
+ * This is used to simplify creating accessors for attributes.
+ * @param obj type on which the attribute is declared
+ * @param name name of the attribute field
+ * @param type type of the attribute field */
 #define LSDN_DECLARE_ATTR(obj, name, type) \
 	lsdn_err_t lsdn_##obj##_set_##name(struct lsdn_##obj *obj, type value); \
 	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *obj); \
@@ -19,10 +24,22 @@ struct lsdn_phys;
 
 typedef void (*lsdn_nomem_cb)(void *user);
 
+/** User callback hooks.
+ * Configured as part of `lsdn_settings`, this structure holds the callback hooks for startup
+ * and shutdown, and their custom data. */
 struct lsdn_user_hooks {
+	/** Startup hook.
+	 * Called at commit time for every local phys and every network it's attached to.
+	 * @param net network.
+	 * @param phys attached phys.
+	 * @param user receives the value of `lsdn_startup_hook_user`. */
 	void (*lsdn_startup_hook)(struct lsdn_net *net, struct lsdn_phys *phys, void *user);
+	/** Custom value for `lsdn_startup_hook`. */
 	void *lsdn_startup_hook_user;
+	/** Shutdown hook.
+	 * Currently unused. TODO. */
 	void (*lsdn_shutdown_hook)(struct lsdn_net *net, struct lsdn_phys *phys, void *user);
+	/** Custom value for `lsdn_shutdown_hook`. */
 	void *lsdn_shutdown_hook_user;
 };
 
@@ -34,8 +51,7 @@ struct lsdn_user_hooks {
  * The same structures (lsdn_phys, lsdn_virt) are used to describe both remote objects
  * and objects running on other machines. This allows the orchestrator to make the same API calls
  * on all physical machines to construct the network topology. The only difference between the
- * API calls on the physical machines will be the lsdn_phys_claim_local calls.
- */
+ * API calls on the physical machines will be the lsdn_phys_claim_local calls. */
 struct lsdn_context;
 
 struct lsdn_context *lsdn_context_new(const char* name);
@@ -47,7 +63,7 @@ void lsdn_context_cleanup(struct lsdn_context *ctx, lsdn_problem_cb cb, void *us
 
 /** Type of network encapsulation. */
 enum lsdn_nettype{
-	/** VxLAN encapsulation. */
+	/** VXLAN encapsulation. */
 	LSDN_NET_VXLAN,
 	/** VLAN encapsulation. */
 	LSDN_NET_VLAN,
@@ -58,32 +74,27 @@ enum lsdn_nettype{
 /** Switch type for the virtual network. */
 enum lsdn_switch{
 	/** Learning switch with single tunnel shared from the phys.
-	 * The network is essentially autoconfiguring in this mode.
-	 */
+	 * The network is essentially autoconfiguring in this mode. */
 	LSDN_LEARNING,
 	/** Learning switch with a tunnel for each connected endpoint.
-	 * In this mode the connection information (IP addr) for each physical node is required.
-	 */
+	 * In this mode the connection information (IP addr) for each physical node is required. */
 	LSDN_LEARNING_E2E,
 	/** Static switching with a tunnel for each connected endpoint.
 	 * In this mode we need the connection information + MAC addresses of all virts and where
 	 * they reside.
 	 *
 	 * @note the endpoint is represented by a single linux interface,
-	 * with the actual endpoint being selected by tc actions.
-	 */
+	 * with the actual endpoint being selected by tc actions. */
 	LSDN_STATIC_E2E
 
 	/* LSDN_STATIC does not exists, because it does not make much sense ATM. It would have
 	 * static rules for the switching at local level, but it would go out through a single
-	 * interface to be switched by some sort of learning switch. May be added if it appears.
-	 */
+	 * interface to be switched by some sort of learning switch. May be added if it appears. */
 };
 
 /** Configuration structure for `lsdn_net`.
  * Multiple networks can share the same settings (e.g. vxlan with static routing on port 1234)
- * and only differ by their identifier (vlan id, vni ...).
- */
+ * and only differ by their identifier (vlan id, vni ...). */
 struct lsdn_settings;
 
 struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx);
@@ -104,8 +115,7 @@ struct lsdn_settings *lsdn_settings_by_name(struct lsdn_context *ctx, const char
  *
  * Networks are defined by two main characteristics:
  *  - the tunnel used to overlay the network over physical topology (transparent to end users)
- *  - the switching methods used (visible to end users)
- */
+ *  - the switching methods used (visible to end users) */
 struct lsdn_net;
 
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
@@ -118,8 +128,7 @@ void lsdn_net_free(struct lsdn_net *net);
 /** Physical host connection representation.
  * Represents a kernel interface for a node, e.g., eth0 on lsdn1.
  * Physical interfaces are used to connect to virtual networks. This connection is called
- * `lsdn_phys_attachement`.
- */
+ * `lsdn_phys_attachement`. */
 struct lsdn_phys;
 
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx);
@@ -138,8 +147,7 @@ LSDN_DECLARE_ATTR(phys, iface, const char*);
 
 /** Physical interface attachment.
  * A point of connection to a virtual network through a physical interface.
- * Only a single attachment may exist for a pair of `lsdn_phys` and `lsdn_net`.
- */
+ * Only a single attachment may exist for a pair of `lsdn_phys` and `lsdn_net`. */
 struct lsdn_phys_attachment;
 
 
@@ -148,8 +156,7 @@ struct lsdn_phys_attachment;
  *
  * Virtual machines participate in virtual networks (through phys_attachments on the host machine
  * connection). They can be migrated between the physical machines by connecting them through
- * different lsdn_phys.
- */
+ * different `lsdn_phys`. */
 struct lsdn_virt;
 
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net);
@@ -162,8 +169,7 @@ lsdn_err_t lsdn_virt_connect(
 void lsdn_virt_disconnect(struct lsdn_virt *virt);
 /** Get a recommanded MTU for a given virt.
  * The MTU is based on the current state and connection port of the virt (it is not based on the
- * committed stated). The phys interface must already exist.
- */
+ * committed stated). The phys interface must already exist. */
 lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu);
 
 LSDN_DECLARE_ATTR(virt, mac, lsdn_mac_t);
