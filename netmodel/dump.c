@@ -1,3 +1,4 @@
+#include <string.h>
 #include <json.h>
 
 #include "private/dump.h"
@@ -85,10 +86,9 @@ static struct json_object *jsonify_lsdn_net(struct lsdn_net *net)
 	return jobj_net;
 }
 
-const char *lsdn_dump_context_json(struct lsdn_context *ctx)
+char *lsdn_dump_context_json(struct lsdn_context *ctx)
 {
 	// TODO handle OOM errors
-	// TODO release json objects
 	struct json_object *jobj = json_object_new_object();
 
 	json_object_object_add(jobj, "lsdnName", json_object_new_string(ctx->name));
@@ -114,7 +114,12 @@ const char *lsdn_dump_context_json(struct lsdn_context *ctx)
 	}
 	json_object_object_add(jobj, "lsdnNets", jarr_nets);
 
-	return json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);
+	const char *str = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);
+	char *dup = strdup(str);
+
+	json_object_put(jobj);
+
+	return dup;
 }
 
 struct lsdn_context *lsdn_load_context_json(const char *str)

@@ -7,7 +7,7 @@
 
 /** Dump the internal LSDN network model in JSON format.
 */
-const char *lsdn_dump_context_json(struct lsdn_context *ctx);
+char *lsdn_dump_context_json(struct lsdn_context *ctx);
 
 /** Load the JSON representation of the network model
  *  into the internal LSDN model.
