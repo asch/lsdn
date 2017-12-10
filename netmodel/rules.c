@@ -24,6 +24,7 @@ static void callback_drop(struct lsdn_filter *f, uint16_t order, void *user) {
 
 struct lsdn_vr_action lsdn_vr_drop = {
 	.desc = {
+		.name = "drop",
 		.actions_count = 1,
 		.fn = callback_drop,
 		.user = NULL

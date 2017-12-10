@@ -109,26 +109,36 @@ void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf)
 			mac->bytes[3], mac->bytes[4], mac->bytes[5]);
 }
 
+void lsdn_ipv4_to_string(const lsdn_ipv4_t *ipv4, char *buf)
+{
+	sprintf(buf,
+		"%d.%d.%d.%d",
+		ipv4->bytes[0], ipv4->bytes[1],
+		ipv4->bytes[2], ipv4->bytes[3]);
+}
+
+void lsdn_ipv6_to_string(const lsdn_ipv6_t *ipv6, char *buf)
+{
+	sprintf(buf,
+		"%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
+		"%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+		ipv6->bytes[0], ipv6->bytes[1],
+		ipv6->bytes[2], ipv6->bytes[3],
+		ipv6->bytes[4], ipv6->bytes[5],
+		ipv6->bytes[6], ipv6->bytes[7],
+		ipv6->bytes[8], ipv6->bytes[9],
+		ipv6->bytes[10], ipv6->bytes[11],
+		ipv6->bytes[12], ipv6->bytes[13],
+		ipv6->bytes[14], ipv6->bytes[15]);
+}
+
 /** Format `lsdn_ip` as ASCII string. */
 void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf)
 {
 	if (ip->v == LSDN_IPv4)
-		sprintf(buf,
-			"%d.%d.%d.%d",
-			ip->v4.bytes[0], ip->v4.bytes[1],
-			ip->v4.bytes[2], ip->v4.bytes[3]);
+		lsdn_ipv4_to_string(&ip->v4, buf);
 	else
-		sprintf(buf,
-			"%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
-			"%02x%02x:%02x%02x:%02x%02x:%02x%02x",
-			ip->v6.bytes[0], ip->v6.bytes[1],
-			ip->v6.bytes[2], ip->v6.bytes[3],
-			ip->v6.bytes[4], ip->v6.bytes[5],
-			ip->v6.bytes[6], ip->v6.bytes[7],
-			ip->v6.bytes[8], ip->v6.bytes[9],
-			ip->v6.bytes[10], ip->v6.bytes[11],
-			ip->v6.bytes[12], ip->v6.bytes[13],
-			ip->v6.bytes[14], ip->v6.bytes[15]);
+		lsdn_ipv6_to_string(&ip->v6, buf);
 }
 
 static void gen_prefix(uint8_t *dst, int prefix)

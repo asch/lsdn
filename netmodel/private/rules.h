@@ -13,6 +13,7 @@
 typedef void (*lsdn_mkaction_fn)(struct lsdn_filter *filter, uint16_t order, void *user);
 /* Describes a sequence of TC actions constructed by a callback when needed */
 struct lsdn_action_desc {
+	char *name;
 	size_t actions_count;
 	/* Callback to create the actions on the filter rule */
 	lsdn_mkaction_fn fn;

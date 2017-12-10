@@ -41,23 +41,95 @@ static struct json_object *jsonify_lsdn_phys(struct lsdn_phys *p)
 	return jobj_phys;
 }
 
+static struct json_object *jsonify_lsdn_vr(struct lsdn_vr *vr)
+{
+	struct json_object *jvr_obj = json_object_new_object();
+	char mac[LSDN_MAC_STRING_LEN + 1];
+	char ip[LSDN_IP_STRING_LEN + 1];
+
+	struct json_object *jvr_arr = json_object_new_array();
+	for (size_t i = 0; i < vr->pos; i++) {
+		struct json_object *jvr = json_object_new_object();
+		const char *target = lsdn_rule_target_name(vr->targets[i]);
+		json_object_object_add(jvr, "target", json_object_new_string(target));
+
+		switch (vr->targets[i]) {
+		case LSDN_MATCH_SRC_MAC:
+		case LSDN_MATCH_DST_MAC:
+			lsdn_mac_to_string(&vr->rule.matches[i].mac, mac);
+			json_object_object_add(jvr, "match", json_object_new_string(mac));
+			lsdn_mac_to_string(&vr->masks[i].mac, mac);
+			json_object_object_add(jvr, "matchMask", json_object_new_string(mac));
+			break;
+		case LSDN_MATCH_SRC_IPV4:
+		case LSDN_MATCH_DST_IPV4:
+			lsdn_ipv4_to_string(&vr->rule.matches[i].ipv4, ip);
+			json_object_object_add(jvr, "match", json_object_new_string(ip));
+			lsdn_ipv4_to_string(&vr->masks[i].ipv4, ip);
+			json_object_object_add(jvr, "matchMask", json_object_new_string(ip));
+			break;
+		case LSDN_MATCH_SRC_IPV6:
+		case LSDN_MATCH_DST_IPV6:
+			lsdn_ipv6_to_string(&vr->rule.matches[i].ipv6, ip);
+			json_object_object_add(jvr, "match", json_object_new_string(ip));
+			lsdn_ipv6_to_string(&vr->masks[i].ipv6, ip);
+			json_object_object_add(jvr, "matchMask", json_object_new_string(ip));
+			break;
+		default:
+			break;
+		}
+		json_object_array_add(jvr_arr, jvr);
+	}
+	json_object_object_add(jvr_obj, "targets", jvr_arr);
+
+	return jvr_obj;
+}
+
+static struct json_object *jsonify_lsdn_virt_rules(struct lsdn_virt *virt)
+{
+	struct json_object *jvr_arr = json_object_new_array();
+
+	struct vr_prio *prio, *tmp;
+	HASH_ITER(hh, virt->ht_in_rules, prio, tmp) {
+		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, vr) {
+			struct json_object *jvr_obj = jsonify_lsdn_vr(vr);
+			json_object_object_add(jvr_obj, "dir", json_object_new_string("in"));
+			json_object_object_add(jvr_obj, "prio", json_object_new_int(prio->prio_num));
+			json_object_object_add(jvr_obj, "action", json_object_new_string(vr->rule.action.name));
+			json_object_array_add(jvr_arr, jvr_obj);
+		}
+	}
+	HASH_ITER(hh, virt->ht_out_rules, prio, tmp) {
+		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, vr) {
+			struct json_object *jvr_obj = jsonify_lsdn_vr(vr);
+			json_object_object_add(jvr_obj, "dir", json_object_new_string("out"));
+			json_object_object_add(jvr_obj, "prio", json_object_new_int(prio->prio_num));
+			json_object_object_add(jvr_obj, "action", json_object_new_string(vr->rule.action.name));
+			json_object_array_add(jvr_arr, jvr_obj);
+		}
+	}
+
+	return jvr_arr;
+}
+
 static struct json_object *jsonify_lsdn_virt(struct lsdn_virt *virt)
 {
 	struct json_object *jobj_virt = json_object_new_object();
-	char mac_buf[LSDN_MAC_STRING_LEN + 1];
+	char mac[LSDN_MAC_STRING_LEN + 1];
 
 	json_object_object_add(jobj_virt, "virtName", json_object_new_string(virt->name.str));
 	if (virt->attr_mac) {
-		lsdn_mac_to_string(virt->attr_mac, mac_buf);
-		json_object_object_add(jobj_virt, "attrMac", json_object_new_string(mac_buf));
+		lsdn_mac_to_string(virt->attr_mac, mac);
+		json_object_object_add(jobj_virt, "attrMac", json_object_new_string(mac));
 	}
 	if (virt->connected_through)
 		json_object_object_add(jobj_virt, "phys", json_object_new_string(
-			virt->connected_through->phys->name.str));
+					virt->connected_through->phys->name.str));
 	if (virt->connected_if.ifname)
 		json_object_object_add(jobj_virt, "iface", json_object_new_string(virt->connected_if.ifname));
 
-	// TODO add virt rules
+	struct json_object *jvirt_rules_arr = jsonify_lsdn_virt_rules(virt);
+	json_object_object_add(jobj_virt, "rules", jvirt_rules_arr);
 
 	return jobj_virt;
 }
@@ -67,7 +139,7 @@ static struct json_object *jsonify_lsdn_net(struct lsdn_net *net)
 	struct json_object *jobj_net = json_object_new_object();
 
 	json_object_object_add(jobj_net, "netName", json_object_new_string(net->name.str));
-	json_object_object_add(jobj_net, "vnetId", json_object_new_int(net->vnet_id));
+	json_object_object_add(jobj_net, "vnetId", json_object_new_int64(net->vnet_id));
 
 	struct json_object *jarr_phys_list = json_object_new_array();
 	lsdn_foreach(net->attached_list, attached_entry, struct lsdn_phys_attachment, pa) {
