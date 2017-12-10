@@ -7,6 +7,9 @@
 #include <stdbool.h>
 #include "errors.h"
 
+#define LSDN_MAC_LEN 6
+#define LSDN_IPv4_LEN 4
+#define LSDN_IPv6_LEN 16
 
 enum lsdn_ethertype_{
 	LSDN_ETHERTYPE_IPV4 = 0x0800,
@@ -23,20 +26,20 @@ enum lsdn_ipv {
 
 /** MAC address. */
 typedef union lsdn_mac {
-	uint8_t bytes[6];
-	char chr[6];
+	uint8_t bytes[LSDN_MAC_LEN];
+	char chr[LSDN_MAC_LEN];
 } lsdn_mac_t;
 
 /** IPv4 address. */
 typedef union lsdn_ipv4 {
-	uint8_t bytes[4];
-	char chr[4];
+	uint8_t bytes[LSDN_IPv4_LEN];
+	char chr[LSDN_IPv4_LEN];
 } lsdn_ipv4_t;
 
 /** IPv6 address. */
 typedef union lsdn_ipv6 {
-	uint8_t bytes[16];
-	char chr[16];
+	uint8_t bytes[LSDN_IPv6_LEN];
+	char chr[LSDN_IPv6_LEN];
 } lsdn_ipv6_t;
 
 /** IP address (any version). */
@@ -83,8 +86,14 @@ lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii);
 bool lsdn_ip_eq(lsdn_ip_t a, lsdn_ip_t b);
 bool lsdn_ipv_eq(lsdn_ip_t a, lsdn_ip_t b);
 
-/* Five colons, six octets */
-#define LSDN_MAC_STRING_LEN (5 + 6 *2)
+/* Five colons, six octets (represented in hexadecimal) */
+#define LSDN_MAC_STRING_LEN (LSDN_MAC_LEN - 1 + LSDN_MAC_LEN * 2)
+/* Three dots, four octets (represented in decimal) */
+#define LSDN_IPv4_STRING_LEN (LSDN_IPv4_LEN - 1 + LSDN_IPv4_LEN * 3)
+/* Seven colons, sixteen octets (represented in hexadecimal) */
+#define LSDN_IPv6_STRING_LEN (LSDN_IPv6_LEN / 2 - 1 + LSDN_IPv6_LEN * 2)
+#define LSDN_IP_STRING_LEN ((LSDN_IPv6_STRING_LEN) > (LSDN_IPv4_STRING_LEN) ? \
+	(LSDN_IPv6_STRING_LEN) : (LSDN_IPv4_STRING_LEN))
 
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf);
 void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf);

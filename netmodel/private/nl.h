@@ -91,6 +91,10 @@ lsdn_err_t lsdn_link_vxlan_create(struct mnl_socket *sock, struct lsdn_if* dst_i
 		lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port,
 		bool learning, bool collect_metadata, enum lsdn_ipv ipv);
 
+lsdn_err_t lsdn_link_geneve_create(
+	struct mnl_socket *sock, struct lsdn_if* dst_if,
+	const char *new_if, uint16_t port, bool collect_metadata);
+
 lsdn_err_t lsdn_link_veth_create(struct mnl_socket *sock,
 		struct lsdn_if *if1, const char *if_name1,
 		struct lsdn_if *if2, const char *if_name2);

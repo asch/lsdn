@@ -32,6 +32,12 @@ static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 		*to = LSDN_STATE_RENEW;
 }
 
+const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type)
+{
+	snprintf(ctx->namebuf, sizeof(ctx->namebuf), "%s-%s-%d", ctx->name, type, ++ctx->obj_count);
+	return ctx->namebuf;
+}
+
 /** Create new LSDN context.
  * Initialize a `lsdn_context` struct, set its name to `name` and configure a netlink socket.
  * The returned struct must be freed by `lsdn_context_free` after use.
@@ -61,7 +67,7 @@ struct lsdn_context *lsdn_context_new(const char* name)
 		return NULL;
 	}
 
-	ctx->ifcount = 0;
+	ctx->obj_count = 0;
 	lsdn_names_init(&ctx->phys_names);
 	lsdn_names_init(&ctx->net_names);
 	lsdn_names_init(&ctx->setting_names);
@@ -235,12 +241,18 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 	net->settings = s;
 	net->vnet_id = vnet_id;
 
+	lsdn_name_init(&net->name);
+	lsdn_names_init(&net->virt_names);
+	lsdn_err_t err = lsdn_name_set(&net->name, &net->ctx->net_names, lsdn_mk_net_name(net->ctx));
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(net);
+		ret_ptr(s->ctx, NULL);
+	}
 	lsdn_list_init_add(&s->setting_users_list, &net->settings_users_entry);
 	lsdn_list_init_add(&s->ctx->networks_list, &net->networks_entry);
 	lsdn_list_init(&net->attached_list);
 	lsdn_list_init(&net->virt_list);
-	lsdn_name_init(&net->name);
-	lsdn_names_init(&net->virt_names);
 	ret_ptr(s->ctx, net);
 }
 
@@ -313,6 +325,12 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 	phys->is_local = false;
 	phys->committed_as_local = false;
 	lsdn_name_init(&phys->name);
+	lsdn_err_t err = lsdn_name_set(&phys->name, &ctx->phys_names, lsdn_mk_phys_name(ctx));
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(phys);
+		ret_ptr(phys->ctx, NULL);
+	}
 	lsdn_list_init_add(&ctx->phys_list, &phys->phys_entry);
 	lsdn_list_init(&phys->attached_to_list);
 	ret_ptr(ctx, phys);
@@ -522,9 +540,15 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	virt->ht_out_rules = NULL;
 	lsdn_if_init(&virt->connected_if);
 	lsdn_if_init(&virt->committed_if);
+	lsdn_name_init(&virt->name);
+	lsdn_err_t err = lsdn_name_set(&virt->name, &net->virt_names, lsdn_mk_virt_name(net->ctx));
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(virt);
+		ret_ptr(net->ctx, NULL);
+	}
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
 	lsdn_list_init(&virt->virt_view_list);
-	lsdn_name_init(&virt->name);
 	ret_ptr(net->ctx, virt);
 }
 

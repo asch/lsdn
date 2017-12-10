@@ -16,7 +16,7 @@ static void vlan_create_pa(struct lsdn_phys_attachment *p)
 	// create the vlan interface
 	lsdn_err_t err = lsdn_link_vlan_create(
 		p->net->ctx->nlsock, &p->tunnel_if,
-		p->phys->attr_iface, lsdn_mk_ifname(p->net->ctx), p->net->vnet_id);
+		p->phys->attr_iface, lsdn_mk_iface_name(p->net->ctx), p->net->vnet_id);
 	if(err != LSDNE_OK)
 		abort();
 
@@ -34,6 +34,7 @@ static unsigned int vlan_tunneling_overhead(struct lsdn_phys_attachment *pa)
  * Adding and removing local virts entails adding to the local Linux Bridge,
  * so we are using functions from `lbridge.c`. */
 static struct lsdn_net_ops lsdn_net_vlan_ops = {
+	.type = "vlan",
 	.create_pa = vlan_create_pa,
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
@@ -49,7 +50,12 @@ struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx)
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->ops = &lsdn_net_vlan_ops;
 	s->nettype = LSDN_NET_VLAN;
 	s->switch_type = LSDN_LEARNING;

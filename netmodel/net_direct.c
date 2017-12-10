@@ -33,6 +33,7 @@ static unsigned int direct_tunneling_overhead(struct lsdn_phys_attachment *pa)
  * Adding and removing local virts entails adding to the local Linux Bridge,
  * so we are using functions from `lbridge.c`. */
 static struct lsdn_net_ops lsdn_net_direct_ops = {
+	.type = "direct",
 	.create_pa = direct_create_pa,
 	.add_virt = lsdn_lbridge_add_virt,
 	.remove_virt = lsdn_lbridge_remove_virt,
@@ -47,7 +48,12 @@ struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx)
 	struct lsdn_settings *s = malloc(sizeof(*s));
 	if(!s)
 		ret_ptr(ctx, NULL);
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->ops = &lsdn_net_direct_ops;
 	s->nettype = LSDN_NET_DIRECT;
 	s->switch_type = LSDN_LEARNING;

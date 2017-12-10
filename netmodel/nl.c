@@ -281,6 +281,39 @@ lsdn_err_t lsdn_link_vxlan_create(
 	return link_create_send(sock, buf, nlh, linkinfo, vxlan_name, dst_if);
 }
 
+lsdn_err_t lsdn_link_geneve_create(
+	struct mnl_socket *sock, struct lsdn_if* dst_if,
+	const char *new_if, uint16_t port, bool collect_metadata)
+{
+	unsigned int seq = 0;
+	nl_buf(buf);
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	struct nlattr *linkinfo, *geneve_linkinfo;
+
+	nlh->nlmsg_type = RTM_NEWLINK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifi_family = AF_UNSPEC;
+	ifm->ifi_change = 0;
+	ifm->ifi_flags = 0;
+	mnl_attr_put_str(nlh, IFLA_IFNAME, new_if);
+
+	linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
+	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "geneve");
+
+	geneve_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
+	if (port)
+		mnl_attr_put_u16(nlh, IFLA_GENEVE_PORT, htons(port));
+	if (collect_metadata)
+		mnl_attr_put(nlh, IFLA_GENEVE_COLLECT_METADATA, 0, NULL);
+	mnl_attr_nest_end(nlh, geneve_linkinfo);
+	mnl_attr_nest_end(nlh, linkinfo);
+
+	return link_create_send(sock, buf, nlh, linkinfo, new_if, dst_if);
+}
+
 lsdn_err_t lsdn_link_bridge_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
 {
 	nl_buf(buf);

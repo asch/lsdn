@@ -2,7 +2,7 @@ file(GLOB lsdn_SRC "*.c")
 file(GLOB lsdn_PUBLIC "include/*.h")
 file(GLOB lsdn_PRIVATE "private/*.h")
 
-include_directories(${MNL_INCLUDE_DIRS} ${KERNEL_HEADERS} ${UTHASH_INCLUDE_DIR})
+include_directories(${MNL_INCLUDE_DIRS} ${KERNEL_HEADERS} ${UTHASH_INCLUDE_DIR} ${JSONC_INCLUDE_DIRS})
 
 add_library(lsdn
    ${lsdn_SRC}
@@ -12,6 +12,7 @@ add_library(lsdn
 target_link_libraries(
 	lsdn
 	${MNL_LIBRARIES} pthread
+	${JSONC_LIBRARIES}
 )
 set_target_properties(lsdn PROPERTIES PUBLIC_HEADER
 	"include/errors.h;include/lsdn.h;include/nettypes.h;include/util.h;")

@@ -29,6 +29,16 @@ static unsigned int vxlan_tunneling_overhead(enum lsdn_ipv ipv)
 		return ETHERNET_FRAME_LEN + IPv6_HEADER_LEN + UDP_HEADER_LEN + VXLAN_HEADER_LEN;
 }
 
+static uint16_t vxlan_get_port(struct lsdn_settings *s)
+{
+	return s->vxlan.port;
+}
+
+static lsdn_ip_t vxlan_mcast_get_ip(struct lsdn_settings *s)
+{
+	return s->vxlan.mcast.mcast_ip;
+}
+
 /** \name Multicast VXLAN network.
  * This should describe what is mcast TODO. */
 /** @{ */
@@ -44,7 +54,7 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 		a->net->ctx->nlsock,
 		&a->tunnel_if,
 		a->phys->attr_iface,
-		lsdn_mk_ifname(a->net->ctx),
+		lsdn_mk_iface_name(a->net->ctx),
 		&s->vxlan.mcast.mcast_ip,
 		a->net->vnet_id,
 		s->vxlan.port,
@@ -69,6 +79,9 @@ static unsigned int vxlan_mcast_tunneling_overhead(struct lsdn_phys_attachment *
 /** Callbacks for VXLAN-multicast network.
  * Reuses network functions from `lbridge.c`. */
 struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
+	.type = "vxlan/mcast",
+	.get_port = vxlan_get_port,
+	.get_ip = vxlan_mcast_get_ip,
 	.create_pa = vxlan_mcast_create_pa,
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
@@ -89,7 +102,12 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->ops = &lsdn_net_vxlan_mcast_ops;
 	s->nettype = LSDN_NET_VXLAN;
 	s->switch_type = LSDN_LEARNING;
@@ -114,7 +132,7 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 		a->net->ctx->nlsock,
 		&a->tunnel_if,
 		a->phys->attr_iface,
-		lsdn_mk_ifname(a->net->ctx),
+		lsdn_mk_iface_name(a->net->ctx),
 		NULL,
 		a->net->vnet_id,
 		a->net->settings->vxlan.port,
@@ -189,6 +207,8 @@ static unsigned int vxlan_e2e_tunneling_overhead(struct lsdn_phys_attachment *pa
  * and for tearing down the network. Adding remote physes is implemented
  * specifically for VXLAN-e2e. */
 struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
+	.type = "vxlan/e2e",
+	.get_port = vxlan_get_port,
 	.create_pa = vxlan_e2e_create_pa,
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
@@ -207,7 +227,12 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->ops = &lsdn_net_vxlan_e2e_ops;
 	s->nettype = LSDN_NET_VXLAN;
 	s->switch_type = LSDN_LEARNING_E2E;
@@ -237,7 +262,7 @@ static void vxlan_use_stunnel(struct lsdn_phys_attachment *a)
 			ctx->nlsock,
 			tunnel,
 			NULL,
-			lsdn_mk_ifname(ctx),
+			lsdn_mk_iface_name(ctx),
 			NULL,
 			0,
 			s->vxlan.port,
@@ -410,6 +435,8 @@ static unsigned int vxlan_static_tunneling_overhead(struct lsdn_phys_attachment 
 
 /** Callbacks for VXLAN-static network. */
 struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
+	.type = "vxlan/static",
+	.get_port = vxlan_get_port,
 	.create_pa = vxlan_static_create_pa,
 	.destroy_pa = vxlan_static_destroy_pa,
 	.add_virt = vxlan_static_add_virt,
@@ -431,7 +458,12 @@ struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, u
 	if(!s)
 		ret_ptr(ctx, NULL);
 
-	lsdn_settings_init_common(s, ctx);
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
 	s->switch_type = LSDN_STATIC_E2E;
 	s->nettype = LSDN_NET_VXLAN;
 	s->ops = &lsdn_net_vxlan_static_ops;
