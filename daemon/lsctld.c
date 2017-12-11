@@ -248,8 +248,11 @@ int main(int argc, char *argv[]) {
 				struct sockaddr_un client_addr;
 				socklen_t client_addr_size = sizeof(struct sockaddr_un);
 				int fdc = accept(fd2, (struct sockaddr *) &client_addr, &client_addr_size);
-				char buf[1024];
-				ssize_t n = read(fdc, buf, 1024);
+#define BUF_SIZE 10240
+				char buf[BUF_SIZE] = {[0 ... BUF_SIZE - 1] = '\0'};
+				dup2(fdc, 1);
+				dup2(fdc, 2);
+				read(fdc, buf, BUF_SIZE);
 
 				if( (ret = Tcl_Eval(interp, buf)) != TCL_OK ) {
 					Tcl_Obj *options = Tcl_GetReturnOptions(interp, ret);
@@ -262,6 +265,7 @@ int main(int argc, char *argv[]) {
 					Tcl_DecrRefCount(options);
 					exitcode = 1;
 				}
+
 
 				daemon_log(LOG_INFO, "Exit code = %d", exitcode);
 				//write(fdc, "Closing...", 10);
