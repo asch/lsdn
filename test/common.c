@@ -17,6 +17,8 @@ struct lsdn_settings *settings_from_env(struct lsdn_context *ctx) {
 		return lsdn_settings_new_vxlan_mcast(ctx, LSDN_MK_IPV4(239,239,239,239), 0);
 	} else if (!strcmp(nettype, "direct")) {
 		return lsdn_settings_new_direct(ctx);
+	} else if (!strcmp(nettype, "geneve")) {
+		return lsdn_settings_new_geneve(ctx, 0);
 	} else {
 		fprintf(stderr, "Unknown nettype: %s\n", nettype);
 		abort();

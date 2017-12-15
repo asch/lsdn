@@ -32,6 +32,12 @@ static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 		*to = LSDN_STATE_RENEW;
 }
 
+const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type)
+{
+	snprintf(ctx->namebuf, sizeof(ctx->namebuf), "%s-%s-%d", ctx->name, type, ++ctx->obj_count);
+	return ctx->namebuf;
+}
+
 /** Create new LSDN context.
  * Initialize a `lsdn_context` struct, set its name to `name` and configure a netlink socket.
  * The returned struct must be freed by `lsdn_context_free` after use.
@@ -61,7 +67,7 @@ struct lsdn_context *lsdn_context_new(const char* name)
 		return NULL;
 	}
 
-	ctx->ifcount = 0;
+	ctx->obj_count = 0;
 	lsdn_names_init(&ctx->phys_names);
 	lsdn_names_init(&ctx->net_names);
 	lsdn_names_init(&ctx->setting_names);
@@ -215,6 +221,15 @@ void lsdn_settings_free(struct lsdn_settings *settings)
 	free_helper(settings, settings_do_free);
 }
 
+/** Create a new network.
+ * Creates a virtual network object with id `vnet_id`, configured by `s`.
+ *
+ * Multiple networks can share the same `lsdn_settings`, as long as they differ
+ * by `vnet_id`.
+ *
+ * @return newly allocated `lsdn_net` structure.
+ * Caller is responsible for freeing it, or it is freed implicitly 
+ * when freeing the context. */
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 {
 	struct lsdn_net *net = malloc(sizeof(*net));
@@ -226,15 +241,24 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 	net->settings = s;
 	net->vnet_id = vnet_id;
 
+	lsdn_name_init(&net->name);
+	lsdn_names_init(&net->virt_names);
+	lsdn_err_t err = lsdn_name_set(&net->name, &net->ctx->net_names, lsdn_mk_net_name(net->ctx));
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(net);
+		ret_ptr(s->ctx, NULL);
+	}
 	lsdn_list_init_add(&s->setting_users_list, &net->settings_users_entry);
 	lsdn_list_init_add(&s->ctx->networks_list, &net->networks_entry);
 	lsdn_list_init(&net->attached_list);
 	lsdn_list_init(&net->virt_list);
-	lsdn_name_init(&net->name);
-	lsdn_names_init(&net->virt_names);
 	ret_ptr(s->ctx, net);
 }
 
+/** Perform freeing of a network object.
+ * Used when `lsdn_net_free` is manually invoked, as the last step,
+ * and also implicitly as part of the decommit phase. */
 static void net_do_free(struct lsdn_net *net)
 {
 	assert(lsdn_is_list_empty(&net->attached_list));
@@ -246,6 +270,8 @@ static void net_do_free(struct lsdn_net *net)
 	free(net);
 }
 
+/** Free a network.
+ * Ensures that all virts in the network are freed and all physes detached. */
 void lsdn_net_free(struct lsdn_net *net)
 {
 	lsdn_foreach(net->virt_list, virt_entry, struct lsdn_virt, v) {
@@ -257,16 +283,21 @@ void lsdn_net_free(struct lsdn_net *net)
 	free_helper(net, net_do_free);
 }
 
+/** Set a name for the network. */
 lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name)
 {
 	ret_err(net->ctx, lsdn_name_set(&net->name, &net->ctx->net_names, name));
 }
 
+/** Get the network's name. */
 const char* lsdn_net_get_name(struct lsdn_net *net)
 {
 	return net->name.str;
 }
 
+/** Find a network by name.
+ * @return `lsdn_net` structure if a network with this name exists.
+ * @return `NULL` otherwise. */
 struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name)
 {
 	struct lsdn_name *r = lsdn_names_search(&ctx->net_names, name);
@@ -275,6 +306,12 @@ struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name)
 	return lsdn_container_of(r, struct lsdn_net, name);
 }
 
+/** Create a new _phys_.
+ * Allocates and initializes a `lsdn_phys` structure.
+ *
+ * @return newly allocated `lsdn_phys` structure.
+ * Caller is responsible for freeing it, or it is freed implicitly 
+ * when freeing the context. */
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 {
 	struct lsdn_phys *phys = malloc(sizeof(*phys));
@@ -288,11 +325,20 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 	phys->is_local = false;
 	phys->committed_as_local = false;
 	lsdn_name_init(&phys->name);
+	lsdn_err_t err = lsdn_name_set(&phys->name, &ctx->phys_names, lsdn_mk_phys_name(ctx));
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(phys);
+		ret_ptr(phys->ctx, NULL);
+	}
 	lsdn_list_init_add(&ctx->phys_list, &phys->phys_entry);
 	lsdn_list_init(&phys->attached_to_list);
 	ret_ptr(ctx, phys);
 }
 
+/** Perform freeing of a _phys_ object.
+ * Used when `lsdn_phys_free` is manually invoked, as the last step,
+ * and also implicitly as part of the decommit phase. */
 static void phys_do_free(struct lsdn_phys *phys)
 {
 	lsdn_list_remove(&phys->phys_entry);
@@ -302,6 +348,8 @@ static void phys_do_free(struct lsdn_phys *phys)
 	free(phys);
 }
 
+/** Free a _phys_.
+ * Ensures that all virts on this _phys_ are disconnected first. */
 void lsdn_phys_free(struct lsdn_phys *phys)
 {
 	lsdn_foreach(phys->attached_to_list, attached_to_entry, struct lsdn_phys_attachment, pa) {
@@ -313,16 +361,21 @@ void lsdn_phys_free(struct lsdn_phys *phys)
 	free_helper(phys, phys_do_free);
 }
 
+/** Set a name for the _phys_. */
 lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name)
 {
 	ret_err(phys->ctx, lsdn_name_set(&phys->name, &phys->ctx->phys_names, name));
 }
 
+/** Get the _phys_'s name. */
 const char* lsdn_phys_get_name(struct lsdn_phys *phys)
 {
 	return phys->name.str;
 }
 
+/** Find a _phys_ by name.
+ * @return `lsdn_phys` structure if a _phys_ with this name exists.
+ * @return `NULL` otherwise. */
 struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name)
 {
 	struct lsdn_name *r = lsdn_names_search(&ctx->phys_names, name);
@@ -440,6 +493,12 @@ lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, lsdn_ip_t ip)
 	ret_err(phys->ctx, LSDNE_OK);
 }
 
+/** Assign a local phys.
+ * All participants in a LSDN network must share a compatible memory model.
+ * That means that every host's model contains all the physes in the network.
+ * This function configures a particular phys to be the local machine. Only
+ * rules related to virts on the local phys are entered into the kernel tables.
+ * @see \ref lsdn-public */
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys)
 {
 	if (!phys->is_local) {
@@ -450,6 +509,9 @@ lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys)
 	return LSDNE_OK;
 }
 
+/** Unassign a local phys.
+ * @see lsdn_phys_claim_local
+ * @see \ref lsdn-public */
 lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys)
 {
 	if (phys->is_local) {
@@ -459,6 +521,12 @@ lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys)
 	return LSDNE_OK;
 }
 
+/** Create a new virt.
+ * Creates a virt as part of `net`.
+ *
+ * @return newly allocated `lsdn_virt` structure.
+ * Caller is responsible for freeing it, or it is freed implicitly 
+ * when freeing the context. */
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	struct lsdn_virt *virt = malloc(sizeof(*virt));
 	if(!virt)
@@ -472,12 +540,21 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	virt->ht_out_rules = NULL;
 	lsdn_if_init(&virt->connected_if);
 	lsdn_if_init(&virt->committed_if);
+	lsdn_name_init(&virt->name);
+	lsdn_err_t err = lsdn_name_set(&virt->name, &net->virt_names, lsdn_mk_virt_name(net->ctx));
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(virt);
+		ret_ptr(net->ctx, NULL);
+	}
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
 	lsdn_list_init(&virt->virt_view_list);
-	lsdn_name_init(&virt->name);
 	ret_ptr(net->ctx, virt);
 }
 
+/** Perform freeing of a virt object.
+ * Used when `lsdn_virt_free` is manually invoked, as the last step,
+ * and also implicitly as part of the decommit phase. */
 static void virt_do_free(struct lsdn_virt *virt)
 {
 	lsdn_vr_do_free_all_rules(virt);
@@ -494,21 +571,28 @@ static void virt_do_free(struct lsdn_virt *virt)
 	free(virt);
 }
 
+/** Free a virt. */
 void lsdn_virt_free(struct lsdn_virt *virt)
 {
 	lsdn_vrs_free_all(virt);
 	free_helper(virt, virt_do_free);
 }
 
+/** Set a name for the virt. */
 lsdn_err_t lsdn_virt_set_name(struct lsdn_virt *virt, const char *name)
 {
 	ret_err(virt->network->ctx, lsdn_name_set(&virt->name, &virt->network->virt_names, name));
 }
 
+/** Get the virt's name. */
 const char* lsdn_virt_get_name(struct lsdn_virt *virt)
 {
 	return virt->name.str;
 }
+
+/** Find a virt by name.
+ * @return `lsdn_virt` structure if a network with this name exists.
+ * @return `NULL` otherwise. */
 struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name)
 {
 	struct lsdn_name *r = lsdn_names_search(&net->virt_names, name);
@@ -517,6 +601,14 @@ struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name)
 	return lsdn_container_of(r, struct lsdn_virt, name);
 }
 
+/** Connect a virt to its network.
+ * Associates a virt with a given phys and a network interface, and ensures that
+ * this interface will receive the network's traffic.
+ * @param virt virt to connect.
+ * @param phys phys on which the virt exists.
+ * @param iface name of Linux network interface on the given phys, which will
+ * receive the virt's traffic.
+ * @see \ref lsdn-public */
 lsdn_err_t lsdn_virt_connect(
 	struct lsdn_virt *virt, struct lsdn_phys *phys, const char *iface)
 {
@@ -536,6 +628,8 @@ lsdn_err_t lsdn_virt_connect(
 	ret_err(phys->ctx, LSDNE_OK);
 }
 
+/** Disconnects a virt from its network.
+ * Disconnected virt will no longer be able to send and receive traffic. */
 void lsdn_virt_disconnect(struct lsdn_virt *virt){
 	if(!virt->connected_through)
 		return;
@@ -545,6 +639,7 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt){
 	renew(&virt->state);
 }
 
+/** Set virt's MAC address. */
 lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 {
 	lsdn_mac_t *mac_dup = malloc(sizeof(*mac_dup));
@@ -555,6 +650,33 @@ lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 	free(virt->attr_mac);
 	virt->attr_mac = mac_dup;
 	ret_err(virt->network->ctx, LSDNE_OK);
+}
+
+/** Get recommended MTU for a given virt.
+ * Calculates the appropriate MTU value, taking into account the network's tunneling 
+ * method overhead. */
+lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu)
+{
+	struct lsdn_context *ctx = virt->network->ctx;
+	struct lsdn_net_ops *ops = virt->network->settings->ops;
+	if (!virt->connected_through)
+		ret_err(ctx, LSDNE_NOIF);
+	struct lsdn_phys *phys = virt->connected_through->phys;
+	struct lsdn_if phys_if = {0};
+	lsdn_err_t ret;
+	if (phys && phys->attr_iface) {
+		phys_if.ifname = phys->attr_iface;
+		ret = lsdn_if_resolve(&phys_if);
+		if (ret != LSDNE_OK)
+			ret_err(ctx, ret);
+		ret = lsdn_link_get_mtu(ctx->nlsock, phys_if.ifindex, mtu);
+		if (ret != LSDNE_OK)
+			ret_err(ctx, ret);
+	} else {
+		ret_err(ctx, LSDNE_NOIF);
+	}
+	*mtu -= ops->compute_tunneling_overhead(virt->connected_through);
+	ret_err(ctx, LSDNE_OK);
 }
 
 static bool should_be_validated(enum lsdn_state state) {

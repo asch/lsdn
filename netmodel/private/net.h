@@ -5,11 +5,11 @@
 #include "../include/lsdn.h"
 #include "lsdn.h"
 
-const char *lsdn_mk_ifname(struct lsdn_context* ctx);
 lsdn_err_t lsdn_prepare_rulesets(
 	struct lsdn_context *ctx, struct lsdn_if *iface,
 	struct lsdn_ruleset* in, struct lsdn_ruleset* out);
-void lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx);
+lsdn_err_t lsdn_settings_init_common(
+	struct lsdn_settings *settings, struct lsdn_context *ctx);
 
 /** Per-local PA view of a remote PA. TODO
  * This structure exists for each combination
@@ -43,6 +43,15 @@ struct lsdn_remote_virt {
  * The documentation at each callback should be taken as a hint as to what actions
  * you might want to take, in order to make the network work. */
 struct lsdn_net_ops {
+	/** Get network tunnel type. */
+	char *type;
+
+	/** Get network tunnel port. */
+	uint16_t (*get_port) (struct lsdn_settings *s);
+
+	/** Get network ip address. */
+	lsdn_ip_t (*get_ip) (struct lsdn_settings *s);
+
 	/** Create a local phys attachment.
 	 * Called when the local machine connects to a network.
 	 *
@@ -106,7 +115,6 @@ struct lsdn_net_ops {
 	 * and use `lsdn_problem_report` to indicate problems. */
 	void (*validate_virt) (struct lsdn_virt *virt);
 
-	/** Get the recommended MTU.
-	 * Get the recommended MTU for a virt on a given phys attachment. */
-	unsigned int (*get_recommended_mtu) (struct lsdn_phys_attachment *pa);
+	/** Compute overhead of network packets incurred by tunneling. */
+	unsigned int (*compute_tunneling_overhead)(struct lsdn_phys_attachment *pa);
 };

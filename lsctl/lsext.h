@@ -1,3 +1,6 @@
+/** \file
+ * TCL extensions for lsctl language header.
+ */
 #pragma once
 
 #include <tcl.h>

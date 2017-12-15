@@ -10,10 +10,10 @@ notifications:
         on_failure: always
 
 install:
-    - sudo apt-get install tcl-dev libmnl-dev libvirt-dev cmake valgrind qemu uthash-dev
+    - sudo apt-get install tcl-dev libmnl-dev libvirt-dev cmake valgrind qemu uthash-dev libjson0-dev
     - pwd
-    - wget https://rkapl.cz/uploads/lsdn-testenv-1.tar.xz -O testenv.tar.xz
-    -  echo '75552ec682bd5d2664183e93cb668a166b686cbac196dba2ec3d38454a63f067  testenv.tar.xz'|sha256sum -c
+    - wget https://rkapl.cz/uploads/lsdn-testenv-2.tar.xz -O testenv.tar.xz
+    - echo 'b2f4c30d41b82801d034e7b8aeac5266d43aadf4940a0e5f6da1db5d5e7a1cda  testenv.tar.xz'|sha256sum -c
     - tar xf testenv.tar.xz
 
 env:

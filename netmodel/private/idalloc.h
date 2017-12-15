@@ -1,11 +1,17 @@
+/** \file
+ * ID allocation related structs and definitions. */
 #pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
 
+/** ID allocation record. */
 struct lsdn_idalloc{
+	/** Starting ID. */
 	uint32_t min;
+	/** Maximum allowable ID. */
 	uint32_t max;
+	/** Next ID to allocate. */
 	uint32_t next;
 };
 

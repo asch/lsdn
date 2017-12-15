@@ -1,7 +1,5 @@
 #include "private/nl.h"
 #include "include/util.h"
-#include <linux/if_link.h>
-#include <linux/rtnetlink.h>
 #include <linux/pkt_sched.h>
 #include <linux/pkt_cls.h>
 #include <linux/tc_act/tc_mirred.h>
@@ -283,6 +281,39 @@ lsdn_err_t lsdn_link_vxlan_create(
 	return link_create_send(sock, buf, nlh, linkinfo, vxlan_name, dst_if);
 }
 
+lsdn_err_t lsdn_link_geneve_create(
+	struct mnl_socket *sock, struct lsdn_if* dst_if,
+	const char *new_if, uint16_t port, bool collect_metadata)
+{
+	unsigned int seq = 0;
+	nl_buf(buf);
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	struct nlattr *linkinfo, *geneve_linkinfo;
+
+	nlh->nlmsg_type = RTM_NEWLINK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifi_family = AF_UNSPEC;
+	ifm->ifi_change = 0;
+	ifm->ifi_flags = 0;
+	mnl_attr_put_str(nlh, IFLA_IFNAME, new_if);
+
+	linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
+	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "geneve");
+
+	geneve_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
+	if (port)
+		mnl_attr_put_u16(nlh, IFLA_GENEVE_PORT, htons(port));
+	if (collect_metadata)
+		mnl_attr_put(nlh, IFLA_GENEVE_COLLECT_METADATA, 0, NULL);
+	mnl_attr_nest_end(nlh, geneve_linkinfo);
+	mnl_attr_nest_end(nlh, linkinfo);
+
+	return link_create_send(sock, buf, nlh, linkinfo, new_if, dst_if);
+}
+
 lsdn_err_t lsdn_link_bridge_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
 {
 	nl_buf(buf);
@@ -463,68 +494,42 @@ lsdn_err_t lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface)
 	return send_await_response(sock, nlh);
 }
 
-static int ifindex_mtu_cb(const struct nlmsghdr *nlh, void *data)
-{
-	int type;
-	unsigned int *ifindex_mtu = (unsigned int *) data;
-
-	struct ifinfomsg *ifm = mnl_nlmsg_get_payload(nlh);
-	struct nlattr *attr;
-
-	ifindex_mtu[0] = ifm->ifi_index;
-
-	mnl_attr_for_each(attr, nlh, sizeof(*ifm)) {
-		type = mnl_attr_get_type(attr);
-
-		/* skip unsupported attribute in user-space */
-		if (mnl_attr_type_valid(attr, IFLA_MAX) < 0)
-			continue;
-
-		if (type == IFLA_MTU)
-			if (mnl_attr_validate(attr, MNL_TYPE_U32) < 0)
-				return MNL_CB_ERROR;
-
-		ifindex_mtu[1] = mnl_attr_get_u32(attr);
-	}
-
-	return MNL_CB_OK;
-}
-
-
 lsdn_err_t lsdn_link_get_mtu(struct mnl_socket *sock, unsigned int ifindex,
 	unsigned int *mtu)
 {
-	unsigned int seq = 0, portid;
+	unsigned int seq = 0;
 	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
-	unsigned int ifindex_mtu[2];
 
 	nlh->nlmsg_type = RTM_GETLINK;
-	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+	nlh->nlmsg_flags = NLM_F_REQUEST;
 	nlh->nlmsg_seq = seq;
 
-	struct rtgenmsg *rt = mnl_nlmsg_put_extra_header(nlh, sizeof(*rt));
-	rt->rtgen_family = AF_PACKET;
-
-	portid = mnl_socket_get_portid(sock);
+	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifi_family = AF_PACKET;
+	ifm->ifi_index = ifindex;
 
 	int ret = mnl_socket_sendto(sock, (void *) nlh, nlh->nlmsg_len);
 	if (ret == -1)
 		return LSDNE_NETLINK;
 
 	ret = mnl_socket_recvfrom(sock, (void *) nlh, MNL_SOCKET_BUFFER_SIZE);
-	while (ret > 0) {
-		ret = mnl_cb_run(buf, ret, seq, portid, ifindex_mtu_cb, ifindex_mtu);
-		if (ret <= MNL_CB_STOP)
-			break;
-		if (ifindex_mtu[0] == ifindex) {
-			*mtu = ifindex_mtu[1];
+	if (ret <= 0)
+		return LSDNE_NETLINK;
+
+	ifm = mnl_nlmsg_get_payload(nlh);
+	assert (ifm->ifi_index == (int)ifindex);
+	struct nlattr *attr;
+	mnl_attr_for_each(attr, nlh, sizeof(*ifm)) {
+		uint16_t type = mnl_attr_get_type(attr);
+
+		if (type == IFLA_MTU) {
+			if (mnl_attr_validate(attr, MNL_TYPE_U32) < 0)
+				return LSDNE_NETLINK;
+			*mtu = mnl_attr_get_u32(attr);
 			return LSDNE_OK;
 		}
-		ret = mnl_socket_recvfrom(sock, (void *) nlh, MNL_SOCKET_BUFFER_SIZE);
 	}
-	if (ret == -1)
-		return LSDNE_NETLINK;
 
 	return LSDNE_NOIF;
 }

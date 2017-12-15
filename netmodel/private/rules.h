@@ -13,6 +13,7 @@
 typedef void (*lsdn_mkaction_fn)(struct lsdn_filter *filter, uint16_t order, void *user);
 /* Describes a sequence of TC actions constructed by a callback when needed */
 struct lsdn_action_desc {
+	char *name;
 	size_t actions_count;
 	/* Callback to create the actions on the filter rule */
 	lsdn_mkaction_fn fn;
@@ -25,7 +26,6 @@ bool lsdn_target_supports_masking(enum lsdn_rule_target);
 
 struct lsdn_flower_rule;
 
-#define LSDN_MAX_MATCHES 2
 #define LSDN_KEY_SIZE (LSDN_MAX_MATCH_LEN * LSDN_MAX_MATCHES)
 /* A single rule in lsdn_ruleset. Fill in the priority, match conditions and action. */
 struct lsdn_rule{

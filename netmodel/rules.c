@@ -24,13 +24,15 @@ static void callback_drop(struct lsdn_filter *f, uint16_t order, void *user) {
 
 struct lsdn_vr_action lsdn_vr_drop = {
 	.desc = {
+		.name = "drop",
 		.actions_count = 1,
 		.fn = callback_drop,
 		.user = NULL
 	}
 };
 
-struct lsdn_vr *lsdn_vr_new(struct lsdn_virt *virt, uint16_t prio_num, enum lsdn_direction dir)
+struct lsdn_vr *lsdn_vr_new(
+	struct lsdn_virt *virt, uint16_t prio_num, enum lsdn_direction dir, struct lsdn_vr_action *a)
 {
 	struct vr_prio **ht = (dir == LSDN_IN) ? &virt->ht_in_rules : &virt->ht_out_rules;
 	struct lsdn_vr *vr = malloc(sizeof(*vr));
@@ -54,6 +56,7 @@ struct lsdn_vr *lsdn_vr_new(struct lsdn_virt *virt, uint16_t prio_num, enum lsdn
 
 	vr->pos = 0;
 	vr->state = LSDN_STATE_NEW;
+	vr->rule.action = a->desc;
 	for(size_t i = 0; i<LSDN_MAX_MATCHES; i++) {
 		vr->targets[i] = LSDN_MATCH_NONE;
 		bzero(vr->masks[i].bytes, sizeof(vr->masks[i].bytes));
@@ -110,7 +113,7 @@ void lsdn_vrs_free_all(struct lsdn_virt *virt)
 
 }
 
-void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value, struct lsdn_vr_action *action)
+void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t value, lsdn_mac_t mask)
 {
 	size_t pos = rule->pos++;
 	assert(pos < LSDN_MAX_MATCH_LEN);
@@ -118,10 +121,9 @@ void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_
 	rule->targets[pos] = LSDN_MATCH_SRC_MAC;
 	rule->masks[pos].mac = mask;
 	rule->rule.matches[pos].mac = value;
-	rule->rule.action = action->desc;
 }
 
-void lsdn_vr_add_masked_dst_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value, struct lsdn_vr_action *action)
+void lsdn_vr_add_masked_dst_mac(struct lsdn_vr *rule, lsdn_mac_t value, lsdn_mac_t mask)
 {
 	size_t pos = rule->pos++;
 	assert(pos < LSDN_MAX_MATCH_LEN);
@@ -129,10 +131,9 @@ void lsdn_vr_add_masked_dst_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_
 	rule->targets[pos] = LSDN_MATCH_DST_MAC;
 	rule->masks[pos].mac = mask;
 	rule->rule.matches[pos].mac = value;
-	rule->rule.action = action->desc;
 }
 
-void lsdn_vr_add_masked_src_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value, struct lsdn_vr_action *action)
+void lsdn_vr_add_masked_src_ip(struct lsdn_vr *rule, lsdn_ip_t value,  lsdn_ip_t mask)
 {
 	size_t pos = rule->pos++;
 	assert(pos < LSDN_MAX_MATCH_LEN);
@@ -147,10 +148,9 @@ void lsdn_vr_add_masked_src_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t v
 		rule->masks[pos].ipv6 = mask.v6;
 		rule->rule.matches[pos].ipv6 = value.v6;
 	}
-	rule->rule.action = action->desc;
 }
 
-void lsdn_vr_add_masked_dst_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value, struct lsdn_vr_action *action)
+void lsdn_vr_add_masked_dst_ip(struct lsdn_vr *rule, lsdn_ip_t value, lsdn_ip_t mask)
 {
 	size_t pos = rule->pos++;
 	assert(pos < LSDN_MAX_MATCH_LEN);
@@ -165,7 +165,6 @@ void lsdn_vr_add_masked_dst_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t v
 		rule->masks[pos].ipv6 = mask.v6;
 		rule->rule.matches[pos].ipv6 = value.v6;
 	}
-	rule->rule.action = action->desc;
 }
 
 void lsdn_action_init(struct lsdn_action_desc *action, size_t count, lsdn_mkaction_fn fn, void *user)
@@ -310,14 +309,13 @@ static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset
 	struct lsdn_filter *filter = lsdn_filter_flower_init(
 		ruleset->iface->ifindex, fl->fl_handle, ruleset->parent_handle,
 		ruleset->chain, prio->prio + ruleset->prio_start);
+	if (!filter)
+		return LSDNE_NOMEM;
+
 	if (update)
 		lsdn_filter_set_update(filter);
 
 	lsdn_log(LSDNL_RULES, "fl_%s(handle=0x%x)\n", update ? "update" : "create", fl->fl_handle);
-
-	if (!filter) {
-		return LSDNE_NETLINK;
-	}
 
 	uint16_t ethtype;
 	if (!find_common_ethtype(fl, prio, &ethtype))
@@ -483,7 +481,7 @@ lsdn_err_t lsdn_ruleset_add(struct lsdn_ruleset_prio *prio, struct lsdn_rule *ru
 			/* there is no need to free `fl`, we won't be here if it is newly allocated */
 			return LSDNE_DUPLICATE;
 		}
-		if (r->subprio >= rule->subprio)
+		if (r->subprio > rule->subprio)
 			break;
 		nearest_lower = &r->sources_entry;
 	}

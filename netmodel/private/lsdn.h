@@ -1,3 +1,5 @@
+/** \file
+ * Main LSDN structure definitions - private part. */
 #pragma once
 
 #include "../include/lsdn.h"
@@ -11,31 +13,58 @@
 #include "state.h"
 
 struct lsdn_context{
-	/** Context name. Determines the prefix for interfaces created in the context. */
+	/** Context name. Determines the prefix for objects created in the context. */
 	char* name;
 	/** Out-of-memory callback. */
 	lsdn_nomem_cb nomem_cb;
 	/** User data for the OOM calback. */
 	void *nomem_cb_user;
+
+	/** Unique phys names. */
 	struct lsdn_names phys_names;
+	/** Unique network names. */
 	struct lsdn_names net_names;
+	/** Unique settings names. */
 	struct lsdn_names setting_names;
 
+	/** Head of list of networks. */
 	struct lsdn_list_entry networks_list;
+	/** Head of list of settings. */
 	struct lsdn_list_entry settings_list;
+	/** Head of list of physes. */
 	struct lsdn_list_entry phys_list;
+
+	/** Netlink socket for installing tc rules. */
 	struct mnl_socket *nlsock;
 
-	// error handling -- only valid during validation and commit
-	struct lsdn_problem problem;
-	struct lsdn_problem_ref problem_refs[LSDN_MAX_PROBLEM_REFS];
+	/** User-specified problem callback. */
 	lsdn_problem_cb problem_cb;
+	/** User-specified data for problem callback. */
 	void *problem_cb_user;
+
+	/** \name Error handling. Only used during validation and commit phase. */
+	/** @{ */
+	/** Currently processed problem. */
+	struct lsdn_problem problem;
+	/** Problem refs for currently processed problem. */
+	struct lsdn_problem_ref problem_refs[LSDN_MAX_PROBLEM_REFS];
+	/** Problem count for the current operation. */
 	size_t problem_count;
+	/** @} */
+
+	/** Disable decommit.
+	 * Checked when tearing down the in-memory model. If `disable_decommit`
+	 * is set, tc rules are retained in kernel. Otherwise, tc rules are removed
+	 * so the networks stop working. */
 	bool disable_decommit;
 
-	int ifcount;
-	char namebuf[IF_NAMESIZE + 1];
+	/** Number of created LSDN objects.
+	 * Used to assign unique names to created objects. */
+	int obj_count;
+
+	/** Name buffer.
+	 * Space for rendering unique LSDN object names. */
+	char namebuf[64 + 1];
 };
 
 struct lsdn_settings {
@@ -63,6 +92,13 @@ struct lsdn_settings {
 				} e2e_static;
 			};
 		} vxlan;
+		struct{
+			uint16_t port;
+			size_t refcount;
+			struct lsdn_if tunnel;
+			struct lsdn_sbridge_phys_if tunnel_sbridge;
+			struct lsdn_ruleset ruleset_in;
+		} geneve;
 	};
 
 	struct lsdn_user_hooks *user_hooks;

@@ -12,19 +12,23 @@
  * @return Pointer to the name string. */
 const char *lsdn_mk_ifname(struct lsdn_context* ctx)
 {
-	snprintf(ctx->namebuf, sizeof(ctx->namebuf), "%s-%d", ctx->name, ++ctx->ifcount);
+	snprintf(ctx->namebuf, sizeof(ctx->namebuf), "%s-%d", ctx->name, ++ctx->obj_count);
 	return ctx->namebuf;
 }
 
 /** Initialize common parts of `lsdn_settings` struct. */
-void lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx)
+lsdn_err_t lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx)
 {
+	lsdn_name_init(&settings->name);
+	lsdn_err_t err = lsdn_name_set(&settings->name, &ctx->setting_names, lsdn_mk_settings_name(ctx));
+	if (err != LSDNE_OK)
+		return err;
 	settings->state = LSDN_STATE_NEW;
 	lsdn_list_init(&settings->setting_users_list);
 	settings->user_hooks = NULL;
 	lsdn_list_init_add(&ctx->settings_list, &settings->settings_entry);
 	settings->ctx = ctx;
-	lsdn_name_init(&settings->name);
+	return LSDNE_OK;
 }
 
 /** Initialize ruleset engine.
