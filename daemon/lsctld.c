@@ -16,7 +16,7 @@
   You should have received a copy of the GNU Lesser General Public
   License along with libdaemon. If not, see
   <http://www.gnu.org/licenses/>.
-***/
+ ***/
 
 #include <signal.h>
 #include <errno.h>
@@ -88,199 +88,208 @@ const char *get_name()
 }
 
 int main(int argc, char *argv[]) {
-    pid_t pid;
+	pid_t pid;
 
-    /* Reset signal handlers */
-    if (daemon_reset_sigs(-1) < 0) {
-        daemon_log(LOG_ERR, "Failed to reset all signal handlers: %s", strerror(errno));
-        return 1;
-    }
+	/* Reset signal handlers */
+	if (daemon_reset_sigs(-1) < 0) {
+		daemon_log(LOG_ERR, "Failed to reset all signal handlers: %s", strerror(errno));
+		return 1;
+	}
 
-    /* Unblock signals */
-    if (daemon_unblock_sigs(-1) < 0) {
-        daemon_log(LOG_ERR, "Failed to unblock all signals: %s", strerror(errno));
-        return 1;
-    }
+	/* Unblock signals */
+	if (daemon_unblock_sigs(-1) < 0) {
+		daemon_log(LOG_ERR, "Failed to unblock all signals: %s", strerror(errno));
+		return 1;
+	}
 
-    /* Set identification string for the daemon for both syslog and PID file */
-    daemon_pid_file_ident = daemon_log_ident = daemon_ident_from_argv0(argv[0]);
+	/* Set identification string for the daemon for both syslog and PID file */
+	daemon_pid_file_ident = daemon_log_ident = daemon_ident_from_argv0(argv[0]);
 
 	get_name();
 	daemon_pid_file_proc = get_name;
 
-    /* Check if we are called with -k parameter */
-    if (argc >= 2 && !strcmp(argv[1], "-k")) {
-        int ret;
-
-        /* Kill daemon with SIGTERM */
-
-        /* Check if the new function daemon_pid_file_kill_wait() is available, if it is, use it. */
-        if ((ret = daemon_pid_file_kill_wait(SIGTERM, 5)) < 0)
-            daemon_log(LOG_WARNING, "Failed to kill daemon: %s", strerror(errno));
-
-        return ret < 0 ? 1 : 0;
-    }
-
-    /* Check that the daemon is not rung twice a the same time */
-    if ((pid = daemon_pid_file_is_running()) >= 0) {
-        daemon_log(LOG_ERR, "Daemon already running on PID file %u", pid);
-        return 1;
-    }
-
-    /* Prepare for return value passing from the initialization procedure of the daemon process */
-    if (daemon_retval_init() < 0) {
-        daemon_log(LOG_ERR, "Failed to create pipe.");
-        return 1;
-    }
-
-    /* Do the fork */
-//    if ((pid = daemon_fork()) < 0) {
-//
-//        /* Exit on error */
-//        daemon_retval_done();
-//        return 1;
-//
-//    } else if (pid) { /* The parent */
-//        int ret;
-//
-//        /* Wait for 20 seconds for the return value passed from the daemon process */
-//        if ((ret = daemon_retval_wait(20)) < 0) {
-//            daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
-//            return 255;
-//        }
-//
-//        daemon_log(ret != 0 ? LOG_ERR : LOG_INFO, "Daemon returned %i as return value.", ret);
-//        return ret;
-//
-//    } else { /* The daemon */
-        int fd, quit = 0;
-        fd_set fds;
-
-        /* Close FDs */
-//        if (daemon_close_all(-1) < 0) {
-//            daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
-//
-//            /* Send the error condition to the parent process */
-//            daemon_retval_send(1);
-//            goto finish;
-//        }
-
-        /* Create the PID file */
-        if (daemon_pid_file_create() < 0) {
-            daemon_log(LOG_ERR, "Could not create PID file (%s).", strerror(errno));
-            daemon_retval_send(2);
-            goto finish;
-        }
-
-        /* Initialize signal handling */
-        if (daemon_signal_init(SIGINT, SIGTERM, SIGQUIT, SIGHUP, 0) < 0) {
-            daemon_log(LOG_ERR, "Could not register signal handlers (%s).", strerror(errno));
-            daemon_retval_send(3);
-            goto finish;
-        }
-
-        /*... do some further init work here */
-		/* Network daemon initialization follows */
-
-
-        /* Send OK to parent process */
-        daemon_retval_send(0);
-
-        daemon_log(LOG_INFO, "Successfully started");
-
-        /* Prepare for select() on the signal fd */
-        FD_ZERO(&fds);
-        fd = daemon_signal_fd();
-		int fd2 = get_unix_socket();
-        FD_SET(fd, &fds);
-        FD_SET(fd2, &fds);
-
+	/* Check if we are called with -k parameter */
+	if (argc >= 2 && !strcmp(argv[1], "-k")) {
 		int ret;
-		int exitcode = 0;
-		Tcl_FindExecutable(argv[0]);
-		Tcl_Interp* interp = Tcl_CreateInterp();
-		if (Tcl_Init(interp) != TCL_OK)
-			return 1;
 
-		register_lsdn_tcl(interp);
-		printf("lsdn commands registered\n");
+		/* Kill daemon with SIGTERM */
 
-        while (!quit) {
-            fd_set fds2 = fds;
+		/* Check if the new function daemon_pid_file_kill_wait() is available, if it is, use it. */
+		if ((ret = daemon_pid_file_kill_wait(SIGTERM, 5)) < 0)
+			daemon_log(LOG_WARNING, "Failed to kill daemon: %s", strerror(errno));
 
-            /* Wait for an incoming signal */
-            if (select(FD_SETSIZE, &fds2, 0, 0, 0) < 0) {
+		return ret < 0 ? 1 : 0;
+	}
 
-                /* If we've been interrupted by an incoming signal, continue */
-                if (errno == EINTR)
-                    continue;
+	/* Check that the daemon is not rung twice a the same time */
+	if ((pid = daemon_pid_file_is_running()) >= 0) {
+		daemon_log(LOG_ERR, "Daemon already running on PID file %u", pid);
+		return 1;
+	}
 
-                daemon_log(LOG_ERR, "select(): %s", strerror(errno));
-                break;
-            }
+	/* Prepare for return value passing from the initialization procedure of the daemon process */
+	if (daemon_retval_init() < 0) {
+		daemon_log(LOG_ERR, "Failed to create pipe.");
+		return 1;
+	}
 
-            /* Check if a signal has been received */
-            if (FD_ISSET(fd, &fds2)) {
-                int sig;
+	/* Do the fork */
+	//    if ((pid = daemon_fork()) < 0) {
+	//
+	//        /* Exit on error */
+	//        daemon_retval_done();
+	//        return 1;
+	//
+	//    } else if (pid) { /* The parent */
+	//        int ret;
+	//
+	//        /* Wait for 20 seconds for the return value passed from the daemon process */
+	//        if ((ret = daemon_retval_wait(20)) < 0) {
+	//            daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
+	//            return 255;
+	//        }
+	//
+	//        daemon_log(ret != 0 ? LOG_ERR : LOG_INFO, "Daemon returned %i as return value.", ret);
+	//        return ret;
+	//
+	//    } else { /* The daemon */
+	int fd, quit = 0;
+	fd_set fds;
 
-                /* Get signal */
-                if ((sig = daemon_signal_next()) <= 0) {
-                    daemon_log(LOG_ERR, "daemon_signal_next() failed: %s", strerror(errno));
-                    break;
-                }
+	/* Close FDs */
+	//        if (daemon_close_all(-1) < 0) {
+	//            daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
+	//
+	//            /* Send the error condition to the parent process */
+	//            daemon_retval_send(1);
+	//            goto finish;
+	//        }
 
-                /* Dispatch signal */
-                switch (sig) {
-                    case SIGINT:
-                    case SIGQUIT:
-                    case SIGTERM:
-                        daemon_log(LOG_WARNING, "Got SIGINT, SIGQUIT or SIGTERM.");
-                        quit = 1;
-                        break;
+	/* Create the PID file */
+	if (daemon_pid_file_create() < 0) {
+		daemon_log(LOG_ERR, "Could not create PID file (%s).", strerror(errno));
+		daemon_retval_send(2);
+		goto finish;
+	}
 
-                    case SIGHUP:
-                        daemon_log(LOG_INFO, "Got a HUP");
-                        daemon_exec("/", NULL, "/bin/ls", "ls", (char*) NULL);
-                        break;
+	/* Initialize signal handling */
+	if (daemon_signal_init(SIGINT, SIGTERM, SIGQUIT, SIGHUP, 0) < 0) {
+		daemon_log(LOG_ERR, "Could not register signal handlers (%s).", strerror(errno));
+		daemon_retval_send(3);
+		goto finish;
+	}
 
-                }
-            } else if (FD_ISSET(fd2, &fds2)) {
-				struct sockaddr_un client_addr;
-				socklen_t client_addr_size = sizeof(struct sockaddr_un);
-				int fdc = accept(fd2, (struct sockaddr *) &client_addr, &client_addr_size);
-#define BUF_SIZE 10240
-				char buf[BUF_SIZE] = {[0 ... BUF_SIZE - 1] = '\0'};
-				dup2(fdc, 1);
-				dup2(fdc, 2);
-				read(fdc, buf, BUF_SIZE);
-
-				if( (ret = Tcl_Eval(interp, buf)) != TCL_OK ) {
-					Tcl_Obj *options = Tcl_GetReturnOptions(interp, ret);
-					Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-					Tcl_Obj *stackTrace;
-					Tcl_IncrRefCount(key);
-					Tcl_DictObjGet(NULL, options, key, &stackTrace);
-					Tcl_DecrRefCount(key);
-					fprintf(stderr, "error: %s\n", Tcl_GetString(stackTrace));
-					Tcl_DecrRefCount(options);
-					exitcode = 1;
-				}
+	/*... do some further init work here */
+	/* Network daemon initialization follows */
 
 
-				daemon_log(LOG_INFO, "Exit code = %d", exitcode);
-				//write(fdc, "Closing...", 10);
-				close(fdc);
+	/* Send OK to parent process */
+	daemon_retval_send(0);
+
+	daemon_log(LOG_INFO, "Successfully started");
+
+	/* Prepare for select() on the signal fd */
+	FD_ZERO(&fds);
+	fd = daemon_signal_fd();
+	int fd2 = get_unix_socket();
+	FD_SET(fd, &fds);
+	FD_SET(fd2, &fds);
+
+	int ret;
+	int exitcode = 0;
+	Tcl_FindExecutable(argv[0]);
+	Tcl_Interp* interp = Tcl_CreateInterp();
+	if (Tcl_Init(interp) != TCL_OK)
+		return 1;
+
+	register_lsdn_tcl(interp);
+	printf("lsdn commands registered\n");
+
+	while (!quit) {
+		fd_set fds2 = fds;
+
+		/* Wait for an incoming signal */
+		if (select(FD_SETSIZE, &fds2, 0, 0, 0) < 0) {
+
+			/* If we've been interrupted by an incoming signal, continue */
+			if (errno == EINTR)
+				continue;
+
+			daemon_log(LOG_ERR, "select(): %s", strerror(errno));
+			break;
+		}
+
+		/* Check if a signal has been received */
+		if (FD_ISSET(fd, &fds2)) {
+			int sig;
+
+			/* Get signal */
+			if ((sig = daemon_signal_next()) <= 0) {
+				daemon_log(LOG_ERR, "daemon_signal_next() failed: %s", strerror(errno));
+				break;
 			}
-        }
 
-		/* Do a cleanup */
-		Tcl_Finalize();
+			/* Dispatch signal */
+			switch (sig) {
+				case SIGINT:
+				case SIGQUIT:
+				case SIGTERM:
+					daemon_log(LOG_WARNING, "Got SIGINT, SIGQUIT or SIGTERM.");
+					quit = 1;
+					break;
+
+				case SIGHUP:
+					daemon_log(LOG_INFO, "Got a HUP");
+					daemon_exec("/", NULL, "/bin/ls", "ls", (char*) NULL);
+					break;
+
+			}
+		} else if (FD_ISSET(fd2, &fds2)) {
+			struct sockaddr_un client_addr;
+			socklen_t client_addr_size = sizeof(struct sockaddr_un);
+			int fdc = accept(fd2, (struct sockaddr *) &client_addr, &client_addr_size);
+			fprintf(stderr, "Connection established\n");
+#define CMD_SIZE 4096
+#define BUF_SIZE 1024
+			char buf[BUF_SIZE];
+			char cmd[CMD_SIZE];
+			bzero(buf, BUF_SIZE);
+			bzero(cmd, CMD_SIZE);
+			dup2(fdc, 1);
+			dup2(fdc, 2);
+			size_t n;
+			size_t pos = 0;
+			while ((n = read(fdc, buf, BUF_SIZE)) != 0) {
+				strncpy(&cmd[pos], buf, n);
+				pos += n;
+			}
+
+			if ((ret = Tcl_Eval(interp, cmd)) != TCL_OK ) {
+				Tcl_Obj *options = Tcl_GetReturnOptions(interp, ret);
+				Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+				Tcl_Obj *stackTrace;
+				Tcl_IncrRefCount(key);
+				Tcl_DictObjGet(NULL, options, key, &stackTrace);
+				Tcl_DecrRefCount(key);
+				fprintf(stderr, "error: %s\n", Tcl_GetString(stackTrace));
+				Tcl_DecrRefCount(options);
+				exitcode = 1;
+			}
+
+			daemon_log(LOG_INFO, "Exit code = %d", exitcode);
+			//write(fdc, "Closing...", 10);
+			close(fdc);
+		}
+	}
+
+	/* Do a cleanup */
+	Tcl_Finalize();
 finish:
-        daemon_log(LOG_INFO, "Exiting...");
-        daemon_retval_send(255);
-        daemon_signal_done();
-        daemon_pid_file_remove();
+	daemon_log(LOG_INFO, "Exiting...");
+	daemon_retval_send(255);
+	daemon_signal_done();
+	daemon_pid_file_remove();
 
-        return 0;
-    }
+	return 0;
+}
 //}
