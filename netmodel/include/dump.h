@@ -2,14 +2,13 @@
  * LSDN network model (de)serialization related definitions. */
 #pragma once
 
-#include "../private/lsdn.h"
-#include "../private/net.h"
+#include "lsdn.h"
 
 /** Dump the internal LSDN network model in JSON format.
 */
 char *lsdn_dump_context_json(struct lsdn_context *ctx);
 
-/** Load the JSON representation of the network model
- *  into the internal LSDN model.
+/** Convert the JSON representation of the network model
+ *  into a TCL netmodel representation.
 */
 char *lsdn_convert_context_json2tcl(const char *str);

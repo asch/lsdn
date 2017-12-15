@@ -15,7 +15,7 @@ target_link_libraries(
 	${JSONC_LIBRARIES}
 )
 set_target_properties(lsdn PROPERTIES PUBLIC_HEADER
-	"include/errors.h;include/lsdn.h;include/nettypes.h;include/util.h;")
+	"include/errors.h;include/lsdn.h;include/nettypes.h;include/util.h;include/dump.h")
 
 install(
 	TARGETS lsdn

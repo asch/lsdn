@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <json.h>
 
-#include "private/dump.h"
+#include "include/dump.h"
+#include "private/net.h"
 #include "include/nettypes.h"
 
 
