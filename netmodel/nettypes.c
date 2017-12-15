@@ -156,7 +156,7 @@ static void gen_prefix(uint8_t *dst, int prefix)
  *
  * For example, `lsdn_ipv4_prefix_mask(LSDN_IPV4)` generates ip `255.255.255.0`.
  */
-lsdn_ip_t lsdn_ip_prefix_mask(enum lsdn_ipv v, int prefix)
+lsdn_ip_t lsdn_ip_mask_from_prefix(enum lsdn_ipv v, int prefix)
 {
 	lsdn_ip_t ip;
 	bzero(&ip, sizeof(ip));
@@ -173,6 +173,62 @@ lsdn_ip_t lsdn_ip_prefix_mask(enum lsdn_ipv v, int prefix)
 		abort();
 	}
 	return ip;
+}
+
+bool lsdn_ip_mask_is_valid(const lsdn_ip_t *mask)
+{
+	size_t LEN;
+	const uint8_t *bytes;
+	if (mask->v == LSDN_IPv4) {
+		LEN = LSDN_IPv4_LEN;
+		bytes = mask->v4.bytes;
+	} else {
+		LEN = LSDN_IPv6_LEN;
+		bytes = mask->v6.bytes;
+	}
+	for (size_t i = 0; i < LEN; i++) {
+		if (bytes[i] == 0xFF)
+			continue;
+
+		uint8_t pow = 1;
+		uint8_t pref = 0xFF - pow;
+		bool ok = false;
+		for (size_t j = 0; j < 7; j++) {
+			if (bytes[i] == pref)
+				ok = true;
+			pow *= 2;
+			pref -= pow;
+		}
+		if (!ok)
+			return false;
+
+		for (size_t j = i + 1; j < LEN; j++)
+			if (bytes[j] != 0)
+				return false;
+		return true;
+	}
+	return true;
+}
+
+int lsdn_ip_prefix_from_mask(const lsdn_ip_t *mask)
+{
+	assert(lsdn_ip_mask_is_valid(mask));
+	int prefix = 0;
+	size_t LEN;
+	const uint8_t *bytes;
+	if (mask->v == LSDN_IPv4) {
+		LEN = LSDN_IPv4_LEN;
+		bytes = mask->v4.bytes;
+	} else {
+		LEN = LSDN_IPv6_LEN;
+		bytes = mask->v6.bytes;
+	}
+	for (size_t i = 0; i < LEN; i++) {
+		for (size_t j = 0; j < 8; j++)
+			if (bytes[i] & (1 << j))
+				prefix++;
+	}
+	return prefix;
 }
 
 /** Check if the size of network prefix makes sense for given ip version */

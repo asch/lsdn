@@ -19,11 +19,11 @@ int main()
 	check_ip(LSDN_MK_IPV6(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
 		"0101:0101:0101:0101:0101:0101:0101:0101");
 
-	if (!lsdn_ip_eq(lsdn_ip_prefix_mask(LSDN_IPv4, 28), LSDN_MK_IPV4(0xFF, 0xFF, 0xFF, 0xF0)))
+	if (!lsdn_ip_eq(lsdn_ip_mask_from_prefix(LSDN_IPv4, 28), LSDN_MK_IPV4(0xFF, 0xFF, 0xFF, 0xF0)))
 		abort();
 
 	if (!lsdn_ip_eq(
-		lsdn_ip_prefix_mask(LSDN_IPv6, 127),
+		lsdn_ip_mask_from_prefix(LSDN_IPv6, 127),
 		LSDN_MK_IPV6(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 			     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE)))
 		abort();

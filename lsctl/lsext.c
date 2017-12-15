@@ -526,7 +526,7 @@ static int parse_ip_match(
 					r = tcl_error(interp, "the network prefix has invalid size for given IP version");
 					goto err;
 				}
-				*mask = lsdn_ip_prefix_mask(value->v, prefix);
+				*mask = lsdn_ip_mask_from_prefix(value->v, prefix);
 			} else {
 				r = TCL_OK;
 				/* the second part is mask or malformed */

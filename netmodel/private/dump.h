@@ -12,4 +12,4 @@ char *lsdn_dump_context_json(struct lsdn_context *ctx);
 /** Load the JSON representation of the network model
  *  into the internal LSDN model.
 */
-struct lsdn_context *lsdn_load_context_json(const char *str);
+char *lsdn_convert_context_json2tcl(const char *str);
