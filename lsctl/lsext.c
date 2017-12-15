@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
 #include "../netmodel/include/lsdn.h"
 #include "../netmodel/include/rules.h"
 
@@ -654,6 +655,115 @@ CMD(rule)
 	return TCL_OK;
 }
 
+struct unit {
+	const char *name;
+	double scale;
+};
+
+static const struct unit utab_bytes[] = {
+/* we use units consistent with tc */
+	{"", 1},
+	{"kb", 1024},
+	{"mb", 1024*1024},
+	{"gb", 1024*1024*1024},
+	{"bit", 1/8.},
+	{"kbit", 1024/8.},
+	{"mbit", 1024*1024/8.},
+	{"gbit", 1024*1024*1024/8.},
+};
+
+static int parse_units(Tcl_Interp *interp, const char *value, float *out, const struct unit *unit_tab)
+{
+	/* Pre-validate the floating point format to (\d+)(.\d+)?<unit>, stricter than strtod */
+	const char *c = value;
+	/* We assume C locale here */
+	if(!isdigit(*c))
+		return tcl_error(interp, "numeric value must start with a digit");
+	while(isdigit(*c))
+		c++;
+	if (*c == '.') {
+		c++;
+		if(!isdigit(*c))
+			return tcl_error(interp, "digit must follow after '.'");
+		while(isdigit(*c))
+			c++;
+	}
+	const char *unit_start = c;
+	while(isalpha(*c))
+		c++;
+	if (*c)
+		return tcl_error(interp, "garbage foun after numeric value");
+
+	for(;unit_tab->name; unit_tab++) {
+		if (strcmp(unit_tab->name, unit_start) == 0)
+			break;
+	}
+	if (!unit_tab->name)
+		return tcl_error(interp, "unknown unit");
+	*out = strtof(value, NULL) * unit_tab->scale;
+	return true;
+}
+
+CMD(rate)
+{
+	/* example rate in -avg 0.5mbit -burst 1mb -burstRate 10mb */
+	if (check_scope(interp, ctx, S_VIRT) != TCL_OK)
+		return TCL_ERROR;
+
+	const char* direction_names[] = {"in", "out"};
+	enum lsdn_direction direction_values[] = {LSDN_IN, LSDN_OUT};
+	int direction_index = 0;
+	enum lsdn_direction direction;
+
+	const char *avg = NULL;
+	const char *burst_size = NULL;
+	const char *burst_rate = NULL;
+
+	if (argc < 2) {
+		Tcl_WrongNumArgs(interp, 1, argv, " direction");
+		return TCL_ERROR;
+	}
+
+	if(Tcl_GetIndexFromObj(interp, argv[1], direction_names, "direction", 0, &direction_index) != TCL_OK)
+		return TCL_ERROR;
+	direction = direction_values[direction_index];
+	argc -= 1;
+	argv += 1;
+
+	const Tcl_ArgvInfo opts[] = {
+		{TCL_ARGV_STRING, "-avg", NULL, &avg},
+		{TCL_ARGV_STRING, "-burstRate", NULL, &burst_rate},
+		{TCL_ARGV_STRING, "-burst", NULL, &burst_size},
+		{TCL_ARGV_END}
+	};
+
+	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
+		return TCL_ERROR;
+
+	lsdn_qos_rate_t rate;
+	if (avg)
+		parse_units(interp, avg, &rate.avg_rate, utab_bytes);
+	else
+		rate.avg_rate = 0;
+
+	float burst_size_f = 0;
+	if (burst_size)
+		parse_units(interp, burst_size, &burst_size_f, utab_bytes);
+	rate.burst_size = burst_size_f;
+
+	if (burst_rate)
+		parse_units(interp, burst_rate, &rate.burst_rate, utab_bytes);
+	else
+		rate.burst_rate = 0;
+
+	if (direction == LSDN_IN)
+		lsdn_virt_set_rate_in(ctx->virt, rate);
+	else
+		lsdn_virt_set_rate_out(ctx->virt, rate);
+
+	return TCL_OK;
+}
+
 CMD(flush)
 {
 	if (check_scope(interp, ctx, S_VIRT) != TCL_OK)
@@ -950,6 +1060,7 @@ int register_lsdn_tcl(Tcl_Interp *interp)
 	REGISTER(detach);
 	REGISTER(flush);
 	REGISTER(rule);
+	REGISTER(rate);
 
 	return TCL_OK;
 }

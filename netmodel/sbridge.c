@@ -262,7 +262,7 @@ void lsdn_sbridge_phys_if_init(
 	// define the ruleset with priorities for match and fallback and subpriorities for us.
 	// Someone else (the firewall) can share the priorities with us.
 	struct lsdn_ruleset_prio *prio_match = sbridge_if->rules_match_mac =
-		lsdn_ruleset_define_prio(rules_in, LSDN_SBRIDGE_IF_PRIO_MATCH);
+		lsdn_ruleset_define_prio(rules_in, LSDN_IF_PRIO_MATCH);
 	if(!prio_match)
 		abort();
 	prio_match->targets[0] = LSDN_MATCH_DST_MAC;
@@ -271,7 +271,7 @@ void lsdn_sbridge_phys_if_init(
 		prio_match->targets[1]= LSDN_MATCH_ENC_KEY_ID;
 
 	struct lsdn_ruleset_prio *prio_fallback = sbridge_if->rules_fallback =
-		lsdn_ruleset_define_prio(rules_in, LSDN_SBRIDGE_IF_PRIO_FALLBACK);
+		lsdn_ruleset_define_prio(rules_in, LSDN_IF_PRIO_FALLBACK);
 	if(!prio_fallback)
 		abort();
 	if (match_vni)

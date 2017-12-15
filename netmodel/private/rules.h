@@ -10,6 +10,11 @@
 #include "list.h"
 #include "state.h"
 
+#define LSDN_IF_PRIO_POLICING 0xFF00
+#define LSDN_IF_PRIO_MATCH 0xFF01
+#define LSDN_IF_PRIO_FALLBACK 0xFF02
+#define LSDN_SBRIDGE_IF_SUBPRIO 0xFFFFFF00
+
 typedef void (*lsdn_mkaction_fn)(struct lsdn_filter *filter, uint16_t order, void *user);
 /* Describes a sequence of TC actions constructed by a callback when needed */
 struct lsdn_action_desc {

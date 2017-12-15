@@ -49,9 +49,6 @@ struct lsdn_sbridge_if {
 	struct lsdn_rule rule_fallback;
 };
 
-#define LSDN_SBRIDGE_IF_PRIO_MATCH 0xFF00
-#define LSDN_SBRIDGE_IF_PRIO_FALLBACK (LSDN_SBRIDGE_IF_PRIO_MATCH + 1)
-#define LSDN_SBRIDGE_IF_SUBPRIO 0xFFFFFF00
 struct lsdn_sbridge_phys_if {
 	struct lsdn_if *iface;
 	struct lsdn_idalloc br_chain_ids;

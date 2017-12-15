@@ -16,11 +16,16 @@
 #define LSDN_DECLARE_ATTR(obj, name, type) \
 	lsdn_err_t lsdn_##obj##_set_##name(struct lsdn_##obj *obj, type value); \
 	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *obj); \
-	type lsdn_##obj##_get_##name(struct lsdn_##obj *obj)
+	const type *lsdn_##obj##_get_##name(struct lsdn_##obj *obj)
 
 struct lsdn_virt;
 struct lsdn_net;
 struct lsdn_phys;
+
+enum lsdn_direction {
+	LSDN_IN,
+	LSDN_OUT
+};
 
 typedef void (*lsdn_nomem_cb)(void *user);
 
@@ -175,7 +180,21 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt);
  * committed stated). The phys interface must already exist. */
 lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu);
 
+/** A bandwith limit for virt's interface (for one direction).
+ * @see lsdn_set_qos_rate
+ */
+typedef struct {
+	/* in bytes per second */
+	float avg_rate;
+	/* in bytes */
+	uint32_t burst_size;
+	/* in bytes per second */
+	float burst_rate;
+} lsdn_qos_rate_t;
+
 LSDN_DECLARE_ATTR(virt, mac, lsdn_mac_t);
+LSDN_DECLARE_ATTR(virt, rate_in, lsdn_qos_rate_t);
+LSDN_DECLARE_ATTR(virt, rate_out, lsdn_qos_rate_t);
 
 lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);

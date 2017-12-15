@@ -1,0 +1,23 @@
+source lib/common.tcl
+common::settings
+
+phys -if out -name a -ip 172.16.0.1
+
+net 1 {
+	attach a
+	set rateParam {-avg 100kbit -burst 600kbit -burstRate 200kbit}
+	virt -phys a -if 1 -mac 00:00:00:00:00:a1 {
+		rate out {*}$rateParam
+		rate in {*}$rateParam
+	}
+	virt -phys a -if 2 -mac 00:00:00:00:00:a2 {
+		rate out {*}$rateParam
+		rate in {*}$rateParam
+	}
+
+}
+
+
+common::claimLocal
+commit
+common::free

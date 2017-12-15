@@ -47,10 +47,8 @@ union lsdn_matchdata {
 /* exclusive */
 #define LSDN_VR_PRIO_MAX 0x8000
 
-enum lsdn_direction {
-	LSDN_IN,
-	LSDN_OUT
-};
+/** Use this priority if you want your rule to take place during forwarding decisions. */
+#define LSDN_PRIO_FORWARD_DST_MAC (LSDN_VR_PRIO_MAX+1)
 
 /* lsdn virt's rule */
 struct lsdn_vr;

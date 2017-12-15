@@ -176,6 +176,8 @@ struct lsdn_virt {
 	struct lsdn_if committed_if;
 
 	lsdn_mac_t *attr_mac;
+	lsdn_qos_rate_t *attr_rate_in;
+	lsdn_qos_rate_t *attr_rate_out;
 	/*lsdn_ip_t *attr_ip; */
 
 	union {
@@ -191,7 +193,16 @@ struct lsdn_virt {
 		};
 	};
 
+	/** A rule for doing the policing on virt's ingress (our egress) */
+	struct lsdn_ruleset_prio *commited_policing_in;
+	struct lsdn_rule commited_policing_rule_in;
+	/** A rule for doing the policing on virt's egress (our ingress) */
+	struct lsdn_ruleset_prio *commited_policing_out;
+	struct lsdn_rule commited_policing_rule_out;
+
+	/** A ruleset on virt's egress (our ingress) */
 	struct lsdn_ruleset rules_in;
+	/** A ruleset on virt's ingress (our egress) */
 	struct lsdn_ruleset rules_out;
 	struct vr_prio *ht_in_rules;
 	struct vr_prio *ht_out_rules;

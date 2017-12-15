@@ -7,6 +7,16 @@
 #include <stdbool.h>
 #include "errors.h"
 
+#define LSDN_BITS(x) ((x) / 8)
+#define LSDN_KBITS(x) ((x) * 1000 / 8)
+#define LSDN_MBITS(x) ((x) * 1000 * 1000 / 8)
+#define LSDN_GBITS(x) ((x) * 1000 * 1000 * 1000 / 8)
+
+#define LSDN_BYTES(x) (x)
+#define LSDN_KBYTES(x) ((x) * 1000)
+#define LSDN_MBYTES(x) ((x) * 1000 * 1000)
+#define LSDN_GBYTES(x) ((x) * 1000 * 1000 * 1000)
+
 #define LSDN_MAC_LEN 6
 #define LSDN_IPv4_LEN 4
 #define LSDN_IPv6_LEN 16

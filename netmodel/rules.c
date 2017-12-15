@@ -34,6 +34,8 @@ struct lsdn_vr_action lsdn_vr_drop = {
 struct lsdn_vr *lsdn_vr_new(
 	struct lsdn_virt *virt, uint16_t prio_num, enum lsdn_direction dir, struct lsdn_vr_action *a)
 {
+	assert ((prio_num >= LSDN_VR_PRIO_MIN && prio_num < LSDN_VR_PRIO_MAX)
+		|| prio_num == LSDN_PRIO_FORWARD_DST_MAC);
 	struct vr_prio **ht = (dir == LSDN_IN) ? &virt->ht_in_rules : &virt->ht_out_rules;
 	struct lsdn_vr *vr = malloc(sizeof(*vr));
 	if (!vr)

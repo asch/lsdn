@@ -534,10 +534,14 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	virt->network = net;
 	virt->state = LSDN_STATE_NEW;
 	virt->attr_mac = NULL;
+	virt->attr_rate_in = NULL;
+	virt->attr_rate_out = NULL;
 	virt->connected_through = NULL;
 	virt->committed_to = NULL;
 	virt->ht_in_rules = NULL;
 	virt->ht_out_rules = NULL;
+	virt->commited_policing_in = NULL;
+	virt->commited_policing_out = NULL;
 	lsdn_if_init(&virt->connected_if);
 	lsdn_if_init(&virt->committed_if);
 	lsdn_name_init(&virt->name);
@@ -568,6 +572,8 @@ static void virt_do_free(struct lsdn_virt *virt)
 	lsdn_if_free(&virt->connected_if);
 	lsdn_if_free(&virt->committed_if);
 	free(virt->attr_mac);
+	free(virt->attr_rate_in);
+	free(virt->attr_rate_out);
 	free(virt);
 }
 
@@ -649,6 +655,7 @@ lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 
 	free(virt->attr_mac);
 	virt->attr_mac = mac_dup;
+	renew(&virt->state);
 	ret_err(virt->network->ctx, LSDNE_OK);
 }
 
@@ -677,6 +684,30 @@ lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *m
 	}
 	*mtu -= ops->compute_tunneling_overhead(virt->connected_through);
 	ret_err(ctx, LSDNE_OK);
+}
+
+lsdn_err_t lsdn_virt_set_rate_in(struct lsdn_virt *virt, lsdn_qos_rate_t rate)
+{
+	lsdn_qos_rate_t *rate_dup = malloc(sizeof(*rate_dup));
+	if (rate_dup == NULL)
+		ret_err(virt->network->ctx, LSDNE_NOMEM);
+	*rate_dup = rate;
+	free(virt->attr_rate_in);
+	virt->attr_rate_in = rate_dup;
+	renew(&virt->state);
+	ret_err(virt->network->ctx, LSDNE_OK);
+}
+
+lsdn_err_t lsdn_virt_set_rate_out(struct lsdn_virt *virt, lsdn_qos_rate_t rate)
+{
+	lsdn_qos_rate_t *rate_dup = malloc(sizeof(*rate_dup));
+	if (rate_dup == NULL)
+		ret_err(virt->network->ctx, LSDNE_NOMEM);
+	*rate_dup = rate;
+	free(virt->attr_rate_out);
+	virt->attr_rate_out = rate_dup;
+	renew(&virt->state);
+	ret_err(virt->network->ctx, LSDNE_OK);
 }
 
 static bool should_be_validated(enum lsdn_state state) {
@@ -826,6 +857,78 @@ static void decommit_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio, enum
 			if (ack_uncommit(&r->state))
 				decommit_vr(virt, prio, r, dir);
 		}
+	}
+}
+
+static void rates_action(struct lsdn_filter *f, uint16_t order, struct lsdn_virt *v, const lsdn_qos_rate_t *rate)
+{
+	/* TODO: specify a tigher mtu */
+	unsigned int mtu = 0xFFFF;
+	(void) lsdn_virt_get_recommended_mtu(v, &mtu);
+	lsdn_action_police(f,
+		order, rate->avg_rate, rate->burst_size, rate->burst_rate, mtu,
+		TC_ACT_PIPE, TC_ACT_SHOT);
+	lsdn_action_continue(f, order+1);
+}
+
+static void rates_action_out(struct lsdn_filter *f, uint16_t order, void *user)
+{
+	struct lsdn_virt *v = user;
+	const lsdn_qos_rate_t *rate = v->attr_rate_out;
+	rates_action(f, order, v, rate);
+}
+
+static void rates_action_in(struct lsdn_filter *f, uint16_t order, void *user)
+{
+	struct lsdn_virt *v = user;
+	const lsdn_qos_rate_t *rate = v->attr_rate_in;
+	rates_action(f, order, v, rate);
+}
+
+static void commit_rates(struct lsdn_virt *virt)
+{
+	if (virt->attr_rate_in) {
+		virt->commited_policing_in =
+			lsdn_ruleset_define_prio(&virt->rules_out, LSDN_IF_PRIO_POLICING);
+		if (!virt->commited_policing_in)
+			abort();
+
+		virt->commited_policing_rule_in.subprio = 0;
+		lsdn_action_init(
+			&virt->commited_policing_rule_in.action, 2, rates_action_out, virt);
+		lsdn_err_t err = lsdn_ruleset_add(
+			virt->commited_policing_in, &virt->commited_policing_rule_in);
+		if (err != LSDNE_OK)
+			abort();
+	}
+
+	if (virt->attr_rate_out) {
+		virt->commited_policing_out =
+			lsdn_ruleset_define_prio(&virt->rules_in, LSDN_IF_PRIO_POLICING);
+		if (!virt->commited_policing_out)
+			abort();
+
+		virt->commited_policing_rule_out.subprio = 0;
+		lsdn_action_init(
+			&virt->commited_policing_rule_out.action, 2, rates_action_in, virt);
+		lsdn_err_t err = lsdn_ruleset_add(
+			virt->commited_policing_out, &virt->commited_policing_rule_out);
+		if (err != LSDNE_OK)
+			abort();
+	}
+}
+
+static void decommit_rates(struct lsdn_virt *virt)
+{
+	if (virt->commited_policing_in) {
+		lsdn_ruleset_remove(&virt->commited_policing_rule_in);
+		lsdn_ruleset_remove_prio(virt->commited_policing_in);
+		virt->commited_policing_in = NULL;
+	}
+	if (virt->commited_policing_out) {
+		lsdn_ruleset_remove(&virt->commited_policing_rule_out);
+		lsdn_ruleset_remove_prio(virt->commited_policing_out);
+		virt->commited_policing_out = NULL;
 	}
 }
 
@@ -1015,6 +1118,8 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 					 v->connected_if.ifname, v);
 				ops->add_virt(v);
 			}
+
+			commit_rates(v);
 		}
 		commit_rules(v, v->ht_in_rules, LSDN_IN);
 		commit_rules(v, v->ht_out_rules, LSDN_OUT);
@@ -1093,6 +1198,8 @@ static void decommit_virt(struct lsdn_virt *v)
 {
 	struct lsdn_net_ops *ops = v->network->settings->ops;
 	struct lsdn_phys_attachment *pa = v->committed_to;
+
+	decommit_rates(v);
 
 	lsdn_foreach(v->virt_view_list, virt_view_entry, struct lsdn_remote_virt, rv) {
 		decommit_remote_virt(rv);

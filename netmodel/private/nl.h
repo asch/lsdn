@@ -6,9 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
-
 #include <libmnl/libmnl.h>
-
+#include <linux/tc_act/tc_gact.h>
 #include <net/if.h>
 #include <linux/if_link.h>
 #include <linux/if_ether.h>
@@ -160,6 +159,57 @@ void lsdn_action_mirror_egress_add(
 void lsdn_action_set_tunnel_key(
 		struct lsdn_filter *f, uint16_t order,
 		uint32_t vni, lsdn_ip_t *src_ip, lsdn_ip_t *dst_ip);
+
+/** If you want to know more, check tcf_act_police in kernel.
+ *
+ * The action keeps two token buckets: peak and burst. Each token corresponds to one ns elapsed.
+ * Each bucket has a depletion rate -- how fast packets deplete the tokens, in order words,
+ * what is a cost of a single packet. The buckets also have a maximum value, reffered to a bit
+ * confusingly as MTU.
+ *
+ * All parameters are passed inside (struct tc_police)TCA_POLICE_TBF nlattrs, ignore the rate tables
+ * in TCA_POLICE_RATE and TCA_POLICE_PEAKRATE, they are no longer used (but still needed in some
+ * vestigial form).
+ *
+ * The parameter names are as follows:
+ *
+ * tc_police member  | iproute (tc) | meaning
+ * --------------------------------------------------------------------------------
+ * burst             | burst        | burst bucket maximum (in tokens)
+ * mtu               | mtu          | peak bucket maximum (in transmit time ticks)
+ * rate              | rate         | burst bucket depletion rate
+ * peakrate          | peakrate     | peak bucker depletion rate
+ *
+ * The basic bucket you configure is the burst bucket -- this bucket controls the normal data rate
+ * and has high number of tokens for bursting. In this cases, the burst rate will be unlimited.
+ *
+ * If you want to limit the burst rate, you use the peak token bucket, which sets the
+ * absolute limit on the traffic, capping even the burst rate. You typically set the 'mtu' parameter
+ * to the actual mtu, so that the peak bucket does not have any excessive bursting itself. So there
+ * really are two levels of bursting, one intentional on the burst bucket, one caused by the mtu of
+ * the peak bucket.
+ *
+ * Example traffic graph (mtu burst ommited):
+ *
+ * ```
+ * kbps       burst
+ *   ^        |---|
+ *   |        #####                        -- peakrate
+ *   |        #####
+ *   |        ######
+ *   |        #########################    -- rate
+ *   |        #########################
+ *   +--------------------------------------> time
+ * ```
+ *
+ * Note: the action also has second mode, using estimators, which is less precices and the text
+ * above ignores it.
+ *
+ * If you do not want to use \a peakrate, set it to 0.
+ */
+void lsdn_action_police(struct lsdn_filter *f,  uint16_t order,
+	uint32_t avg_rate, uint32_t burst, uint32_t peakrate, uint32_t mtu,
+	int gact_conforming, int gact_overlimit);
 
 void lsdn_action_drop(struct lsdn_filter *f, uint16_t order);
 

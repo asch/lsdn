@@ -6,6 +6,7 @@
 #include <linux/tc_act/tc_gact.h>
 #include <linux/tc_act/tc_tunnel_key.h>
 #include <linux/veth.h>
+#include <pthread.h>
 #include <assert.h>
 #include <errno.h>
 
@@ -744,6 +745,98 @@ void lsdn_action_set_tunnel_key(
 
 	mnl_attr_put(f->nlh, TCA_TUNNEL_KEY_PARMS, sizeof(tunnel_key), &tunnel_key);
 
+	mnl_attr_nest_end(f->nlh, nested_attr2);
+	mnl_attr_nest_end(f->nlh, nested_attr);
+}
+
+const static uint32_t vestigial_rtab[TC_RTAB_SIZE / sizeof(uint32_t)];
+
+static void finish_rate(struct tc_ratespec *r, uint32_t mtu)
+{
+	/* cell_log estimation taken from TC -- it is not longer used anyway */
+	r->cell_log = 0;
+	r->cell_align = -1;
+	while ((mtu >> r->cell_log) > 255)
+		r->cell_log++;
+}
+
+/* linux packet scheduler ticks */
+static double tick_per_sec = 0;
+
+static void tc_init_fail(void)
+{
+	fprintf(stderr, "tc timer initialization failed\n");
+	abort();
+}
+void tc_core_init(void)
+{
+	/* Code taken nearly verbatim from TC */
+	FILE *fp;
+	uint32_t clock_res;
+	uint32_t t2us;
+	uint32_t us2t;
+
+	fp = fopen("/proc/net/psched", "r");
+	if (fp == NULL)
+		tc_init_fail();
+
+	if (fscanf(fp, "%08x%08x%08x", &t2us, &us2t, &clock_res) != 3)
+		tc_init_fail();
+	fclose(fp);
+
+	/* compatibility hack: for old iproute binaries (ignoring
+	 * the kernel clock resolution) the kernel advertises a
+	 * tick multiplier of 1000 in case of nano-second resolution,
+	 * which really is 1. */
+	if (clock_res == 1000000000)
+		t2us = us2t;
+
+	double clock_factor  = (double)clock_res;
+	tick_per_sec = (double)t2us / us2t * clock_factor;
+}
+
+static pthread_once_t pt_core_once = PTHREAD_ONCE_INIT;
+void tc_core_init_once()
+{
+	// TODO: make this part of the lsdn context, where it can fail more gracefully
+	if (pthread_once(&pt_core_once, tc_core_init) != 0)
+		tc_init_fail();
+}
+
+static uint32_t xmittime(uint32_t rate, uint32_t size)
+{
+	double time = (double)size/(double)rate;
+	return tick_per_sec*time;
+}
+
+void lsdn_action_police(struct lsdn_filter *f, uint16_t order,
+	uint32_t avg_rate, uint32_t burst, uint32_t peakrate, uint32_t mtu,
+	int gact_conforming, int gact_overlimit)
+{
+	tc_core_init_once();
+	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
+	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "police");
+	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
+
+	struct tc_police p;
+	bzero(&p, sizeof(p));
+
+	p.rate.rate = avg_rate;
+	finish_rate(&p.rate, mtu);
+	p.burst = xmittime(p.rate.rate, burst);
+	// printf("Burst %u, rate %u\n", p.burst, p.rate.rate);
+
+	p.peakrate.rate = peakrate;
+	finish_rate(&p.peakrate, mtu);
+
+	p.mtu = mtu;
+	p.action = gact_overlimit;
+	p.index = order;
+	mnl_attr_put(f->nlh, TCA_POLICE_TBF, sizeof(p), &p);
+	mnl_attr_put_u32(f->nlh, TCA_POLICE_RESULT, gact_conforming);
+	mnl_attr_put(f->nlh, TCA_POLICE_RATE, sizeof(vestigial_rtab), vestigial_rtab);
+	if (peakrate)
+		mnl_attr_put(f->nlh, TCA_POLICE_PEAKRATE, sizeof(vestigial_rtab), vestigial_rtab);
 	mnl_attr_nest_end(f->nlh, nested_attr2);
 	mnl_attr_nest_end(f->nlh, nested_attr);
 }
