@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <malloc.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -44,6 +45,8 @@
 
 #define LISTEN_BACKLOG 10
 
+char *ns;
+
 // TODO: Make it nicer, join with get_unix_socket
 const char *get_socket_path()
 {
@@ -51,7 +54,7 @@ const char *get_socket_path()
 	static char buf[128];
 	getcwd(buf, sizeof(buf));
 	if (fn[0] == 0) {
-		snprintf(fn, sizeof(fn), "%s/%s.socket", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown");
+		snprintf(fn, sizeof(fn), "%s/%s%s.socket", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown", ns);
 	}
 	return fn;
 }
@@ -82,13 +85,18 @@ const char *get_name()
 	static char buf[128];
 	getcwd(buf, sizeof(buf));
 	if (fn[0] == 0) {
-		snprintf(fn, sizeof(fn), "%s/%s.pid", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown");
+		snprintf(fn, sizeof(fn), "%s/%s%s.pid", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown", ns);
 	}
 	return fn;
 }
 
 int main(int argc, char *argv[]) {
 	pid_t pid;
+
+	/* Check if we are called with -id parameter */
+	if (argc >= 3 && !strcmp(argv[1], "-ns")) {
+		ns = argv[2];
+	}
 
 	/* Reset signal handlers */
 	if (daemon_reset_sigs(-1) < 0) {
@@ -106,20 +114,11 @@ int main(int argc, char *argv[]) {
 	daemon_pid_file_ident = daemon_log_ident = daemon_ident_from_argv0(argv[0]);
 
 	get_name();
+	get_socket_path();
 	daemon_pid_file_proc = get_name;
-
-	/* Check if we are called with -k parameter */
-	if (argc >= 2 && !strcmp(argv[1], "-k")) {
-		int ret;
-
-		/* Kill daemon with SIGTERM */
-
-		/* Check if the new function daemon_pid_file_kill_wait() is available, if it is, use it. */
-		if ((ret = daemon_pid_file_kill_wait(SIGTERM, 5)) < 0)
-			daemon_log(LOG_WARNING, "Failed to kill daemon: %s", strerror(errno));
-
-		return ret < 0 ? 1 : 0;
-	}
+#define CWD_LIMIT 512
+	char cwd[CWD_LIMIT];
+	getcwd(cwd, CWD_LIMIT);
 
 	/* Check that the daemon is not rung twice a the same time */
 	if ((pid = daemon_pid_file_is_running()) >= 0) {
@@ -134,36 +133,36 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* Do the fork */
-	//    if ((pid = daemon_fork()) < 0) {
-	//
-	//        /* Exit on error */
-	//        daemon_retval_done();
-	//        return 1;
-	//
-	//    } else if (pid) { /* The parent */
-	//        int ret;
-	//
-	//        /* Wait for 20 seconds for the return value passed from the daemon process */
-	//        if ((ret = daemon_retval_wait(20)) < 0) {
-	//            daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
-	//            return 255;
-	//        }
-	//
-	//        daemon_log(ret != 0 ? LOG_ERR : LOG_INFO, "Daemon returned %i as return value.", ret);
-	//        return ret;
-	//
-	//    } else { /* The daemon */
+	    if ((pid = daemon_fork()) < 0) {
+	
+	        /* Exit on error */
+	        daemon_retval_done();
+	        return 1;
+	
+	    } else if (pid) { /* The parent */
+	        int ret;
+	
+	        /* Wait for 20 seconds for the return value passed from the daemon process */
+	        if ((ret = daemon_retval_wait(20)) < 0) {
+	            daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
+	            return 255;
+	        }
+	
+	        daemon_log(ret != 0 ? LOG_ERR : LOG_INFO, "Daemon returned %i as return value.", ret);
+	        return ret;
+	
+	    } else { /* The daemon */
 	int fd, quit = 0;
 	fd_set fds;
 
 	/* Close FDs */
-	//        if (daemon_close_all(-1) < 0) {
-	//            daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
-	//
-	//            /* Send the error condition to the parent process */
-	//            daemon_retval_send(1);
-	//            goto finish;
-	//        }
+	        if (daemon_close_all(-1) < 0) {
+	            daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
+	
+	            /* Send the error condition to the parent process */
+	            daemon_retval_send(1);
+	            goto finish;
+	        }
 
 	/* Create the PID file */
 	if (daemon_pid_file_create() < 0) {
@@ -187,6 +186,9 @@ int main(int argc, char *argv[]) {
 	daemon_retval_send(0);
 
 	daemon_log(LOG_INFO, "Successfully started");
+
+	/* Go back to current directory */
+	chdir(cwd);
 
 	/* Prepare for select() on the signal fd */
 	FD_ZERO(&fds);
@@ -257,8 +259,7 @@ int main(int argc, char *argv[]) {
 			bzero(cmd, CMD_SIZE);
 			dup2(fdc, 1);
 			dup2(fdc, 2);
-			size_t n;
-			size_t pos = 0;
+			size_t n, pos = 0;
 			while ((n = read(fdc, buf, BUF_SIZE)) != 0) {
 				strncpy(&cmd[pos], buf, n);
 				pos += n;
@@ -278,6 +279,8 @@ int main(int argc, char *argv[]) {
 
 			daemon_log(LOG_INFO, "Exit code = %d", exitcode);
 			//write(fdc, "Closing...", 10);
+			//X-Files
+			shutdown(fdc, SHUT_RDWR);
 			close(fdc);
 		}
 	}
@@ -289,7 +292,8 @@ finish:
 	daemon_retval_send(255);
 	daemon_signal_done();
 	daemon_pid_file_remove();
+	unlink(get_socket_path());
 
 	return 0;
 }
-//}
+}

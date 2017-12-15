@@ -12,7 +12,11 @@ namespace eval common {
 		}
 	}
 	proc claimLocal {} {
-		set phys [lindex $::argv 0]
+		if [ info exists ::env(LSCTL_PHYS) ] {
+			set phys $::env(LSCTL_PHYS)
+		} else {
+			set phys [lindex $::argv 0]
+		}
 		::claimLocal $phys
 	}
 	proc free {} {

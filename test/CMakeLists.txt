@@ -51,6 +51,7 @@ test_executable(fw)
 test_simple(nettypes)
 # direct connection does not support multiple vnets, so no need to run the regular test
 test_parts(direct migrate ping)
+test_parts(direct migrate-daemon ping)
 test_parts(direct migrate cleanup)
 
 test_parts(vlan basic ping)
