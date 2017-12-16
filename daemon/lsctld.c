@@ -54,7 +54,7 @@ const char *get_socket_path()
 	static char buf[128];
 	getcwd(buf, sizeof(buf));
 	if (fn[0] == 0) {
-		snprintf(fn, sizeof(fn), "%s/%s%s.socket", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown", ns);
+		snprintf(fn, sizeof(fn), "%s/%s%s.socket", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown", ns ? ns : "");
 	}
 	return fn;
 }
@@ -85,7 +85,7 @@ const char *get_name()
 	static char buf[128];
 	getcwd(buf, sizeof(buf));
 	if (fn[0] == 0) {
-		snprintf(fn, sizeof(fn), "%s/%s%s.pid", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown", ns);
+		snprintf(fn, sizeof(fn), "%s/%s%s.pid", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown", ns ? ns : "");
 	}
 	return fn;
 }
