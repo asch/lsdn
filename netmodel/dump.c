@@ -142,6 +142,7 @@ static struct json_object *jsonify_lsdn_net(struct lsdn_net *net)
 	struct json_object *jobj_net = json_object_new_object();
 
 	json_object_object_add(jobj_net, "netName", json_object_new_string(net->name.str));
+	json_object_object_add(jobj_net, "settings", json_object_new_string(net->settings->name.str));
 	json_object_object_add(jobj_net, "vnetId", json_object_new_int64(net->vnet_id));
 
 	struct json_object *jarr_phys_list = json_object_new_array();
@@ -381,21 +382,20 @@ static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 		if (!json_object_is_type(jnet, json_type_object))
 			abort();
 		SA(SA(sbuf, "net"), SPACE);
-		struct json_object *virt_list = NULL;
-		struct json_object *phys_list = NULL;
-		json_object_object_foreach(jnet, key, val) {
-			if (!strcmp(key, "netName")) {
-				SA(SA(SA(SA(sbuf, "-name"), SPACE), json_object_get_string(val)), SPACE);
-			} else if (!strcmp(key, "vnetId")) {
-				SA(SA(SA(SA(sbuf, "-vid"), SPACE), json_object_get_string(val)), SPACE);
-			} else if (!strcmp(key, "physList")) {
-				phys_list = val;
-			} else if (!strcmp(key, "virts")) {
-				virt_list = val;
-			}
+		struct json_object *val;
+		if (json_object_object_get_ex(jnet, "vnetId", &val)) {
+			SA(SA(SA(SA(sbuf, "-vid"), SPACE), json_object_get_string(val)), SPACE);
+		}
+		if (json_object_object_get_ex(jnet, "settings", &val)) {
+			SA(SA(SA(SA(sbuf, "-settings"), SPACE), json_object_get_string(val)), SPACE);
+		}
+		if (json_object_object_get_ex(jnet, "netName", &val)) {
+			SA(SA(sbuf, json_object_get_string(val)), SPACE);
 		}
 		SA(SA(sbuf, "{"), NEWLINE);
-		if (phys_list) {
+
+		struct json_object *phys_list;
+		if (json_object_object_get_ex(jnet, "physList", &phys_list)) {
 			if (!json_object_is_type(phys_list, json_type_array))
 				abort();
 			int len_phys_list = json_object_array_length(phys_list);
@@ -404,7 +404,9 @@ static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 				SA(SA(SA(SA(sbuf, "attach"), SPACE), json_object_get_string(p)), NEWLINE);
 			}
 		}
-		if (virt_list) {
+
+		struct json_object *virt_list;
+		if (json_object_object_get_ex(jnet, "virts", &virt_list)) {
 			if (!json_object_is_type(virt_list, json_type_array))
 				abort();
 			int len_virt_list = json_object_array_length(virt_list);
