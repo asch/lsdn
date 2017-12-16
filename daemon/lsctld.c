@@ -93,7 +93,7 @@ const char *get_name()
 int main(int argc, char *argv[]) {
 	pid_t pid;
 
-	/* Check if we are called with -id parameter */
+	/* Check if we are called with -ns parameter */
 	if (argc >= 3 && !strcmp(argv[1], "-ns")) {
 		ns = argv[2];
 	}
