@@ -133,167 +133,167 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* Do the fork */
-	    if ((pid = daemon_fork()) < 0) {
-	
-	        /* Exit on error */
-	        daemon_retval_done();
-	        return 1;
-	
-	    } else if (pid) { /* The parent */
-	        int ret;
-	
-	        /* Wait for 20 seconds for the return value passed from the daemon process */
-	        if ((ret = daemon_retval_wait(20)) < 0) {
-	            daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
-	            return 255;
-	        }
-	
-	        daemon_log(ret != 0 ? LOG_ERR : LOG_INFO, "Daemon returned %i as return value.", ret);
-	        return ret;
-	
-	    } else { /* The daemon */
-	int fd, quit = 0;
-	fd_set fds;
+	if ((pid = daemon_fork()) < 0) {
 
-	/* Close FDs */
-	        if (daemon_close_all(-1) < 0) {
-	            daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
-	
-	            /* Send the error condition to the parent process */
-	            daemon_retval_send(1);
-	            goto finish;
-	        }
-
-	/* Create the PID file */
-	if (daemon_pid_file_create() < 0) {
-		daemon_log(LOG_ERR, "Could not create PID file (%s).", strerror(errno));
-		daemon_retval_send(2);
-		goto finish;
-	}
-
-	/* Initialize signal handling */
-	if (daemon_signal_init(SIGINT, SIGTERM, SIGQUIT, SIGHUP, 0) < 0) {
-		daemon_log(LOG_ERR, "Could not register signal handlers (%s).", strerror(errno));
-		daemon_retval_send(3);
-		goto finish;
-	}
-
-	/*... do some further init work here */
-	/* Network daemon initialization follows */
-
-
-	/* Send OK to parent process */
-	daemon_retval_send(0);
-
-	daemon_log(LOG_INFO, "Successfully started");
-
-	/* Go back to current directory */
-	chdir(cwd);
-
-	/* Prepare for select() on the signal fd */
-	FD_ZERO(&fds);
-	fd = daemon_signal_fd();
-	int fd2 = get_unix_socket();
-	FD_SET(fd, &fds);
-	FD_SET(fd2, &fds);
-
-	int ret;
-	int exitcode = 0;
-	Tcl_FindExecutable(argv[0]);
-	Tcl_Interp* interp = Tcl_CreateInterp();
-	if (Tcl_Init(interp) != TCL_OK)
+		/* Exit on error */
+		daemon_retval_done();
 		return 1;
 
-	register_lsdn_tcl(interp);
-	printf("lsdn commands registered\n");
+	} else if (pid) { /* The parent */
+		int ret;
 
-	while (!quit) {
-		fd_set fds2 = fds;
-
-		/* Wait for an incoming signal */
-		if (select(FD_SETSIZE, &fds2, 0, 0, 0) < 0) {
-
-			/* If we've been interrupted by an incoming signal, continue */
-			if (errno == EINTR)
-				continue;
-
-			daemon_log(LOG_ERR, "select(): %s", strerror(errno));
-			break;
+		/* Wait for 20 seconds for the return value passed from the daemon process */
+		if ((ret = daemon_retval_wait(20)) < 0) {
+			daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
+			return 255;
 		}
 
-		/* Check if a signal has been received */
-		if (FD_ISSET(fd, &fds2)) {
-			int sig;
+		daemon_log(ret != 0 ? LOG_ERR : LOG_INFO, "Daemon returned %i as return value.", ret);
+		return ret;
 
-			/* Get signal */
-			if ((sig = daemon_signal_next()) <= 0) {
-				daemon_log(LOG_ERR, "daemon_signal_next() failed: %s", strerror(errno));
+	} else { /* The daemon */
+		int fd, quit = 0;
+		fd_set fds;
+
+		/* Close FDs */
+		if (daemon_close_all(-1) < 0) {
+			daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
+
+			/* Send the error condition to the parent process */
+			daemon_retval_send(1);
+			goto finish;
+		}
+
+		/* Create the PID file */
+		if (daemon_pid_file_create() < 0) {
+			daemon_log(LOG_ERR, "Could not create PID file (%s).", strerror(errno));
+			daemon_retval_send(2);
+			goto finish;
+		}
+
+		/* Initialize signal handling */
+		if (daemon_signal_init(SIGINT, SIGTERM, SIGQUIT, SIGHUP, 0) < 0) {
+			daemon_log(LOG_ERR, "Could not register signal handlers (%s).", strerror(errno));
+			daemon_retval_send(3);
+			goto finish;
+		}
+
+		/*... do some further init work here */
+		/* Network daemon initialization follows */
+
+
+		/* Send OK to parent process */
+		daemon_retval_send(0);
+
+		daemon_log(LOG_INFO, "Successfully started");
+
+		/* Go back to current directory */
+		chdir(cwd);
+
+		/* Prepare for select() on the signal fd */
+		FD_ZERO(&fds);
+		fd = daemon_signal_fd();
+		int fd2 = get_unix_socket();
+		FD_SET(fd, &fds);
+		FD_SET(fd2, &fds);
+
+		int ret;
+		int exitcode = 0;
+		Tcl_FindExecutable(argv[0]);
+		Tcl_Interp* interp = Tcl_CreateInterp();
+		if (Tcl_Init(interp) != TCL_OK)
+			return 1;
+
+		register_lsdn_tcl(interp);
+		printf("lsdn commands registered\n");
+
+		while (!quit) {
+			fd_set fds2 = fds;
+
+			/* Wait for an incoming signal */
+			if (select(FD_SETSIZE, &fds2, 0, 0, 0) < 0) {
+
+				/* If we've been interrupted by an incoming signal, continue */
+				if (errno == EINTR)
+					continue;
+
+				daemon_log(LOG_ERR, "select(): %s", strerror(errno));
 				break;
 			}
 
-			/* Dispatch signal */
-			switch (sig) {
-				case SIGINT:
-				case SIGQUIT:
-				case SIGTERM:
-					daemon_log(LOG_WARNING, "Got SIGINT, SIGQUIT or SIGTERM.");
-					quit = 1;
-					break;
+			/* Check if a signal has been received */
+			if (FD_ISSET(fd, &fds2)) {
+				int sig;
 
-				case SIGHUP:
-					daemon_log(LOG_INFO, "Got a HUP");
-					daemon_exec("/", NULL, "/bin/ls", "ls", (char*) NULL);
+				/* Get signal */
+				if ((sig = daemon_signal_next()) <= 0) {
+					daemon_log(LOG_ERR, "daemon_signal_next() failed: %s", strerror(errno));
 					break;
+				}
 
-			}
-		} else if (FD_ISSET(fd2, &fds2)) {
-			struct sockaddr_un client_addr;
-			socklen_t client_addr_size = sizeof(struct sockaddr_un);
-			int fdc = accept(fd2, (struct sockaddr *) &client_addr, &client_addr_size);
-			fprintf(stderr, "Connection established\n");
+				/* Dispatch signal */
+				switch (sig) {
+					case SIGINT:
+					case SIGQUIT:
+					case SIGTERM:
+						daemon_log(LOG_WARNING, "Got SIGINT, SIGQUIT or SIGTERM.");
+						quit = 1;
+						break;
+
+					case SIGHUP:
+						daemon_log(LOG_INFO, "Got a HUP");
+						daemon_exec("/", NULL, "/bin/ls", "ls", (char*) NULL);
+						break;
+
+				}
+			} else if (FD_ISSET(fd2, &fds2)) {
+				struct sockaddr_un client_addr;
+				socklen_t client_addr_size = sizeof(struct sockaddr_un);
+				int fdc = accept(fd2, (struct sockaddr *) &client_addr, &client_addr_size);
+				fprintf(stderr, "Connection established\n");
 #define CMD_SIZE 4096
 #define BUF_SIZE 1024
-			char buf[BUF_SIZE];
-			char cmd[CMD_SIZE];
-			bzero(buf, BUF_SIZE);
-			bzero(cmd, CMD_SIZE);
-			dup2(fdc, 1);
-			dup2(fdc, 2);
-			size_t n, pos = 0;
-			while ((n = read(fdc, buf, BUF_SIZE)) != 0) {
-				strncpy(&cmd[pos], buf, n);
-				pos += n;
-			}
+				char buf[BUF_SIZE];
+				char cmd[CMD_SIZE];
+				bzero(buf, BUF_SIZE);
+				bzero(cmd, CMD_SIZE);
+				dup2(fdc, 1);
+				dup2(fdc, 2);
+				size_t n, pos = 0;
+				while ((n = read(fdc, buf, BUF_SIZE)) != 0) {
+					strncpy(&cmd[pos], buf, n);
+					pos += n;
+				}
 
-			if ((ret = Tcl_Eval(interp, cmd)) != TCL_OK ) {
-				Tcl_Obj *options = Tcl_GetReturnOptions(interp, ret);
-				Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-				Tcl_Obj *stackTrace;
-				Tcl_IncrRefCount(key);
-				Tcl_DictObjGet(NULL, options, key, &stackTrace);
-				Tcl_DecrRefCount(key);
-				fprintf(stderr, "error: %s\n", Tcl_GetString(stackTrace));
-				Tcl_DecrRefCount(options);
-				exitcode = 1;
-			}
+				if ((ret = Tcl_Eval(interp, cmd)) != TCL_OK ) {
+					Tcl_Obj *options = Tcl_GetReturnOptions(interp, ret);
+					Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+					Tcl_Obj *stackTrace;
+					Tcl_IncrRefCount(key);
+					Tcl_DictObjGet(NULL, options, key, &stackTrace);
+					Tcl_DecrRefCount(key);
+					fprintf(stderr, "error: %s\n", Tcl_GetString(stackTrace));
+					Tcl_DecrRefCount(options);
+					exitcode = 1;
+				}
 
-			daemon_log(LOG_INFO, "Exit code = %d", exitcode);
-			//write(fdc, "Closing...", 10);
-			//X-Files
-			shutdown(fdc, SHUT_RDWR);
-			close(fdc);
+				daemon_log(LOG_INFO, "Exit code = %d", exitcode);
+				//write(fdc, "Closing...", 10);
+				//X-Files
+				shutdown(fdc, SHUT_RDWR);
+				close(fdc);
+			}
 		}
-	}
 
-	/* Do a cleanup */
-	Tcl_Finalize();
+		/* Do a cleanup */
+		Tcl_Finalize();
 finish:
-	daemon_log(LOG_INFO, "Exiting...");
-	daemon_retval_send(255);
-	daemon_signal_done();
-	daemon_pid_file_remove();
-	unlink(get_socket_path());
+		daemon_log(LOG_INFO, "Exiting...");
+		daemon_retval_send(255);
+		daemon_signal_done();
+		daemon_pid_file_remove();
+		unlink(get_socket_path());
 
-	return 0;
-}
+		return 0;
+	}
 }
