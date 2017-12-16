@@ -232,7 +232,7 @@ static struct strbuf *strbuf_append(
 	size_t str_len = strlen(str);
 	if (free_space < str_len) {
 		size_t new_size = sbuf->len > str_len ?
-			(sbuf->len * 2) : (str_len * 2 + 1);
+			(sbuf->len * 2) : (str_len * 2);
 		char *s = (char *) malloc(new_size);
 		if (!s)
 			abort();
