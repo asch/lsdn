@@ -213,7 +213,7 @@ CMD(settings_vxlan_mcast)
 	const char* name = NULL;
 	const char* ip;
 	lsdn_ip_t ip_parsed;
-	int port = 0;
+	int port = 4789;
 
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_STRING, "-mcastIp", NULL, &ip},
