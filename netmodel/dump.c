@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
 #include <json.h>
@@ -243,8 +244,7 @@ static struct strbuf *strbuf_create(size_t hint)
 	return sbuf;
 }
 
-#define SA strbuf_append
-static struct strbuf *strbuf_append(
+static struct strbuf *strbuf_append_str(
 		struct strbuf *sbuf, const char *str)
 {
 	size_t size = sbuf->end - sbuf->s;
@@ -264,6 +264,19 @@ static struct strbuf *strbuf_append(
 	}
 	strcpy(sbuf->end, str);
 	sbuf->end += str_len;
+	return sbuf;
+}
+
+static struct strbuf *strbuf_append(struct strbuf *sbuf, ...)
+{
+	va_list args;
+	const char *str;
+
+	va_start(args, sbuf);
+	while ((str = va_arg(args, char *)))
+		sbuf = strbuf_append_str(sbuf, str);
+	va_end(args);
+
 	return sbuf;
 }
 
@@ -287,22 +300,22 @@ static void parse_json_lsdn_settings(struct json_object *jobj, struct strbuf *sb
 		struct json_object *jsettings = json_object_array_get_idx(jobj, idx);
 		if (!json_object_is_type(jsettings, json_type_object))
 			abort();
-		SA(SA(sbuf, "settings"), SPACE);
+		strbuf_append(sbuf, "settings", SPACE, NULL);
 		struct json_object *val;
 		if (!json_object_object_get_ex(jsettings, "settingsType", &val))
 			abort();
-		SA(SA(sbuf, json_object_get_string(val)), SPACE);
+		strbuf_append(sbuf, json_object_get_string(val), SPACE, NULL);
 
 		if (json_object_object_get_ex(jsettings, "settingsName", &val)) {
-			SA(SA(SA(SA(sbuf, "-name"), SPACE), json_object_get_string(val)), SPACE);
+			strbuf_append(sbuf, "-name", SPACE, json_object_get_string(val), SPACE, NULL);
 		}
 		if (json_object_object_get_ex(jsettings, "port", &val)) {
-			SA(SA(SA(SA(sbuf, "-port"), SPACE), json_object_get_string(val)), SPACE);
+			strbuf_append(sbuf, "-port", SPACE, json_object_get_string(val), SPACE, NULL);
 		}
 		if (json_object_object_get_ex(jsettings, "ip", &val)) {
-			SA(SA(SA(sbuf, "-mcastIp"), SPACE), json_object_get_string(val));
+			strbuf_append(sbuf, "-mcastIp", SPACE, json_object_get_string(val), NULL);
 		}
-		SA(sbuf, NEWLINE);
+		strbuf_append(sbuf, NEWLINE, NULL);
 	}
 }
 
@@ -347,17 +360,17 @@ static void convert_rules(struct json_object *rules, struct strbuf *sbuf)
 		struct json_object *rule = json_object_array_get_idx(rules, idx);
 		if (!json_object_is_type(rule, json_type_object))
 			abort();
-		SA(SA(sbuf, "rule"), SPACE);
+		strbuf_append(sbuf, "rule", SPACE, NULL);
 		struct json_object *val;
 		if (!json_object_object_get_ex(rule, "dir", &val))
 			abort();
-		SA(SA(sbuf, json_object_get_string(val)), SPACE);
+		strbuf_append(sbuf, json_object_get_string(val), SPACE, NULL);
 		if (!json_object_object_get_ex(rule, "prio", &val))
 			abort();
-		SA(SA(sbuf, json_object_get_string(val)), SPACE);
+		strbuf_append(sbuf, json_object_get_string(val), SPACE, NULL);
 		if (!json_object_object_get_ex(rule, "action", &val))
 			abort();
-		SA(SA(sbuf, json_object_get_string(val)), SPACE);
+		strbuf_append(sbuf, json_object_get_string(val), SPACE, NULL);
 
 		if (json_object_object_get_ex(rule, "targets", &val)) {
 			if (!json_object_is_type(val, json_type_array))
@@ -370,10 +383,10 @@ static void convert_rules(struct json_object *rules, struct strbuf *sbuf)
 				if (!json_object_object_get_ex(wal, "target", &zal))
 					abort();
 				const char *target = json_object_get_string(zal);
-				SA(SA(sbuf, target_match_conversion(target)), SPACE);
+				strbuf_append(sbuf, target_match_conversion(target), SPACE, NULL);
 				if (!json_object_object_get_ex(wal, "match", &zal))
 					abort();
-				SA(sbuf, json_object_get_string(zal));
+				strbuf_append(sbuf, json_object_get_string(zal), NULL);
 				if (target_has_mask(target)) {
 					if (json_object_object_get_ex(wal, "matchMask", &zal)) {
 						lsdn_ip_t ip;
@@ -382,12 +395,12 @@ static void convert_rules(struct json_object *rules, struct strbuf *sbuf)
 							abort();
 						int prefix = lsdn_ip_prefix_from_mask(&ip);
 						sprintf(ip_pref, "%d", prefix);
-						SA(SA(sbuf, "/"), ip_pref);
+						strbuf_append(sbuf, "/", ip_pref, NULL);
 					}
 				}
 			}
 		}
-		SA(sbuf, NEWLINE);
+		strbuf_append(sbuf, NEWLINE, NULL);
 	}
 }
 
@@ -395,24 +408,21 @@ static void convert_qos(struct json_object *qos, bool in, struct strbuf *sbuf)
 {
 	if (!json_object_is_type(qos, json_type_object))
 		abort();
-	SA(SA(sbuf, "rate"), SPACE);
+	strbuf_append(sbuf, "rate", SPACE, NULL);
 	if (in)
-		SA(SA(sbuf, "in"), SPACE);
+		strbuf_append(sbuf, "in", SPACE, NULL);
 	else
-		SA(SA(sbuf, "out"), SPACE);
+		strbuf_append(sbuf, "out", SPACE, NULL);
 
 	struct json_object *attr;
-	if (json_object_object_get_ex(qos, "avgRate", &attr)) {
-		SA(SA(SA(SA(sbuf, "-avg"), SPACE), json_object_get_string(attr)), SPACE);
-	}
-	if (json_object_object_get_ex(qos, "burstSize", &attr)) {
-		SA(SA(SA(SA(sbuf, "-burst"), SPACE), json_object_get_string(attr)), SPACE);
-	}
-	if (json_object_object_get_ex(qos, "burstRate", &attr)) {
-		SA(SA(SA(SA(sbuf, "-burstRate"), SPACE), json_object_get_string(attr)), SPACE);
-	}
+	if (json_object_object_get_ex(qos, "avgRate", &attr))
+		strbuf_append(sbuf, "-avg", SPACE, json_object_get_string(attr), SPACE, NULL);
+	if (json_object_object_get_ex(qos, "burstSize", &attr))
+		strbuf_append(sbuf, "-burst", SPACE, json_object_get_string(attr), SPACE, NULL);
+	if (json_object_object_get_ex(qos, "burstRate", &attr))
+		strbuf_append(sbuf, "-burstRate", SPACE, json_object_get_string(attr), SPACE, NULL);
 
-	SA(sbuf, NEWLINE);
+	strbuf_append(sbuf, NEWLINE, NULL);
 }
 
 static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
@@ -424,18 +434,15 @@ static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 		struct json_object *jnet = json_object_array_get_idx(jobj, idx);
 		if (!json_object_is_type(jnet, json_type_object))
 			abort();
-		SA(SA(sbuf, "net"), SPACE);
+		strbuf_append(sbuf, "net", SPACE, NULL);
 		struct json_object *val;
-		if (json_object_object_get_ex(jnet, "vnetId", &val)) {
-			SA(SA(SA(SA(sbuf, "-vid"), SPACE), json_object_get_string(val)), SPACE);
-		}
-		if (json_object_object_get_ex(jnet, "settings", &val)) {
-			SA(SA(SA(SA(sbuf, "-settings"), SPACE), json_object_get_string(val)), SPACE);
-		}
-		if (json_object_object_get_ex(jnet, "netName", &val)) {
-			SA(SA(sbuf, json_object_get_string(val)), SPACE);
-		}
-		SA(SA(sbuf, "{"), NEWLINE);
+		if (json_object_object_get_ex(jnet, "vnetId", &val))
+			strbuf_append(sbuf, "-vid", SPACE, json_object_get_string(val), SPACE, NULL);
+		if (json_object_object_get_ex(jnet, "settings", &val))
+			strbuf_append(sbuf, "-settings", SPACE, json_object_get_string(val), SPACE, NULL);
+		if (json_object_object_get_ex(jnet, "netName", &val))
+			strbuf_append(sbuf, json_object_get_string(val), SPACE, NULL);
+		strbuf_append(sbuf, "{", NEWLINE, NULL);
 
 		struct json_object *phys_list;
 		if (json_object_object_get_ex(jnet, "physList", &phys_list)) {
@@ -444,7 +451,7 @@ static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 			int len_phys_list = json_object_array_length(phys_list);
 			for (int idx = 0; idx < len_phys_list; idx++) {
 				struct json_object *p = json_object_array_get_idx(phys_list, idx);
-				SA(SA(SA(SA(sbuf, "attach"), SPACE), json_object_get_string(p)), NEWLINE);
+				strbuf_append(sbuf, "attach", SPACE, json_object_get_string(p), NEWLINE, NULL);
 			}
 		}
 
@@ -455,45 +462,37 @@ static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 			int len_virt_list = json_object_array_length(virt_list);
 			for (int idx = 0; idx < len_virt_list; idx++) {
 				struct json_object *p = json_object_array_get_idx(virt_list, idx);
-				SA(SA(sbuf, "virt"), SPACE);
+				strbuf_append(sbuf, "virt", SPACE, NULL);
 				struct json_object *rules = NULL;
 				struct json_object *qos_in = NULL;
 				struct json_object *qos_out = NULL;
 				json_object_object_foreach(p, pkey, pval) {
-					if (!strcmp(pkey, "virtName")) {
-						SA(SA(SA(SA(sbuf, "-name"), SPACE), json_object_get_string(pval)), SPACE);
-					}
-					else if (!strcmp(pkey, "phys")) {
-						SA(SA(SA(SA(sbuf, "-phys"), SPACE), json_object_get_string(pval)), SPACE);
-					}
-					else if (!strcmp(pkey, "iface")) {
-						SA(SA(SA(SA(sbuf, "-if"), SPACE), json_object_get_string(pval)), SPACE);
-					}
-					else if (!strcmp(pkey, "attrMac")) {
-						SA(SA(SA(SA(sbuf, "-mac"), SPACE), json_object_get_string(pval)), SPACE);
-					}
-					else if (!strcmp(pkey, "qosIn")) {
+					if (!strcmp(pkey, "virtName"))
+						strbuf_append(sbuf, "-name", SPACE, json_object_get_string(pval), SPACE, NULL);
+					else if (!strcmp(pkey, "phys"))
+						strbuf_append(sbuf, "-phys", SPACE, json_object_get_string(pval), SPACE, NULL);
+					else if (!strcmp(pkey, "iface"))
+						strbuf_append(sbuf, "-if", SPACE, json_object_get_string(pval), SPACE, NULL);
+					else if (!strcmp(pkey, "attrMac"))
+						strbuf_append(sbuf, "-mac", SPACE, json_object_get_string(pval), SPACE, NULL);
+					else if (!strcmp(pkey, "qosIn"))
 						qos_in = pval;
-					}
-					else if (!strcmp(pkey, "qosOut")) {
+					else if (!strcmp(pkey, "qosOut"))
 						qos_out = pval;
-					}
-					else if (!strcmp(pkey, "rules")) {
+					else if (!strcmp(pkey, "rules"))
 						rules = pval;
-					}
 				}
-				SA(SA(sbuf, "{"), NEWLINE);
+				strbuf_append(sbuf, "{", NEWLINE, NULL);
 				if (rules)
 					convert_rules(rules, sbuf);
 				if (qos_in)
 					convert_qos(qos_in, true, sbuf);
 				if (qos_out)
 					convert_qos(qos_out, false, sbuf);
-				SA(SA(sbuf, "}"), NEWLINE);
-				SA(sbuf, NEWLINE);
+				strbuf_append(sbuf, "}", NEWLINE, NULL);
 			}
 		}
-		SA(SA(sbuf, "}"), NEWLINE);
+		strbuf_append(sbuf, "}", NEWLINE, NULL);
 	}
 }
 
@@ -506,27 +505,24 @@ static void parse_json_lsdn_physes(struct json_object *jobj, struct strbuf *sbuf
 		struct json_object *jphys = json_object_array_get_idx(jobj, idx);
 		if (!json_object_is_type(jphys, json_type_object))
 			abort();
-		SA(SA(sbuf, "phys"), SPACE);
+		strbuf_append(sbuf, "phys", SPACE, NULL);
 		char *name = NULL;
 		struct json_object *val;
 		if (json_object_object_get_ex(jphys, "physName", &val)) {
-			SA(SA(sbuf, "-name"), SPACE);
+			strbuf_append(sbuf, "-name", SPACE, NULL);
 			name = strdup(json_object_get_string(val));
 			if (!name)
 				abort();
-			SA(SA(sbuf, name), SPACE);
+			strbuf_append(sbuf, name, SPACE, NULL);
 		}
-		if (json_object_object_get_ex(jphys, "attrIp", &val)) {
-			SA(SA(SA(SA(sbuf, "-ip"), SPACE), json_object_get_string(val)), SPACE);
-		}
-		if (json_object_object_get_ex(jphys, "iface", &val)) {
-			SA(SA(SA(SA(sbuf, "-if"), SPACE), json_object_get_string(val)), SPACE);
-		}
-		SA(sbuf, NEWLINE);
-		if (json_object_object_get_ex(jphys, "isLocal", &val) && name) {
-			SA(SA(SA(sbuf, "claimLocal"), SPACE), name);
-		}
-		SA(sbuf, NEWLINE);
+		if (json_object_object_get_ex(jphys, "attrIp", &val))
+			strbuf_append(sbuf, "-ip", SPACE, json_object_get_string(val), SPACE, NULL);
+		if (json_object_object_get_ex(jphys, "iface", &val))
+			strbuf_append(sbuf, "-if", SPACE, json_object_get_string(val), SPACE, NULL);
+		strbuf_append(sbuf, NEWLINE, NULL);
+		if (json_object_object_get_ex(jphys, "isLocal", &val) && name)
+			strbuf_append(sbuf, "claimLocal", SPACE, name, NULL);
+		strbuf_append(sbuf, NEWLINE, NULL);
 		free(name);
 	}
 }
@@ -534,7 +530,7 @@ static void parse_json_lsdn_physes(struct json_object *jobj, struct strbuf *sbuf
 static void parse_json_lsdn_name(struct json_object *jobj, struct strbuf *sbuf)
 {
 	const char *name = json_object_get_string(jobj);
-	SA(SA(SA(SA(sbuf, "-name"), SPACE), name), NEWLINE);
+	strbuf_append(sbuf, "-name", SPACE, name, NEWLINE, NULL);
 }
 
 char *lsdn_convert_context_json2tcl(const char *str_json)
@@ -571,4 +567,3 @@ char *lsdn_convert_context_json2tcl(const char *str_json)
 
 #undef NEWLINE
 #undef SPACE
-#undef SA
