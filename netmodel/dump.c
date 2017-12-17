@@ -115,6 +115,16 @@ static struct json_object *jsonify_lsdn_virt_rules(struct lsdn_virt *virt)
 	return jvr_arr;
 }
 
+static struct json_object *jsonify_lsdn_qos_rate(lsdn_qos_rate_t *qos)
+{
+	// TODO unify double / float / uint32 types in lsctl, netmodel and dump
+	struct json_object *jqos = json_object_new_object();
+	json_object_object_add(jqos, "avgRate", json_object_new_double(qos->avg_rate));
+	json_object_object_add(jqos, "burstSize", json_object_new_int64(qos->burst_size));
+	json_object_object_add(jqos, "burstRate", json_object_new_double(qos->burst_rate));
+	return jqos;
+}
+
 static struct json_object *jsonify_lsdn_virt(struct lsdn_virt *virt)
 {
 	struct json_object *jobj_virt = json_object_new_object();
@@ -133,6 +143,15 @@ static struct json_object *jsonify_lsdn_virt(struct lsdn_virt *virt)
 
 	struct json_object *jvirt_rules_arr = jsonify_lsdn_virt_rules(virt);
 	json_object_object_add(jobj_virt, "rules", jvirt_rules_arr);
+
+	if (virt->attr_rate_in) {
+		struct json_object *jvirt_qos_in = jsonify_lsdn_qos_rate(virt->attr_rate_in);
+		json_object_object_add(jobj_virt, "qosIn", jvirt_qos_in);
+	}
+	if (virt->attr_rate_out) {
+		struct json_object *jvirt_qos_out = jsonify_lsdn_qos_rate(virt->attr_rate_out);
+		json_object_object_add(jobj_virt, "qosOut", jvirt_qos_out);
+	}
 
 	return jobj_virt;
 }
@@ -372,6 +391,30 @@ static void convert_rules(struct json_object *rules, struct strbuf *sbuf)
 	}
 }
 
+static void convert_qos(struct json_object *qos, bool in, struct strbuf *sbuf)
+{
+	if (!json_object_is_type(qos, json_type_object))
+		abort();
+	SA(SA(sbuf, "rate"), SPACE);
+	if (in)
+		SA(SA(sbuf, "in"), SPACE);
+	else
+		SA(SA(sbuf, "out"), SPACE);
+
+	struct json_object *attr;
+	if (json_object_object_get_ex(qos, "avgRate", &attr)) {
+		SA(SA(SA(SA(sbuf, "-avg"), SPACE), json_object_get_string(attr)), SPACE);
+	}
+	if (json_object_object_get_ex(qos, "burstSize", &attr)) {
+		SA(SA(SA(SA(sbuf, "-burst"), SPACE), json_object_get_string(attr)), SPACE);
+	}
+	if (json_object_object_get_ex(qos, "burstRate", &attr)) {
+		SA(SA(SA(SA(sbuf, "-burstRate"), SPACE), json_object_get_string(attr)), SPACE);
+	}
+
+	SA(sbuf, NEWLINE);
+}
+
 static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 {
 	if (!json_object_is_type(jobj, json_type_array))
@@ -414,6 +457,8 @@ static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 				struct json_object *p = json_object_array_get_idx(virt_list, idx);
 				SA(SA(sbuf, "virt"), SPACE);
 				struct json_object *rules = NULL;
+				struct json_object *qos_in = NULL;
+				struct json_object *qos_out = NULL;
 				json_object_object_foreach(p, pkey, pval) {
 					if (!strcmp(pkey, "virtName")) {
 						SA(SA(SA(SA(sbuf, "-name"), SPACE), json_object_get_string(pval)), SPACE);
@@ -427,15 +472,24 @@ static void parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 					else if (!strcmp(pkey, "attrMac")) {
 						SA(SA(SA(SA(sbuf, "-mac"), SPACE), json_object_get_string(pval)), SPACE);
 					}
+					else if (!strcmp(pkey, "qosIn")) {
+						qos_in = pval;
+					}
+					else if (!strcmp(pkey, "qosOut")) {
+						qos_out = pval;
+					}
 					else if (!strcmp(pkey, "rules")) {
 						rules = pval;
 					}
 				}
-				if (rules) {
-					SA(SA(sbuf, "{"), NEWLINE);
+				SA(SA(sbuf, "{"), NEWLINE);
+				if (rules)
 					convert_rules(rules, sbuf);
-					SA(SA(sbuf, "}"), NEWLINE);
-				}
+				if (qos_in)
+					convert_qos(qos_in, true, sbuf);
+				if (qos_out)
+					convert_qos(qos_out, false, sbuf);
+				SA(SA(sbuf, "}"), NEWLINE);
 				SA(sbuf, NEWLINE);
 			}
 		}
