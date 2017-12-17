@@ -91,7 +91,7 @@ case $1 in
 		CMDLINE="qemu/serial-shell"
 		;;
 	all)
-		CMDLINE='ctest'
+		CMDLINE='ctest --output-on-failure'
 		RESULT="ctest.result"
 		;;
 	*)
