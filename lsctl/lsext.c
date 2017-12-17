@@ -670,6 +670,7 @@ static const struct unit utab_bytes[] = {
 	{"kbit", 1024/8.},
 	{"mbit", 1024*1024/8.},
 	{"gbit", 1024*1024*1024/8.},
+	{NULL, 0},
 };
 
 static int parse_units(Tcl_Interp *interp, const char *value, float *out, const struct unit *unit_tab)
