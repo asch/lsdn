@@ -67,7 +67,8 @@ static inline bool ack_uncommit(enum lsdn_state *s)
  * If the state is `LSDN_STATE_DELETE`, call `free` on the object.
  * @param obj object to free
  * @param free deallocator function */
-#define ack_delete(obj, free) { \
+#define ack_delete(obj, free) \
+	do { \
 		if (obj->state == LSDN_STATE_DELETE) \
 			free(obj); \
-	}while(0);
+	} while(0)
