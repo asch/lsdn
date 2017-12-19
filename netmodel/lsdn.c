@@ -1321,7 +1321,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 
 	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p){
 		if (ack_uncommit(&p->state))
-			ack_delete(p, phys_do_free)
+			ack_delete(p, phys_do_free);
 	}
 
 	lsdn_foreach(ctx->settings_list, settings_entry, struct lsdn_settings, s) {
