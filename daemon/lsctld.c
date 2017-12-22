@@ -282,7 +282,6 @@ int main(int argc, char *argv[]) {
 				struct sockaddr_un client_addr;
 				socklen_t client_addr_size = sizeof(struct sockaddr_un);
 				int fdc = accept(fd2, (struct sockaddr *) &client_addr, &client_addr_size);
-				fprintf(stderr, "Connection established\n");
 #define CMD_SIZE 4096
 #define BUF_SIZE 1024
 				char buf[BUF_SIZE];
@@ -310,10 +309,10 @@ int main(int argc, char *argv[]) {
 				}
 
 				daemon_log(LOG_INFO, "Exit code = %d", exitcode);
-				//write(fdc, "Closing...", 10);
-				//X-Files
 				shutdown(fdc, SHUT_RDWR);
 				close(fdc);
+				close(1);
+				close(2);
 			}
 		}
 
