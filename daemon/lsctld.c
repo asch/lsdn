@@ -29,6 +29,7 @@
 #include <sys/unistd.h>
 #include <sys/select.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include <libdaemon/dfork.h>
 #include <libdaemon/dsignal.h>
@@ -45,30 +46,19 @@
 
 #define LISTEN_BACKLOG 10
 
-char *ns;
-
-// TODO: Make it nicer, join with get_unix_socket
-const char *get_socket_path()
-{
-	static char fn[256] = { 0 };
-	static char buf[128];
-	getcwd(buf, sizeof(buf));
-	if (fn[0] == 0) {
-		snprintf(fn, sizeof(fn), "%s/%s%s.socket", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown", ns ? ns : "");
-	}
-	return fn;
-}
+static const char* opt_pidfile;
+static const char* opt_socket;
 
 int get_unix_socket()
 {
 	// TODO do it properly
-	unlink(get_socket_path());
+	unlink(opt_socket);
 
 	struct sockaddr_un server_addr;
 
 	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sun_family = AF_UNIX;
-	strncpy(server_addr.sun_path, get_socket_path(), sizeof(server_addr.sun_path) - 1);
+	strncpy(server_addr.sun_path, opt_socket, sizeof(server_addr.sun_path) - 1);
 
 	int s = socket(AF_UNIX, SOCK_STREAM, 0);
 
@@ -79,13 +69,17 @@ int get_unix_socket()
 	return s;
 }
 
-const char *get_name()
+const char *get_pidfile_name()
 {
-	static char fn[256] = { 0 };
-	static char buf[128];
-	getcwd(buf, sizeof(buf));
-	if (fn[0] == 0) {
-		snprintf(fn, sizeof(fn), "%s/%s%s.pid", buf, daemon_pid_file_ident ? daemon_pid_file_ident : "unknown", ns ? ns : "");
+	static char *fn = NULL;
+	const char *suffix = ".pid";
+	if (opt_pidfile)
+		return opt_pidfile;
+
+	if (!fn) {
+		size_t buflen = 1 + strlen(opt_socket) + strlen(suffix);
+		fn = malloc(buflen);
+		snprintf(fn, buflen, "%s%s", opt_socket, suffix);
 	}
 	return fn;
 }
@@ -93,10 +87,46 @@ const char *get_name()
 int main(int argc, char *argv[]) {
 	pid_t pid;
 
-	/* Check if we are called with -ns parameter */
-	if (argc >= 3 && !strcmp(argv[1], "-ns")) {
-		ns = argv[2];
+	static struct option long_options[] =
+	{
+		{"socket",  required_argument, 0, 's'},
+		{"pidfile", required_argument, 0, 'p'},
+		{0, 0, 0, 0}
+	};
+
+	while (1){
+		int option_index = 0;
+		int c = getopt_long (argc, argv, "s:p:", long_options, &option_index);
+
+		/* Detect the end of the options. */
+		if (c == -1)
+			break;
+
+		switch (c)
+		{
+		case 's':
+			opt_socket = optarg;
+			break;
+
+		case 'p':
+			opt_pidfile = optarg;
+			break;
+
+		case '?':
+			/* getopt_long already printed an error message. */
+			return 1;
+
+		default:
+			abort ();
+		}
 	}
+
+	if (!opt_socket) {
+		fprintf(stderr, "--socket argument is required\n");
+		return 1;
+	}
+
+	/* TODO: check path length agains AF_UNIX limits */
 
 	/* Reset signal handlers */
 	if (daemon_reset_sigs(-1) < 0) {
@@ -113,9 +143,7 @@ int main(int argc, char *argv[]) {
 	/* Set identification string for the daemon for both syslog and PID file */
 	daemon_pid_file_ident = daemon_log_ident = daemon_ident_from_argv0(argv[0]);
 
-	get_name();
-	get_socket_path();
-	daemon_pid_file_proc = get_name;
+	daemon_pid_file_proc = get_pidfile_name;
 #define CWD_LIMIT 512
 	char cwd[CWD_LIMIT];
 	getcwd(cwd, CWD_LIMIT);
@@ -155,6 +183,13 @@ int main(int argc, char *argv[]) {
 		int fd, quit = 0;
 		fd_set fds;
 
+		/* Go back to current directory */
+		if (chdir(cwd) != 0) {
+			daemon_retval_send(1);
+			/* do not cleanup anything -- we are in the wrong directory */
+			return 1;
+		}
+
 		/* Close FDs */
 		if (daemon_close_all(-1) < 0) {
 			daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
@@ -186,9 +221,6 @@ int main(int argc, char *argv[]) {
 		daemon_retval_send(0);
 
 		daemon_log(LOG_INFO, "Successfully started");
-
-		/* Go back to current directory */
-		chdir(cwd);
 
 		/* Prepare for select() on the signal fd */
 		FD_ZERO(&fds);
@@ -292,7 +324,7 @@ finish:
 		daemon_retval_send(255);
 		daemon_signal_done();
 		daemon_pid_file_remove();
-		unlink(get_socket_path());
+		unlink(opt_socket);
 
 		return 0;
 	}

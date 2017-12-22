@@ -15,9 +15,12 @@ function prepare(){
 	mk_bridge net switch a b c
 }
 
+LSPATH="/tmp/lsctld-tests"
 function run_daemons() {
+	rm -rf "$LSPATH" 2> /dev/null
+	mkdir -p "$LSPATH"
 	for p in $PHYS_LIST; do
-		LSCTL_PHYS=$p in_phys $p ../daemon/lsctld -ns $p
+		LSCTL_PHYS=$p in_phys $p ../daemon/lsctld -s "$LSPATH/$p"
 	done
 	sleep 1
 }
@@ -26,7 +29,7 @@ function connect() {
 	run_daemons
 	config=parts/migrate.lsctl
 	for p in $PHYS_LIST; do
-		nc -N -U lsctld$p.socket < $config
+		nc -N -U "$LSPATH/$p" < $config
 	done
 	pkill lsctld
 }
