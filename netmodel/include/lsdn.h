@@ -205,7 +205,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
  * the name of the type of object being created and "12" is the number of
  * already created names.
  * The generated name is stored in `namebuf` field of `ctx`, so repeated calls
- * to `lsdn_mk_ifname` overwrite it. You should make a private copy if you need it.
+ * to `lsdn_mk_name` overwrite it. You should make a private copy if you need it.
  * @param ctx LSDN context.
  * @return Pointer to the name string. */
 const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type);

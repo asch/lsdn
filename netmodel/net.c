@@ -2,20 +2,6 @@
  * Common functions for various types of networks. */
 #include "private/net.h"
 
-/** Make a unique interface name.
- * Creates a new interface name for a given context. The name is in the form
- * `"ctxname-12"`, where "ctxname" is `name` for the context and "12" is number
- * of already created interfaces.
- * The generated name is stored in `namebuf` field of `ctx`, so repeated calls
- * to `lsdn_mk_ifname` overwrite it. You should make a private copy if you need it.
- * @param ctx LSDN context.
- * @return Pointer to the name string. */
-const char *lsdn_mk_ifname(struct lsdn_context* ctx)
-{
-	snprintf(ctx->namebuf, sizeof(ctx->namebuf), "%s-%d", ctx->name, ++ctx->obj_count);
-	return ctx->namebuf;
-}
-
 /** Initialize common parts of `lsdn_settings` struct. */
 lsdn_err_t lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx)
 {
