@@ -702,7 +702,7 @@ static int parse_units(Tcl_Interp *interp, const char *value, float *out, const 
 	if (!unit_tab->name)
 		return tcl_error(interp, "unknown unit");
 	*out = strtof(value, NULL) * unit_tab->scale;
-	return true;
+	return TCL_OK;
 }
 
 CMD(rate)
@@ -742,18 +742,24 @@ CMD(rate)
 		return TCL_ERROR;
 
 	lsdn_qos_rate_t rate;
-	if (avg)
-		parse_units(interp, avg, &rate.avg_rate, utab_bytes);
+	if (avg) {
+		if (parse_units(interp, avg, &rate.avg_rate, utab_bytes) != TCL_OK)
+			return TCL_ERROR;
+	}
 	else
 		rate.avg_rate = 0;
 
 	float burst_size_f = 0;
-	if (burst_size)
-		parse_units(interp, burst_size, &burst_size_f, utab_bytes);
+	if (burst_size) {
+		if (parse_units(interp, burst_size, &burst_size_f, utab_bytes) != TCL_OK)
+			return TCL_ERROR;
+	}
 	rate.burst_size = burst_size_f;
 
-	if (burst_rate)
-		parse_units(interp, burst_rate, &rate.burst_rate, utab_bytes);
+	if (burst_rate) {
+		if (parse_units(interp, burst_rate, &rate.burst_rate, utab_bytes) != TCL_OK)
+			return TCL_ERROR;
+	}
 	else
 		rate.burst_rate = 0;
 
