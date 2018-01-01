@@ -32,21 +32,23 @@ void lsdn_names_free(struct lsdn_names *tab)
  * @return `LSDNE_NOMEM` if memory allocation failed. */
 lsdn_err_t lsdn_name_set(struct lsdn_name *name, struct lsdn_names *table, const char* str)
 {
-	if(name->str == str)
+	if (!str) {
+		lsdn_name_free(name);
 		return LSDNE_OK;
-	if(str && name->str && strcmp(name->str, str) == 0)
+	}
+	if (name->str == str)
+		return LSDNE_OK;
+	if (name->str && strcmp(name->str, str) == 0)
 		return LSDNE_OK;
 
-	if(str && lsdn_names_search(table, str))
+	if (lsdn_names_search(table, str))
 		return LSDNE_DUPLICATE;
 
 	char *namedup = strdup(str);
-	if(str && !namedup)
+	if (!namedup)
 		return LSDNE_NOMEM;
 
-	free(name->str);
-	if (!lsdn_is_list_empty(&name->entry))
-		lsdn_list_remove(&name->entry);
+	lsdn_name_free(name);
 
 	name->str = namedup;
 	lsdn_list_add(&table->head, &name->entry);
@@ -68,6 +70,7 @@ void lsdn_name_init(struct lsdn_name *name)
 void lsdn_name_free(struct lsdn_name *name)
 {
 	free(name->str);
+	name->str = NULL;
 	if (!lsdn_is_list_empty(&name->entry))
 		lsdn_list_remove(&name->entry);
 }
