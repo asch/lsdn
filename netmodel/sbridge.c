@@ -37,6 +37,7 @@ static void if_br_make(struct lsdn_sbridge_if *from, struct lsdn_sbridge_route *
 	bra->route = to;
 	struct lsdn_action_desc desc;
 	/* Set tunnel metadata + mirred */
+	desc.name = NULL;
 	desc.actions_count = to->tunnel_action.actions_count + 1;
 	desc.fn = if_br_mkaction;
 	desc.user = bra;
