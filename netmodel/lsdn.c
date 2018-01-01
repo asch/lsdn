@@ -329,7 +329,7 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 	assert(err != LSDNE_DUPLICATE);
 	if (err == LSDNE_NOMEM) {
 		free(phys);
-		ret_ptr(phys->ctx, NULL);
+		ret_ptr(ctx, NULL);
 	}
 	lsdn_list_init_add(&ctx->phys_list, &phys->phys_entry);
 	lsdn_list_init(&phys->attached_to_list);

@@ -39,7 +39,7 @@ struct lsdn_vr *lsdn_vr_new(
 	struct vr_prio **ht = (dir == LSDN_IN) ? &virt->ht_in_rules : &virt->ht_out_rules;
 	struct lsdn_vr *vr = malloc(sizeof(*vr));
 	if (!vr)
-		ret_ptr(virt->network->ctx, vr);
+		ret_ptr(virt->network->ctx, NULL);
 
 	struct vr_prio *prio;
 	HASH_FIND(hh, *ht, &prio_num, sizeof(prio_num), prio);
@@ -47,7 +47,7 @@ struct lsdn_vr *lsdn_vr_new(
 		prio = malloc(sizeof(*prio));
 		if (!prio) {
 			free(vr);
-			ret_ptr(virt->network->ctx, vr);
+			ret_ptr(virt->network->ctx, NULL);
 		}
 		prio->commited_prio = NULL;
 		prio->commited_count = 0;
