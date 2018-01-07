@@ -465,7 +465,7 @@ static int parse_mac_match(
 		Tcl_Obj *value_obj;
 		r = Tcl_ListObjIndex(interp, obj, 0, &value_obj);
 		assert (r == TCL_OK);
-		enum lsdn_err ls_err = lsdn_parse_mac(value, Tcl_GetString(value_obj));
+		lsdn_err_t ls_err = lsdn_parse_mac(value, Tcl_GetString(value_obj));
 		if (ls_err != LSDNE_OK) {
 			r = tcl_error(interp, "can not parse mac address");
 			goto err;
@@ -509,7 +509,7 @@ static int parse_ip_match(
 		Tcl_Obj *value_obj;
 		r = Tcl_ListObjIndex(interp, obj, 0, &value_obj);
 		assert (r == TCL_OK);
-		enum lsdn_err ls_err = lsdn_parse_ip(value, Tcl_GetString(value_obj));
+		lsdn_err_t ls_err = lsdn_parse_ip(value, Tcl_GetString(value_obj));
 		if (ls_err != LSDNE_OK) {
 			r = tcl_error(interp, "can not parse mac address");
 			goto err;

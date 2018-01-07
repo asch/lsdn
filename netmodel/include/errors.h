@@ -11,7 +11,7 @@
 struct lsdn_context;
 
 /** Possible LSDN errors. */
-enum lsdn_err {
+typedef enum {
 	/** No error. */
 	LSDNE_OK = 0,
 	/** Out of memory. */
@@ -34,8 +34,7 @@ enum lsdn_err {
 	LSDNE_COMMIT,
 	/** Incompatible rules with the same priority */
 	LSDNE_INCOMPATIBLE_MATCH
-};
-typedef enum lsdn_err lsdn_err_t;
+} lsdn_err_t;
 
 /** Generator for `lsdn_problem_code`.
  * @see LSDN_ENUM
