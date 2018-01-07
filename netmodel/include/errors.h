@@ -86,21 +86,33 @@ enum lsdn_problem_ref_type {
 	LSDNS_END
 };
 
+/** Maximum number of problem items described simultaneously.
+ * Configures size of the problem buffer in `lsdn_context`. */
 #define LSDN_MAX_PROBLEM_REFS 10
 
-/** Single problem reference. */
+/** Reference to a problem item.
+ * Consists of a problem type, and a pointer to a struct of the appropriate type. */
 struct lsdn_problem_ref {
 	/** Problem type. */
 	enum lsdn_problem_ref_type type;
-	/** Associated data, depending on problem type.
-	 * TODO this should probably be a union. */
+	/** Pointer to the appropriate struct.
+	 * TODO this should probably be a union? */
 	void *ptr;
 };
 
-/** Something about a problem. XXX */
+/** Description of encountered problem.
+ * Passed to a `lsdn_problem_cb` callback when an error occurs.
+ *
+ * `code` refers to the type of problem encountered. Depending on the type of the problem,
+ * this might also indicate any number of related problematic items. Pointers to them
+ * are stored in `refs`. */
 struct lsdn_problem {
+	/** Problem code. */
 	enum lsdn_problem_code code;
+	/** Number of related items. */
 	size_t refs_count;
+	/** Array of references to related items.
+	 * @note `refs` actually point to a buffer in `lsdn_context`. */
 	struct lsdn_problem_ref *refs;
 };
 

@@ -10,13 +10,17 @@
 #include "private/lsdn.h"
 
 
-#define mk_diag_fmt(x, fmt) fmt,
-
 /** List of errors and their format strings. */
 LSDN_ENUM_NAMES(problem_code);
 
+/** Extract pointer to the appropriate type from `lsdn_problem_ref`.
+ * Used as a shorthand for typecasting `ref->ptr`, which is a void pointer in order
+ * to simplify assigning to it. */
 #define CAST(x) ((x)subj->ptr)
-/** Convert subject name to string. */
+
+/** Convert subject name to string.
+ * @param[in] subj reference to a problem item. 
+ * @param[out] out output stream. */
 static void format_subject(FILE* out, const struct lsdn_problem_ref *subj)
 {
 	bool printed = false;
@@ -54,7 +58,9 @@ static void format_subject(FILE* out, const struct lsdn_problem_ref *subj)
 }
 
 /** Print problem description.
- * Constructs a string describing the problem and writes it out to `out`. */
+ * Constructs a string describing the problem and writes it out to `out`.
+ * @param[out] out output stream.
+ * @param[in] problem problem description. */
 void lsdn_problem_format(FILE* out, const struct lsdn_problem *problem)
 {
 	size_t i = 0;
@@ -104,7 +110,15 @@ void lsdn_problem_report(struct lsdn_context *ctx, enum lsdn_problem_code code, 
 	ctx->problem_count++;
 }
 
+/** Problem handler that dumps problem descriptions to `stderr`.
+ * Can be used as a callback in `lsdn_commit`, `lsdn_validate`, and any other place that takes
+ * `lsdn_problem_cb`.
+ *
+ * When a problem is encountered, this handler will dump a human-readable description to `stderr`.
+ * @param problem problem description.
+ * @param user user data for the callback. Unused. */
 void lsdn_problem_stderr_handler(const struct lsdn_problem *problem, void *user)
 {
+	LSDN_UNUSED(user);
 	lsdn_problem_format(stderr, problem);
 }

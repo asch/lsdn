@@ -8,7 +8,10 @@
 
 /** Return error code and/or call OoM callback.
  * Checks if the error is #LSDNE_NOMEM and invokes `lsdn_context.nomem_cb`
- * if specified. Then it returns the error. */
+ * if specified. Then it returns the error.
+ * @param ctx LSDN context.
+ * @param err error code.
+ * @return value of `err`. */
 static inline lsdn_err_t ret_err(struct lsdn_context *ctx, lsdn_err_t err)
 {
 	if(err == LSDNE_NOMEM && ctx->nomem_cb)
@@ -22,7 +25,10 @@ static inline lsdn_err_t ret_err(struct lsdn_context *ctx, lsdn_err_t err)
 /** Return pointer and/or call OoM callback.
  * Checks if the pointer is `NULL`. If yes, assumes that it was caused
  * by a failed allocations and invokes `lsdn_context.nomem_cb` if specified.
- * Then it returns the pointer. */
+ * Then it returns the pointer.
+ * @param ctx LSDN context.
+ * @param ptr pointer to check.
+ * @return value of `ptr`. */
 static inline void *ret_ptr(struct lsdn_context *ctx, void *ptr){
 	if(ptr == NULL && ctx->nomem_cb)
 		ctx->nomem_cb(ctx->nomem_cb_user);
