@@ -47,7 +47,6 @@ mk_phys(){
 	#in_ns "$phys" sysctl net.ipv6.conf.all.disable_ipv6=1 > /dev/null
 	mk_veth_pair "$phys" out "$net" "$phys"
 	set_ifattr "$phys" out "$@"
-	PHYS_LIST="$PHYS_LIST $phys"
 }
 in_phys(){
 	local ns="$1"

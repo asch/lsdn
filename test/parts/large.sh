@@ -1,5 +1,9 @@
 phys_seq=`seq 40`
 phys_names=
+PHYS_LIST=""
+for p in $phys_seq; do
+	PHYS_LIST="$PHYS_LIST p$p"
+done
 
 function prepare(){
 	mk_testnet net

@@ -1,4 +1,5 @@
 NETCONF="firewall"
+PHYS_LIST="a"
 
 function prepare(){
 	mk_testnet net

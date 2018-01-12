@@ -1,3 +1,5 @@
+PHYS_LIST="a b c"
+
 function dhcp_server(){
 	in_virt $1 $2 tcpdump -i $3 -w dump.pcap&
 	cat << EOF > /tmp/dhcpd.conf

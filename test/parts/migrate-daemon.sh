@@ -1,4 +1,5 @@
 NETCONF="migrate"
+PHYS_LIST="a b c"
 
 function prepare(){
 	mk_testnet net

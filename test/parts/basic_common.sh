@@ -1,3 +1,4 @@
+PHYS_LIST="a b c"
 function prepare(){
 	mk_testnet net
 	mk_phys net a ip 172.16.0.1/24
