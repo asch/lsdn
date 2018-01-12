@@ -14,7 +14,9 @@
 	/** Network operations. */ \
 	x(LSDNL_NETOPS, "netops") \
 	/** TC rules. */ \
-	x(LSDNL_RULES, "rules")
+	x(LSDNL_RULES, "rules") \
+	/** Netlink and other low-level failures */ \
+	x(LSDN_NLERR, "nlerr")
 
 /** Log category. */
 LSDN_ENUM(log_category, LSDNL);

@@ -1,4 +1,5 @@
 #include "private/nl.h"
+#include "private/log.h"
 #include "include/util.h"
 #include <linux/pkt_sched.h>
 #include <linux/pkt_cls.h>
@@ -91,6 +92,22 @@ struct mnl_socket *lsdn_socket_init()
 		mnl_socket_close(sock);
 		return NULL;
 	}
+
+	/* This requests extended errorr messages (an error text). */
+	int yes = 1;
+	err = mnl_socket_setsockopt(sock, NETLINK_EXT_ACK, &yes, sizeof(yes));
+	if (err) {
+		mnl_socket_close(sock);
+		return NULL;
+	}
+
+	/* This asks the kernel not to send back messages in ACKs, just headers */
+	err = mnl_socket_setsockopt(sock, NETLINK_CAP_ACK, &yes, sizeof(yes));
+	if (err) {
+		mnl_socket_close(sock);
+		return NULL;
+	}
+
 	return sock;
 }
 
@@ -101,18 +118,37 @@ void lsdn_socket_free(struct mnl_socket *s)
 
 static lsdn_err_t process_response(struct nlmsghdr *nlh)
 {
-	int *resp;
+	struct nlmsgerr *resp;
 	lsdn_err_t ret;
 
 	if (nlh->nlmsg_type == NLMSG_ERROR) {
 		resp = mnl_nlmsg_get_payload(nlh);
-		if (*resp)
+
+		if (resp->error) {
+			const char* msg = NULL;
+			struct nlattr *attr;
+			mnl_attr_for_each(attr, nlh, sizeof(*resp)) {
+				uint16_t type = mnl_attr_get_type(attr);
+				if (type == NLMSGERR_ATTR_MSG) {
+					if (mnl_attr_validate(attr, MNL_TYPE_STRING) < 0)
+						break;
+					msg = mnl_attr_get_str(attr);
+				}
+			}
+
+			lsdn_log(LSDN_NLERR, "Error code %s (%d)\n", strerror(-resp->error), resp->error);
+			if (msg)
+				lsdn_log(LSDN_NLERR, "Kernel message: %s\n", msg);
+
+
 			ret = LSDNE_NETLINK;
-		else
+		} else {
 			ret = LSDNE_OK;
+		}
 	} else {
 		ret = LSDNE_NETLINK;
 	}
+
 
 	return ret;
 }
