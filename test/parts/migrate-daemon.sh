@@ -29,7 +29,7 @@ function connect() {
 	run_daemons
 	config=parts/migrate.lsctl
 	for p in $PHYS_LIST; do
-		nc -N -U "$LSPATH/$p" < $config
+		pass ../lsctlc/lsctlc "$LSPATH/$p" < $config
 	done
 	pkill lsctld
 }
