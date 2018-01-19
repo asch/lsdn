@@ -1,3 +1,5 @@
+/** \file
+ * Virt Rules engine related private structs and definitions. */
 #pragma once
 
 #include <uthash.h>
@@ -15,31 +17,38 @@
 #define LSDN_IF_PRIO_FALLBACK 0xFF02
 #define LSDN_SBRIDGE_IF_SUBPRIO 0xFFFFFF00
 
+/** Action generator callback signature.
+ * @see lsdn_action_desc */
 typedef void (*lsdn_mkaction_fn)(struct lsdn_filter *filter, uint16_t order, void *user);
-/* Describes a sequence of TC actions constructed by a callback when needed */
+
+/** Description of rule actions.
+ * Describes a sequence of TC actions constructed by a callback when needed.
+ * TODO expand on this */
 struct lsdn_action_desc {
+	/** Name. */
 	char *name;
+	/** Number of actions in sequence. */
 	size_t actions_count;
-	/* Callback to create the actions on the filter rule */
+	/** Callback that generates the actions. */
 	lsdn_mkaction_fn fn;
+	/** User data for the callback. */
 	void *user;
 };
-/* A helper for setting action fields */
-void lsdn_action_init(struct lsdn_action_desc *action, size_t count, lsdn_mkaction_fn fn, void *user);
 
+void lsdn_action_init(struct lsdn_action_desc *action, size_t count, lsdn_mkaction_fn fn, void *user);
 bool lsdn_target_supports_masking(enum lsdn_rule_target);
 
 struct lsdn_flower_rule;
 
 #define LSDN_KEY_SIZE (LSDN_MAX_MATCH_LEN * LSDN_MAX_MATCHES)
 /* A single rule in lsdn_ruleset. Fill in the priority, match conditions and action. */
-struct lsdn_rule{
+struct lsdn_rule {
 	/* Match conditions, taken as logical conjunction of the match lsdn_match. */
 	union lsdn_matchdata matches[LSDN_MAX_MATCHES];
 	struct lsdn_action_desc action;
 	uint32_t subprio;
 
-	/* private part */
+	/** @privatesection */
 	struct lsdn_ruleset *ruleset;
 	struct lsdn_ruleset_prio *prio;
 	struct lsdn_flower_rule *fl_rule;
@@ -47,35 +56,45 @@ struct lsdn_rule{
 	UT_hash_handle hh;
 };
 
-/* A set of lsdn_rule organized by priorities and sub-priorities.
- * These rules will be transormed into a chain of TC flower filters.
+/** Set of lsdn_rule organized by priorities and sub-priorities.
+ * These rules will be transformed into a chain of TC flower filters.
  *
- * The rules may have the same priority, if they match against the same data. That is, they must have
+ * The rules may have the same priority only if they match against the same data. That is, they must have
  * the same match targets and masks. However, the rules within the same priority must be unique
  * (they must have different data), unless distinguished by subpriority
  *
  * Valid example:
+ * ```
  *	1.0: dst_ip ~ 192.168.0.0/16
  *	1.0: dst_ip ~ 127.0.0.0/16
+ * ```
  *
  * Invalid example (different match targets):
+ * ```
  *	1.0: dst_ip ~ 192.168.0.0/16
  *	1.0: dst_ip ~ 192.168.0.0/32
+ * ```
  *
  * Invalid example (duplicate rules):
+ * ```
  *	1.0: dst_ip ~ 192.168.0.0/16
  *	1.0: dst_ip ~ 192.168.0.0/16
+ * ```
  *
  * Valid example:
+ * ```
  *	1.0: dst_ip ~ 192.168.0.0/16
  *	1.1: dst_ip ~ 192.168.0.0/16
+ * ```
  *
  * Performance: For the flower filter chain to work efficiently, it is important to minimize the
  * number of flower filters and maximize the number of rules in one instance. You are guaranteed
  * that all rules sharing a priority will share a filter instance.
  */
 struct lsdn_ruleset {
+	/** Network interface where the rules apply. */
 	struct lsdn_if *iface;
+	/** LSDN context. */
 	struct lsdn_context *ctx;
 	uint32_t parent_handle;
 	uint32_t chain;
@@ -96,10 +115,14 @@ struct lsdn_ruleset_prio {
 	struct lsdn_flower_rule *hash_fl_rules;
 };
 
+/** Flower rule.
+ * Represents a TC flower filter rule in kernel. */
 struct lsdn_flower_rule {
+	/** Match data. */
 	union lsdn_matchdata matches[LSDN_MAX_MATCHES];
+	/** Flower handle. */
 	uint32_t fl_handle;
-	/* List of rules that are combined into these flower rules */
+	/** List of rules that are combined into these flower rules */
 	struct lsdn_list_entry sources_list;
 	UT_hash_handle hh;
 };

@@ -22,8 +22,11 @@ struct lsdn_virt;
 struct lsdn_net;
 struct lsdn_phys;
 
+/** Virt rule direction. */
 enum lsdn_direction {
+	/** Inbound rule. */
 	LSDN_IN,
+	/** Outbound rule. */
 	LSDN_OUT
 };
 
