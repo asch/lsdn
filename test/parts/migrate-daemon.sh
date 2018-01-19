@@ -1,5 +1,6 @@
 NETCONF="migrate"
 PHYS_LIST="a b c"
+PHASES=3
 
 function prepare(){
 	mk_testnet net
@@ -14,6 +15,8 @@ function prepare(){
 	mk_virt c 2 ip 192.168.99.2/24 mac "00:00:00:00:00:02"
 
 	mk_bridge net switch a b c
+
+	run_daemons
 }
 
 LSPATH="/tmp/lsctld-tests"
@@ -27,14 +30,23 @@ function run_daemons() {
 }
 
 function connect() {
-	run_daemons
-	config=parts/migrate.lsctl
+	config=parts/migrate-daemon${1:-}.lsctl
 	for p in $PHYS_LIST; do
 		pass ../lsctlc/lsctlc "$LSPATH/$p" < $config
 	done
-	pkill lsctld
 }
 
 function test_ping() {
-	pass in_virt a 1 $qping 192.168.99.2
+	case ${1:-} in
+		1)
+			fail in_virt a 1 $qping 192.168.99.2
+			;;
+		2)
+			fail in_virt a 1 $qping 192.168.99.2
+			;;
+		3)
+			pass in_virt a 1 $qping 192.168.99.2
+			pkill lsctld
+			;;
+	esac
 }

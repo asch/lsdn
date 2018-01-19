@@ -1,0 +1,12 @@
+source lib/common.tcl
+
+net movingTarget {
+	virt -name migrator -phys c -if 2
+}
+
+common::claimLocal
+
+puts "LSCTL: commit 3a"
+commit
+puts "LSCTL: commit 3b"
+commit

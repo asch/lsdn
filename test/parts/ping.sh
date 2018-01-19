@@ -1,3 +1,3 @@
 function test() {
-	test_ping
+	test_ping $@
 }

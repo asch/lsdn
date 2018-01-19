@@ -1,0 +1,18 @@
+source lib/common.tcl
+common::settings
+
+net -vid 1 movingTarget {
+	phys -if out -name a -ip 172.16.0.1 {
+		virt -if 1 -mac 00:00:00:00:00:01
+		virt -if 2 -mac 00:00:00:00:00:02 -name migrator
+	}
+	phys -if out -name b -ip 172.16.0.2
+	phys -if out -name c -ip 172.16.0.3
+}
+
+common::claimLocal
+
+puts "LSCTL: commit 1a"
+commit
+puts "LSCTL: commit 1b"
+commit
