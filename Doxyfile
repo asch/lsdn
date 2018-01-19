@@ -422,7 +422,7 @@ EXTRACT_ALL            = NO
 # be included in the documentation.
 # The default value is: NO.
 
-EXTRACT_PRIVATE        = NO
+EXTRACT_PRIVATE        = YES
 
 # If the EXTRACT_PACKAGE tag is set to YES, all members with package or internal
 # scope will be included in the documentation.
@@ -2028,7 +2028,8 @@ PREDEFINED             =
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
 EXPAND_AS_DEFINED      = LSDN_ENUM LSDN_ENUM_NAMES _LSDN_DUMP_ENUM _LSDN_DUMP_NAMES \
-                         lsdn_enumgen_rule_target lsdn_enumgen_problem_code lsdn_enumgen_log_category
+                         lsdn_enumgen_rule_target lsdn_enumgen_problem_code lsdn_enumgen_log_category \
+                         lsdn_vr_shortcuts
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES then doxygen's preprocessor will
 # remove all references to function-like macros that are alone on a line, have
