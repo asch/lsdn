@@ -8,6 +8,9 @@
 lsdn_err_t lsdn_prepare_rulesets(
 	struct lsdn_context *ctx, struct lsdn_if *iface,
 	struct lsdn_ruleset* in, struct lsdn_ruleset* out);
+lsdn_err_t lsdn_cleanup_rulesets(
+	struct lsdn_context *ctx, struct lsdn_if *iface,
+	struct lsdn_ruleset* in, struct lsdn_ruleset* out);
 lsdn_err_t lsdn_settings_init_common(
 	struct lsdn_settings *settings, struct lsdn_context *ctx);
 
@@ -60,14 +63,14 @@ struct lsdn_net_ops {
 	 * - tunnel interface (interface + lbridge if or interface + sbridge_phys_if + sbridge_if)
 	 * - or connect an existing shared tunnel (sbridge_if)
 	 */
-	void (*create_pa) (struct lsdn_phys_attachment *pa);
+	lsdn_err_t (*create_pa) (struct lsdn_phys_attachment *pa);
 
 	/** Add a local virtual machine.
 	 * Called when a virt on the local machine is added to a network.
 	 *
 	 * We use this to create a bridge interface (lbridge_if or sbridge_phys_if + sbridge_if)
 	 */
-	void (*add_virt) (struct lsdn_virt *virt);
+	lsdn_err_t (*add_virt) (struct lsdn_virt *virt);
 
 	/** Add a remote machine.
 	 * Called when a remote machine connects to our network. Create:
@@ -75,7 +78,7 @@ struct lsdn_net_ops {
 	 * - a routing rule (sbridge_route)
 	 * - or nothing, if the network does not need routing information
 	 */
-	void (*add_remote_pa) (struct lsdn_remote_pa *pa);
+	lsdn_err_t (*add_remote_pa) (struct lsdn_remote_pa *pa);
 
 	/** Add a remote virtual machine.
 	 * Called when a virt on a remoe machine connects to our network.
@@ -85,23 +88,23 @@ struct lsdn_net_ops {
 	 * - a MAC address match on a routing rule (sbridge_mac)
 	 * - or nothing, if the network does not need routing information
 	 */
-	void (*add_remote_virt) (struct lsdn_remote_virt *virt);
+	lsdn_err_t (*add_remote_virt) (struct lsdn_remote_virt *virt);
 
 	/** Clean up after the local machine.
 	 * Called when local machine is disconnecting from the network.
 	 * Destroy all resources created by `create_pa`.
 	 * All virts, remote virts and remote PAs were already removed and this PA is empty */
-	void (*destroy_pa) (struct lsdn_phys_attachment *pa);
+	lsdn_err_t (*destroy_pa) (struct lsdn_phys_attachment *pa);
 
 	/** Clean up after a local virt. */
-	void (*remove_virt) (struct lsdn_virt *virt);
+	lsdn_err_t (*remove_virt) (struct lsdn_virt *virt);
 
 	/** Clean up after a remote machine.
 	 * All its remote virts were already removed. */
-	void (*remove_remote_pa) (struct lsdn_remote_pa *pa);
+	lsdn_err_t (*remove_remote_pa) (struct lsdn_remote_pa *pa);
 
 	/** Clean up after a remote virt. */
-	void (*remove_remote_virt) (struct lsdn_remote_virt *virt);
+	lsdn_err_t (*remove_remote_virt) (struct lsdn_remote_virt *virt);
 
 	/** Validate a machine.
 	 * Called when adding local or remote machine.

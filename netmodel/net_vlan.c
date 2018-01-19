@@ -11,17 +11,25 @@
  *
  * Creates a dedicated VLAN interface for this machine, sets up
  * a Linux Bridge and adds the interface to it. */
-static void vlan_create_pa(struct lsdn_phys_attachment *p)
+static lsdn_err_t vlan_create_pa(struct lsdn_phys_attachment *p)
 {
+	lsdn_err_t err;
+	lsdn_if_init(&p->tunnel_if);
 	// create the vlan interface
-	lsdn_err_t err = lsdn_link_vlan_create(
+	err = lsdn_link_vlan_create(
 		p->net->ctx->nlsock, &p->tunnel_if,
 		p->phys->attr_iface, lsdn_mk_iface_name(p->net->ctx), p->net->vnet_id);
 	if(err != LSDNE_OK)
-		abort();
+		return err;
 
-	lsdn_lbridge_init(p->net->ctx, &p->lbridge);
-	lsdn_lbridge_add(&p->lbridge, &p->lbridge_if, &p->tunnel_if);
+	err = lsdn_lbridge_create_pa(p);
+	if (err != LSDNE_OK) {
+		if (lsdn_link_delete(p->net->ctx->nlsock, &p->tunnel_if) != LSDNE_OK)
+			return LSDNE_INCONSISTENT;
+		lsdn_if_free(&p->tunnel_if);
+		return err;
+	}
+	return LSDNE_OK;
 }
 
 /** Compute tunneling overhead of VLAN tunnels. */

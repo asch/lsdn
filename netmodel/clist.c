@@ -2,6 +2,7 @@
  * Cleanup list management routines.
  */
 #include "private/clist.h"
+#include "private/errors.h"
 
 /** Initialize a cleanup list. */
 void lsdn_clist_init(struct lsdn_clist *clist, size_t clist_index)
@@ -32,14 +33,16 @@ void lsdn_clist_add(struct lsdn_clist *clist, struct lsdn_clist_entry *entry)
  * This function traverses the cleanup list, dropping all the entries
  * and invoking their callbacks.
  */
-void lsdn_clist_flush(struct lsdn_clist *clist)
+lsdn_err_t lsdn_clist_flush(struct lsdn_clist *clist)
 {
+	lsdn_err_t err = LSDNE_OK;
 	lsdn_foreach(clist->cleanup_list, cleanup_entry[clist->clist_index], struct lsdn_clist_entry, ce) {
 		for(size_t i = 0; i<LSDN_CLIST_MAX; i++) {
 			struct lsdn_list_entry *e = &ce->cleanup_entry[i];
 			if (!lsdn_is_list_empty(e))
 				lsdn_list_remove(e);
 		}
-		ce->cb(ce->user);
+		acc_inconsistent(&err, ce->cb(ce->user));
 	}
+	return err;
 }

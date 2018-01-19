@@ -46,3 +46,11 @@ lsdn_err_t lsdn_prepare_rulesets(
 
 	return LSDNE_OK;
 }
+
+lsdn_err_t lsdn_cleanup_rulesets(
+	struct lsdn_context *ctx, struct lsdn_if *iface,
+	struct lsdn_ruleset* in, struct lsdn_ruleset* out)
+{
+	/* TODO: implement */
+	return LSDNE_OK;
+}

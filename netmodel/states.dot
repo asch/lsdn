@@ -6,16 +6,19 @@ digraph G {
     NEW -> free [label = "free", color = "blue"];
     NEW -> OK [label = "commit", color = "green"];
     NEW -> NEW [label = "c. error", color = "orange" ];
-    NEW -> INCONSISTENT [label = "c. fail", color = "red"];
+    NEW -> FAIL [label = "c. fail", color = "red"];
     OK -> RENEW [label = "update", color = "blue"];
     OK -> DELETE [label = "free", color = "blue"];
     OK -> OK [label = "commit", color = "green"];
     DELETE -> free [label = "commit", color = "green"];
-    DELETE -> INCONSISTENT [label = "c. fail", color = "red"];
-    DELETE -> INCONSISTENT [label = "c. error", color = "orange"];
+    DELETE -> free [label = "c. fail", color = "red"];
+    DELETE -> free [label = "c. error", color = "orange"];
     RENEW -> RENEW [label = "update", color = "blue"];
     RENEW -> DELETE [label = "free", color = "blue"];
     RENEW -> NEW [label = "c. error", color = "orange"];
-    RENEW -> INCONSISTENT [label = "c. fail", color = "red"];
+    RENEW -> FAIL [label = "c. fail", color = "red"];
     RENEW -> OK [label = "commit", color = "green"];
+    FAIL -> free [label = "free", color = "blue" ];
+    FAIL -> FAIL [label = "update", color = "blue" ];
+    FAIL -> FAIL [label = "c. fail", color = "red" ];
 }

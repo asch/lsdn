@@ -10,22 +10,30 @@
  * Implements `lsdn_net_ops.create_pa`.
  *
  * Sets up a tunnel interface and connects it to a Linux Bridge. */
-static void direct_create_pa(struct lsdn_phys_attachment *a)
+static lsdn_err_t direct_create_pa(struct lsdn_phys_attachment *a)
 {
 	lsdn_err_t err;
 	lsdn_if_init(&a->tunnel_if);
 	err = lsdn_if_set_name(&a->tunnel_if, a->phys->attr_iface);
 	if (err != LSDNE_OK)
-		abort();
+		return err;
 	err = lsdn_if_resolve(&a->tunnel_if);
-	if (err != LSDNE_OK)
-		abort();
+	if (err != LSDNE_OK) {
+		lsdn_if_free(&a->tunnel_if);
+		return err;
+	}
 
-	lsdn_lbridge_create_pa(a);
+	err = lsdn_lbridge_create_pa(a);
+	if (err != LSDNE_OK) {
+		lsdn_if_free(&a->tunnel_if);
+		return err;
+	}
+	return LSDNE_OK;
 }
 
 static unsigned int direct_tunneling_overhead(struct lsdn_phys_attachment *pa)
 {
+	LSDN_UNUSED(pa);
 	return 0;
 }
 

@@ -79,31 +79,31 @@ struct lsdn_sbridge_mac {
 
 /* Create a bridge using tc rules to route the packets between it's interfaces. Since the bridge
  * is not learning, each interface must have its associated mac addresses. */
-void lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br);
-void lsdn_sbridge_free(struct lsdn_sbridge *br);
-void lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface);
-void lsdn_sbridge_remove_if(struct lsdn_sbridge_if *iface);
-void lsdn_sbridge_add_route(struct lsdn_sbridge_if *iface, struct lsdn_sbridge_route *route);
-void lsdn_sbridge_add_route_default(struct lsdn_sbridge_if *iface, struct lsdn_sbridge_route *route);
-void lsdn_sbridge_remove_route(struct lsdn_sbridge_route *route);
-void lsdn_sbridge_add_mac(
+lsdn_err_t lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br);
+lsdn_err_t lsdn_sbridge_free(struct lsdn_sbridge *br);
+lsdn_err_t lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface);
+lsdn_err_t lsdn_sbridge_remove_if(struct lsdn_sbridge_if *iface);
+lsdn_err_t lsdn_sbridge_add_route(struct lsdn_sbridge_if *iface, struct lsdn_sbridge_route *route);
+lsdn_err_t lsdn_sbridge_add_route_default(struct lsdn_sbridge_if *iface, struct lsdn_sbridge_route *route);
+lsdn_err_t lsdn_sbridge_remove_route(struct lsdn_sbridge_route *route);
+lsdn_err_t lsdn_sbridge_add_mac(
 	struct lsdn_sbridge_route* route, struct lsdn_sbridge_mac *mac_entry, lsdn_mac_t mac);
-void lsdn_sbridge_remove_mac(struct lsdn_sbridge_mac *mac);
-void lsdn_sbridge_phys_if_init(
+lsdn_err_t lsdn_sbridge_remove_mac(struct lsdn_sbridge_mac *mac);
+lsdn_err_t lsdn_sbridge_phys_if_init(
 	struct lsdn_context *ctx, struct lsdn_sbridge_phys_if *sbridge_if,
 	struct lsdn_if* iface, bool match_vni,
 	struct lsdn_ruleset *rules_in);
-void lsdn_sbridge_phys_if_free(struct lsdn_sbridge_phys_if *iface);
+lsdn_err_t lsdn_sbridge_phys_if_free(struct lsdn_sbridge_phys_if *iface);
 
 struct lsdn_virt;
 struct lsdn_phys_attachment;
 struct lsdn_net;
 
-void lsdn_sbridge_add_virt(struct lsdn_sbridge *br, struct lsdn_virt *virt);
-void lsdn_sbridge_remove_virt(struct lsdn_virt *virt);
+lsdn_err_t lsdn_sbridge_add_virt(struct lsdn_sbridge *br, struct lsdn_virt *virt);
+lsdn_err_t lsdn_sbridge_remove_virt(struct lsdn_virt *virt);
 
-void lsdn_sbridge_add_stunnel(
+lsdn_err_t lsdn_sbridge_add_stunnel(
 		struct lsdn_sbridge *br, struct lsdn_sbridge_if* iface,
 		struct lsdn_sbridge_phys_if *tunnel, struct lsdn_net *net);
-void lsdn_sbridge_remove_stunnel(
+lsdn_err_t lsdn_sbridge_remove_stunnel(
 		struct lsdn_sbridge_if *iface);

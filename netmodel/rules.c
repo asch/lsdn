@@ -57,6 +57,7 @@ struct lsdn_vr *lsdn_vr_new(
 	}
 
 	vr->pos = 0;
+	vr->pending_free = false;
 	vr->state = LSDN_STATE_NEW;
 	vr->rule.action = a->desc;
 	for(size_t i = 0; i<LSDN_MAX_MATCHES; i++) {
@@ -379,41 +380,44 @@ static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset
 	return LSDNE_OK;
 }
 
-static void free_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset_prio *prio, bool may_fail)
+static lsdn_err_t free_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset_prio *prio)
 {
+	lsdn_err_t err = LSDNE_OK;
 	struct lsdn_ruleset *rs = prio->parent;
 	lsdn_log(LSDNL_RULES, "fl_delete(handle=0x%x)\n", fl->fl_handle);
 	if (!prio->parent->ctx->disable_decommit) {
-		lsdn_err_t err = lsdn_filter_delete(
+		err = lsdn_filter_delete(
 			rs->ctx->nlsock, rs->iface->ifindex, fl->fl_handle,
 			rs->parent_handle, rs->chain, prio->prio + rs->prio_start);
-		if (err != LSDNE_OK && !may_fail)
-			abort();
 	}
 
 	HASH_DEL(prio->hash_fl_rules, fl);
 	free(fl);
+	return err;
 }
 
-void lsdn_ruleset_remove(struct lsdn_rule *rule)
+lsdn_err_t lsdn_ruleset_remove(struct lsdn_rule *rule)
 {
+	lsdn_err_t err = LSDNE_OK;
 	lsdn_log(LSDNL_RULES, "ruleset_remove(iface=%s, chain=%d, prio=0x%x, handle=0x%x)\n",
 		rule->ruleset->iface->ifname, rule->ruleset->chain, rule->prio->prio,
 		rule->fl_rule->fl_handle);
 	lsdn_list_remove(&rule->sources_entry);
 	if (lsdn_is_list_empty(&rule->fl_rule->sources_list)) {
-		free_fl_rule(rule->fl_rule, rule->prio, false);
+		err = free_fl_rule(rule->fl_rule, rule->prio);
 	} else {
-		flush_fl_rule(rule->fl_rule, rule->prio, true);
+		err = flush_fl_rule(rule->fl_rule, rule->prio, true);
 	}
 	rule->fl_rule = NULL;
+	return err;
 }
 
-void lsdn_ruleset_remove_prio(struct lsdn_ruleset_prio *prio)
+lsdn_err_t lsdn_ruleset_remove_prio(struct lsdn_ruleset_prio *prio)
 {
 	assert(HASH_COUNT(prio->hash_fl_rules) == 0);
 	HASH_DELETE(hh, prio->parent->hash_prios, prio);
 	free(prio);
+	return LSDNE_OK;
 }
 
 static void hard_mask(char *value, size_t valsize)
@@ -492,10 +496,8 @@ lsdn_err_t lsdn_ruleset_add(struct lsdn_ruleset_prio *prio, struct lsdn_rule *ru
 	err = flush_fl_rule(fl, prio, update);
 	if (err != LSDNE_OK) {
 		lsdn_list_remove(&rule->sources_entry);
-		free_fl_rule(fl, prio, true);
-		return err;
+		acc_inconsistent(&err, free_fl_rule(fl, prio));
 	}
-
 	return err;
 }
 
@@ -549,7 +551,7 @@ static bool lsdn_find_free_action(
 #define MAIN_RULE_HANDLE 1
 
 /** Update the broadcast filter and all it's actions. */
-static void lsdn_flush_action_list(struct lsdn_broadcast_filter* br_filter)
+static lsdn_err_t lsdn_flush_action_list(struct lsdn_broadcast_filter* br_filter)
 {
 	struct lsdn_broadcast *br = br_filter->broadcast;
 	struct lsdn_filter *filter = lsdn_filter_flower_init(
@@ -557,7 +559,6 @@ static void lsdn_flush_action_list(struct lsdn_broadcast_filter* br_filter)
 		MAIN_RULE_HANDLE, LSDN_INGRESS_HANDLE, br->chain, br_filter->prio);
 	lsdn_filter_set_update(filter);
 	size_t order = 1;
-	int err;
 
 	lsdn_flower_actions_start(filter);
 	for(size_t i = 0; i < LSDN_MAX_ACT_PRIO - 1; i++) {
@@ -570,45 +571,46 @@ static void lsdn_flush_action_list(struct lsdn_broadcast_filter* br_filter)
 	}
 	lsdn_action_continue(filter, order);
 	lsdn_flower_actions_end(filter);
-	err = lsdn_filter_create(br->ctx->nlsock, filter);
-	if (err != LSDNE_OK)
-		abort();
+	lsdn_err_t err = lsdn_filter_create(br->ctx->nlsock, filter);
 	lsdn_filter_free(filter);
+	return err;
 }
 
-void lsdn_broadcast_add(struct lsdn_broadcast *br, struct lsdn_broadcast_action *action, struct lsdn_action_desc desc)
+lsdn_err_t lsdn_broadcast_add(struct lsdn_broadcast *br, struct lsdn_broadcast_action *action, struct lsdn_action_desc desc)
 {
 	struct lsdn_broadcast_filter *f;
 	size_t i;
 	if (!lsdn_find_free_action(br, desc.actions_count, &f, &i))
-		abort();
+		return LSDNE_NOMEM;
 	f->free_actions -= desc.actions_count;
 	f->actions[i] = action;
 	action->action = desc;
 	action->filter = f;
 	action->filter_entry_index = i;
-	lsdn_flush_action_list(f);
+	return lsdn_flush_action_list(f);
 }
 
-void lsdn_broadcast_remove(struct lsdn_broadcast_action *action)
+lsdn_err_t lsdn_broadcast_remove(struct lsdn_broadcast_action *action)
 {
+	lsdn_err_t err = LSDNE_OK;
 	action->filter->free_actions += action->action.actions_count;
 	action->filter->actions[action->filter_entry_index] = NULL;
 	if(!action->filter->broadcast->ctx->disable_decommit)
-		lsdn_flush_action_list(action->filter);
+		acc_inconsistent(&err, lsdn_flush_action_list(action->filter));
+	return err;
 }
 
-void lsdn_broadcast_free(struct lsdn_broadcast *br)
+lsdn_err_t lsdn_broadcast_free(struct lsdn_broadcast *br)
 {
+	lsdn_err_t err = LSDNE_OK;
 	lsdn_foreach(br->filters_list, filters_entry, struct lsdn_broadcast_filter, f)
 	{
 		if(!br->ctx->disable_decommit) {
-			lsdn_err_t err = lsdn_filter_delete(
+			acc_inconsistent(&err, lsdn_filter_delete(
 				br->ctx->nlsock, br->iface->ifindex,
-				MAIN_RULE_HANDLE, LSDN_INGRESS_HANDLE, br->chain, f->prio);
-			if (err != LSDNE_OK)
-				abort();
+				MAIN_RULE_HANDLE, LSDN_INGRESS_HANDLE, br->chain, f->prio));
 		}
 		free(f);
 	}
+	return err;
 }

@@ -47,9 +47,10 @@ static lsdn_ip_t vxlan_mcast_get_ip(struct lsdn_settings *s)
  * Implements `lsdn_net_ops.create_pa`.
  *
  * Creates a multicast VXLAN link and connects it to a local Linux Bridge. */
-static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
+static lsdn_err_t vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 {
 	struct lsdn_settings *s = a->net->settings;
+	lsdn_if_init(&a->tunnel_if);
 	lsdn_err_t err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
 		&a->tunnel_if,
@@ -61,10 +62,19 @@ static void vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 		true,
 		false,
 		s->vxlan.mcast.mcast_ip.v);
-	if (err != LSDNE_OK)
-		abort();
+	if (err != LSDNE_OK) {
+		lsdn_if_free(&a->tunnel_if);
+		return err;
+	}
 
-	lsdn_lbridge_create_pa(a);
+	err = lsdn_lbridge_create_pa(a);
+	if (err != LSDNE_OK) {
+		if (lsdn_link_delete(a->net->ctx->nlsock, &a->tunnel_if) != LSDNE_OK)
+			return LSDNE_INCONSISTENT;
+		lsdn_if_free(&a->tunnel_if);
+		return err;
+	}
+	return LSDNE_OK;
 }
 
 /** Calculate tunneling overhead for VXLAN-multicast network.
@@ -126,7 +136,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
  * Implements `lsdn_net_ops.create_pa`.
  *
  * Sets up a VXLAN tunnel and connects it to a Linux Bridge. */
-static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
+static lsdn_err_t vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 {
 	lsdn_err_t err = lsdn_link_vxlan_create(
 		a->net->ctx->nlsock,
@@ -140,43 +150,44 @@ static void vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 		false,
 		a->phys->attr_ip->v);
 	if (err != LSDNE_OK)
-		abort();
+		return err;
 
-	lsdn_lbridge_create_pa(a);
+	err = lsdn_lbridge_create_pa(a);
+	if (err != LSDNE_OK) {
+		acc_inconsistent(&err, lsdn_link_delete(a->net->ctx->nlsock, &a->tunnel_if));
+		lsdn_if_free(&a->tunnel_if);
+	}
+	return err;
 }
 
 /** Adds a remote machine to VXLAN-e2e network.
  * Implements `lsdn_net_ops.add_remote_pa`. 
  *
  * Sets up a static route to the given remote phys. */
-static void vxlan_e2e_add_remote_pa(struct lsdn_remote_pa *remote)
+static lsdn_err_t vxlan_e2e_add_remote_pa(struct lsdn_remote_pa *remote)
 {
 	/* Redirect broadcast packets to all remote PAs */
 	struct lsdn_phys_attachment *local = remote->local;
-	lsdn_err_t err = lsdn_fdb_add_entry(
+	return lsdn_fdb_add_entry(
 		local->net->ctx->nlsock, local->tunnel_if.ifindex,
 		lsdn_all_zeroes_mac,
 		*remote->remote->phys->attr_ip);
-	if (err != LSDNE_OK)
-		abort();
 }
 
 /** Remove a remote machine from VXLAN-e2e network.
  * Implements `lsdn_net_ops.remove_remote_pa`.
  *
  * Tears down a static route to the given remote phys. */
-static void vxlan_e2e_remove_remote_pa(struct lsdn_remote_pa *remote)
+static lsdn_err_t vxlan_e2e_remove_remote_pa(struct lsdn_remote_pa *remote)
 {
 	if(remote->local->net->ctx->disable_decommit)
-		return;
+		return LSDNE_OK;
 
 	struct lsdn_phys_attachment *local = remote->local;
-	lsdn_err_t err = lsdn_fdb_remove_entry(
+	return lsdn_fdb_remove_entry(
 		local->net->ctx->nlsock, local->tunnel_if.ifindex,
 		lsdn_all_zeroes_mac,
 		*remote->remote->phys->attr_ip);
-	if (err != LSDNE_OK)
-		abort();
 }
 
 /** Validate a phys attachment for use in VXLAN-e2e network.
@@ -250,9 +261,9 @@ struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint
  * Makes sure the VXLAN interface for a given UDP port exists
  * and is operating in metadata mode. Increases refcount for the
  * static tunnel. */
-static void vxlan_use_stunnel(struct lsdn_phys_attachment *a)
+static lsdn_err_t vxlan_use_stunnel(struct lsdn_phys_attachment *a)
 {
-	lsdn_err_t err;
+	lsdn_err_t err = LSDNE_OK;
 	struct lsdn_settings *s = a->net->settings;
 	struct lsdn_context *ctx = s->ctx;
 	struct lsdn_if *tunnel = &s->vxlan.e2e_static.tunnel;
@@ -270,19 +281,30 @@ static void vxlan_use_stunnel(struct lsdn_phys_attachment *a)
 			true,
 			a->phys->attr_ip->v);
 		if (err != LSDNE_OK)
-			abort();
+			goto cleanup_link;
 
 		err = lsdn_link_set(ctx->nlsock, tunnel->ifindex, true);
 		if (err != LSDNE_OK)
-			abort();
+			goto cleanup_link;
 
 		err = lsdn_prepare_rulesets(ctx, tunnel, rules_in, NULL);
 		if (err != LSDNE_OK)
-			abort();
+			goto cleanup_link;
 
-		lsdn_sbridge_phys_if_init(
+		err = lsdn_sbridge_phys_if_init(
 			ctx, &s->vxlan.e2e_static.tunnel_sbridge, tunnel, true, rules_in);
+
+		if (err != LSDNE_OK)
+			goto cleanup_phys_if;
 	}
+	return err;
+
+	cleanup_phys_if:
+	acc_inconsistent(&err, lsdn_sbridge_phys_if_free(&s->vxlan.e2e_static.tunnel_sbridge));
+	cleanup_link:
+	acc_inconsistent(&err, lsdn_link_delete(ctx->nlsock, tunnel));
+	lsdn_if_free(tunnel);
+	return err;
 }
 
 /** Release a static tunnel.
@@ -290,6 +312,7 @@ static void vxlan_use_stunnel(struct lsdn_phys_attachment *a)
  * down the tunnel. */
 static void vxlan_release_stunnel(struct lsdn_settings *s)
 {
+	// TODO: add error handling
 	if (--s->vxlan.e2e_static.refcount == 0) {
 		lsdn_sbridge_phys_if_free(&s->vxlan.e2e_static.tunnel_sbridge);
 		if(!s->ctx->disable_decommit) {
@@ -306,42 +329,59 @@ static void vxlan_release_stunnel(struct lsdn_settings *s)
  * Implements `lsdn_net_ops.create_pa`.
  *
  * Ensures local static tunnel exists and bridges the phys into it. */
-static void vxlan_static_create_pa(struct lsdn_phys_attachment *pa)
+static lsdn_err_t vxlan_static_create_pa(struct lsdn_phys_attachment *pa)
 {
-	vxlan_use_stunnel(pa);
-	lsdn_sbridge_init(pa->net->ctx, &pa->sbridge);
-	lsdn_sbridge_add_stunnel(
+	lsdn_err_t err = LSDNE_OK;
+	err = vxlan_use_stunnel(pa);
+	if (err != LSDNE_OK)
+		goto no_cleanup;
+	err = lsdn_sbridge_init(pa->net->ctx, &pa->sbridge);
+	if (err != LSDNE_OK)
+		goto cleanup_tunnel;
+	err = lsdn_sbridge_add_stunnel(
 		&pa->sbridge, &pa->sbridge_if,
 		&pa->net->settings->vxlan.e2e_static.tunnel_sbridge, pa->net);
+	if (err != LSDNE_OK)
+		goto cleanup_sbridge;
+	return err;
+
+	cleanup_sbridge:
+	acc_inconsistent(&err, lsdn_sbridge_free(&pa->sbridge));
+	cleanup_tunnel:
+	vxlan_release_stunnel(pa->net->settings);
+	no_cleanup:
+	return err;
 }
 
 /** Remove a local machine from VXLAN-static network.
  * Implements `lsdn_net_ops.destroy_pa`.
  *
  * Tears down the local static bridge and releases the tunnel. */
-static void vxlan_static_destroy_pa(struct lsdn_phys_attachment *pa)
+static lsdn_err_t vxlan_static_destroy_pa(struct lsdn_phys_attachment *pa)
 {
-	lsdn_sbridge_remove_stunnel(&pa->sbridge_if);
-	lsdn_sbridge_free(&pa->sbridge);
+	lsdn_err_t err = LSDNE_OK;
+	acc_inconsistent(&err, lsdn_sbridge_remove_stunnel(&pa->sbridge_if));
+	acc_inconsistent(&err, lsdn_sbridge_free(&pa->sbridge));
 	vxlan_release_stunnel(pa->net->settings);
+	return err;
 }
 
 /** Add a local virt to VXLAN-static network.
  * Implements `lsdn_net_ops.add_virt`.
  *
  * Connects the virt to the static tunnel bridge. */
-static void vxlan_static_add_virt(struct lsdn_virt *virt)
+static lsdn_err_t vxlan_static_add_virt(struct lsdn_virt *virt)
 {
-	lsdn_sbridge_add_virt(&virt->committed_to->sbridge, virt);
+	return lsdn_sbridge_add_virt(&virt->committed_to->sbridge, virt);
 }
 
 /** Remove a local virt from VXLAN-static network.
  * Implements `lsdn_net_ops.remove_virt`.
  *
  * Disconnects the virt from the static tunnel bridge. */
-static void vxlan_static_remove_virt(struct lsdn_virt *virt)
+static lsdn_err_t vxlan_static_remove_virt(struct lsdn_virt *virt)
 {
-	lsdn_sbridge_remove_virt(virt);
+	return lsdn_sbridge_remove_virt(virt);
 }
 
 /** TODO */
@@ -359,40 +399,40 @@ static void set_vxlan_metadata(struct lsdn_filter *f, uint16_t order, void *user
  * Implements `lsdn_net_ops.add_remote_pa`.
  *
  * Inserts an appropriate route into the static bridge. */
-static void vxlan_static_add_remote_pa (struct lsdn_remote_pa *pa)
+static lsdn_err_t vxlan_static_add_remote_pa (struct lsdn_remote_pa *pa)
 {
 	struct lsdn_action_desc *bra = &pa->sbridge_route.tunnel_action;
 	bra->actions_count = 1;
 	bra->fn = set_vxlan_metadata;
 	bra->user = pa;
-	lsdn_sbridge_add_route(&pa->local->sbridge_if, &pa->sbridge_route);
+	return lsdn_sbridge_add_route(&pa->local->sbridge_if, &pa->sbridge_route);
 }
 
 /** Remove a remote phys from VXLAN-static network.
  * Implements `lsdn_net_ops.remove_remote_pa`.
  *
  * Removes the appropriate route from the static bridge. */
-static void vxlan_static_remove_remote_pa (struct lsdn_remote_pa *pa)
+static lsdn_err_t vxlan_static_remove_remote_pa (struct lsdn_remote_pa *pa)
 {
-	lsdn_sbridge_remove_route(&pa->sbridge_route);
+	return lsdn_sbridge_remove_route(&pa->sbridge_route);
 }
 
 /** Add a remote virt to VXLAN-static network.
  * Implements `lsdn_net_ops.add_remote_virt`.
  *
  * Adds a MAC-based rule into the static bridge. */
-static void vxlan_static_add_remote_virt(struct lsdn_remote_virt *virt)
+static lsdn_err_t vxlan_static_add_remote_virt(struct lsdn_remote_virt *virt)
 {
-	lsdn_sbridge_add_mac(&virt->pa->sbridge_route, &virt->sbridge_mac, *virt->virt->attr_mac);
+	return lsdn_sbridge_add_mac(&virt->pa->sbridge_route, &virt->sbridge_mac, *virt->virt->attr_mac);
 }
 
 /** Remove a remote virt from VXLAN-static network.
  * Implemens `lsdn_net_ops.remove_remote_virt`.
  *
  * Drops the appropriate rule from the static bridge. */
-static void vxlan_static_remove_remote_virt(struct lsdn_remote_virt *virt)
+static lsdn_err_t vxlan_static_remove_remote_virt(struct lsdn_remote_virt *virt)
 {
-	lsdn_sbridge_remove_mac(&virt->sbridge_mac);
+	return lsdn_sbridge_remove_mac(&virt->sbridge_mac);
 }
 
 /** Validate a phys attachment for use in VXLAN-static network.
