@@ -40,6 +40,14 @@ lsdn_err_t lsdn_if_copy(struct lsdn_if *dst, struct lsdn_if *src)
 	return LSDNE_OK;
 }
 
+void lsdn_if_swap(struct lsdn_if *a, struct lsdn_if *b)
+{
+	struct lsdn_if tmp;
+	tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
 void lsdn_if_free(struct lsdn_if *lsdn_if)
 {
 	free(lsdn_if->ifname);
@@ -116,6 +124,14 @@ void lsdn_socket_free(struct mnl_socket *s)
 	mnl_socket_close(s);
 }
 
+/* This functions is intentionally separate to provide a convinient place for placing breakpoints */
+static void report_nl_error(int code, const char* msg)
+{
+	lsdn_log(LSDN_NLERR, "Error code %s (%d)\n", strerror(-code), code);
+	if (msg)
+		lsdn_log(LSDN_NLERR, "Kernel message: %s\n", msg);
+}
+
 static lsdn_err_t process_response(struct nlmsghdr *nlh)
 {
 	struct nlmsgerr *resp;
@@ -135,12 +151,7 @@ static lsdn_err_t process_response(struct nlmsghdr *nlh)
 					msg = mnl_attr_get_str(attr);
 				}
 			}
-
-			lsdn_log(LSDN_NLERR, "Error code %s (%d)\n", strerror(-resp->error), resp->error);
-			if (msg)
-				lsdn_log(LSDN_NLERR, "Kernel message: %s\n", msg);
-
-
+			report_nl_error(resp->error, msg);
 			ret = LSDNE_NETLINK;
 		} else {
 			ret = LSDNE_OK;
@@ -176,7 +187,7 @@ static void link_create_header(
 	unsigned int seq = 0;
 
 	nlh->nlmsg_type = RTM_NEWLINK;
-	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK | NLM_F_EXCL;
 	nlh->nlmsg_seq = seq;
 
 	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));

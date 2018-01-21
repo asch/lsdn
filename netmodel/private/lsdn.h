@@ -50,6 +50,7 @@ struct lsdn_context{
 	struct lsdn_problem_ref problem_refs[LSDN_MAX_PROBLEM_REFS];
 	/** Problem count for the current operation. */
 	size_t problem_count;
+	bool inconsistent;
 	/** @} */
 
 	/** Disable decommit.
@@ -67,8 +68,10 @@ struct lsdn_context{
 	char namebuf[64 + 1];
 };
 
+
 struct lsdn_settings {
 	enum lsdn_state state;
+	bool pending_free;
 	struct lsdn_list_entry settings_entry;
 	struct lsdn_list_entry setting_users_list;
 	struct lsdn_context *ctx;
@@ -106,6 +109,7 @@ struct lsdn_settings {
 
 struct lsdn_phys {
 	enum lsdn_state state;
+	bool pending_free;
 	struct lsdn_name name;
 	struct lsdn_list_entry phys_entry;
 	struct lsdn_list_entry attached_to_list;
@@ -119,6 +123,7 @@ struct lsdn_phys {
 
 struct lsdn_net {
 	enum lsdn_state state;
+	bool pending_free;
 	struct lsdn_list_entry networks_entry;
 	struct lsdn_list_entry settings_users_entry;
 	struct lsdn_context *ctx;
@@ -134,6 +139,7 @@ struct lsdn_net {
 
 struct lsdn_phys_attachment {
 	enum lsdn_state state;
+	bool pending_free;
 	/* list held by net */
 	struct lsdn_list_entry attached_entry;
 	/* list held by phys */
@@ -164,6 +170,7 @@ struct lsdn_phys_attachment {
 struct lsdn_virt {
 	/* Tracks the state of local virts */
 	enum lsdn_state state;
+	bool pending_free;
 	struct lsdn_name name;
 	struct lsdn_list_entry virt_entry;
 	struct lsdn_list_entry connected_virt_entry;

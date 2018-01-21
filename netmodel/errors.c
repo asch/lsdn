@@ -54,7 +54,7 @@ static void format_subject(FILE* out, const struct lsdn_problem_ref *subj)
 		break;
 	}
 	if (!printed)
-		fprintf(out, "0x%p", subj);
+		fprintf(out, "%p", subj);
 }
 
 /** Print problem description.

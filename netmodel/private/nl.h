@@ -43,6 +43,7 @@ struct lsdn_if{
  */
 void lsdn_if_init(struct lsdn_if *lsdn_if);
 lsdn_err_t lsdn_if_copy(struct lsdn_if *dst, struct lsdn_if *src);
+void lsdn_if_swap(struct lsdn_if *a, struct lsdn_if *b);
 /**
  * Free the underlying memory for storing the name.
  */

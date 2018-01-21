@@ -4,8 +4,9 @@
 #pragma once
 
 #include "list.h"
+#include "../include/errors.h"
 
-typedef void (*lsdn_clist_cb)(void *user);
+typedef lsdn_err_t (*lsdn_clist_cb)(void *user);
 
 /** Maximum number of cleanup lists for an entry to inhabit simultaneously. */
 #define LSDN_CLIST_MAX 2
@@ -32,4 +33,4 @@ struct lsdn_clist_entry {
 void lsdn_clist_init(struct lsdn_clist *clist, size_t clist_index);
 void lsdn_clist_init_entry(struct lsdn_clist_entry *entry, lsdn_clist_cb cb, void *user);
 void lsdn_clist_add(struct lsdn_clist *clist, struct lsdn_clist_entry *entry);
-void lsdn_clist_flush(struct lsdn_clist *clist);
+lsdn_err_t lsdn_clist_flush(struct lsdn_clist *clist);

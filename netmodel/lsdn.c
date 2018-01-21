@@ -238,6 +238,7 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 
 	net->ctx = s->ctx;
 	net->state = LSDN_STATE_NEW;
+	net->pending_free = false;
 	net->settings = s;
 	net->vnet_id = vnet_id;
 
@@ -320,6 +321,7 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 
 	phys->ctx = ctx;
 	phys->state = LSDN_STATE_NEW;
+	phys->pending_free = false;
 	phys->attr_iface = NULL;
 	phys->attr_ip = NULL;
 	phys->is_local = false;
@@ -399,6 +401,7 @@ static struct lsdn_phys_attachment* find_or_create_attachement(
 	a->phys = phys;
 	a->net = net;
 	a->state = LSDN_STATE_NEW;
+	a->pending_free = false;
 
 	lsdn_list_init_add(&net->attached_list, &a->attached_entry);
 	lsdn_list_init_add(&phys->attached_to_list, &a->attached_to_entry);
@@ -533,6 +536,7 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 		ret_ptr(net->ctx, NULL);
 	virt->network = net;
 	virt->state = LSDN_STATE_NEW;
+	virt->pending_free = false;
 	virt->attr_mac = NULL;
 	virt->attr_rate_in = NULL;
 	virt->attr_rate_out = NULL;
@@ -768,7 +772,8 @@ static void validate_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio)
 						virt->network->ctx, LSDNP_VR_INCOMPATIBLE_MATCH,
 						LSDNS_VR, first_rule,
 						LSDNS_VR, r,
-						LSDNS_VIRT, virt);
+						LSDNS_VIRT, virt,
+						LSDNS_END);
 					/* do not bother doing more checks */
 					return;
 				}
@@ -792,7 +797,8 @@ static void validate_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio)
 					virt->network->ctx, LSDNP_VR_DUPLICATE_RULE,
 					LSDNS_VR, r,
 					LSDNS_VR, duplicate,
-					LSDNS_VIRT, virt);
+					LSDNS_VIRT, virt,
+					LSDNS_END);
 				HASH_CLEAR(hh, rule_ht);
 				return;
 			}
@@ -854,7 +860,7 @@ static void decommit_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio, enum
 	HASH_ITER(hh, ht_prio, prio, tmp) {
 		lsdn_foreach(prio->rules_list, rules_entry, struct lsdn_vr, r) {
 			propagate(&virt->state, &r->state);
-			if (ack_uncommit(&r->state))
+			if (ack_decommit(&r->state))
 				decommit_vr(virt, prio, r, dir);
 		}
 	}
@@ -885,49 +891,73 @@ static void rates_action_in(struct lsdn_filter *f, uint16_t order, void *user)
 	rates_action(f, order, v, rate);
 }
 
-static void commit_rates(struct lsdn_virt *virt)
+static lsdn_err_t commit_rates_inout(
+	struct lsdn_virt *v,
+	struct lsdn_ruleset_prio **commited_policing_prio,
+	struct lsdn_rule *comitted_policing_rule,
+	struct lsdn_ruleset *rules,
+	lsdn_mkaction_fn action)
 {
-	if (virt->attr_rate_in) {
-		virt->commited_policing_in =
-			lsdn_ruleset_define_prio(&virt->rules_out, LSDN_IF_PRIO_POLICING);
-		if (!virt->commited_policing_in)
-			abort();
+	lsdn_err_t err;
 
-		virt->commited_policing_rule_in.subprio = 0;
-		lsdn_action_init(
-			&virt->commited_policing_rule_in.action, 2, rates_action_out, virt);
-		lsdn_err_t err = lsdn_ruleset_add(
-			virt->commited_policing_in, &virt->commited_policing_rule_in);
-		if (err != LSDNE_OK)
-			abort();
+	*commited_policing_prio =
+		lsdn_ruleset_define_prio(rules, LSDN_IF_PRIO_POLICING);
+	if (!*commited_policing_prio)
+		return LSDNE_NOMEM;
+	comitted_policing_rule->subprio = 0;
+	lsdn_action_init(&comitted_policing_rule->action, 2, action, v);
+	err = lsdn_ruleset_add(*commited_policing_prio, comitted_policing_rule);
+	if (err != LSDNE_OK) {
+		err = lsdn_ruleset_remove_prio(*commited_policing_prio);
+		if (err != LSDNE_OK) {
+			v->network->ctx->inconsistent = true;
+			return LSDNE_INCONSISTENT;
+		}
+		*commited_policing_prio = NULL;
 	}
+	return LSDNE_OK;
+}
+
+static void decommit_rates(struct lsdn_virt *virt);
+static lsdn_err_t commit_rates(struct lsdn_virt *virt)
+{
+	lsdn_err_t err;
+	if (virt->attr_rate_in) {
+		err = commit_rates_inout(
+			virt, &virt->commited_policing_in, &virt->commited_policing_rule_in,
+			&virt->rules_out, rates_action_out);
+		if (err != LSDNE_OK)
+			return err;
+	}
+
 
 	if (virt->attr_rate_out) {
-		virt->commited_policing_out =
-			lsdn_ruleset_define_prio(&virt->rules_in, LSDN_IF_PRIO_POLICING);
-		if (!virt->commited_policing_out)
-			abort();
-
-		virt->commited_policing_rule_out.subprio = 0;
-		lsdn_action_init(
-			&virt->commited_policing_rule_out.action, 2, rates_action_in, virt);
-		lsdn_err_t err = lsdn_ruleset_add(
-			virt->commited_policing_out, &virt->commited_policing_rule_out);
-		if (err != LSDNE_OK)
-			abort();
+		err = commit_rates_inout(
+			virt, &virt->commited_policing_out, &virt->commited_policing_rule_out,
+			&virt->rules_in, rates_action_in);
+		if (err != LSDNE_OK) {
+			decommit_rates(virt);
+			return err;
+		}
 	}
+	return LSDNE_OK;
 }
 
 static void decommit_rates(struct lsdn_virt *virt)
 {
+	struct lsdn_context *ctx = virt->network->ctx;
 	if (virt->commited_policing_in) {
-		lsdn_ruleset_remove(&virt->commited_policing_rule_in);
-		lsdn_ruleset_remove_prio(virt->commited_policing_in);
+		mark_commit_err(ctx, &virt->state, LSDNS_VIRT, virt, true,
+			lsdn_ruleset_remove(&virt->commited_policing_rule_in));
+		mark_commit_err(ctx, &virt->state, LSDNS_VIRT, virt, true,
+			lsdn_ruleset_remove_prio(virt->commited_policing_in));
 		virt->commited_policing_in = NULL;
 	}
 	if (virt->commited_policing_out) {
-		lsdn_ruleset_remove(&virt->commited_policing_rule_out);
-		lsdn_ruleset_remove_prio(virt->commited_policing_out);
+		mark_commit_err(ctx, &virt->state, LSDNS_VIRT, virt, true,
+			lsdn_ruleset_remove(&virt->commited_policing_rule_out));
+		mark_commit_err(ctx, &virt->state, LSDNS_VIRT, virt, true,
+			lsdn_ruleset_remove_prio(virt->commited_policing_out));
 		virt->commited_policing_out = NULL;
 	}
 }
@@ -998,6 +1028,7 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	ctx->problem_cb = cb;
 	ctx->problem_cb_user = user;
 	ctx->problem_count = 0;
+	ctx->inconsistent = false;
 
 	/********* Propagate states (some will be propagated later) *********/
 	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p) {
@@ -1092,23 +1123,37 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 	return (ctx->problem_count == 0) ? LSDNE_OK : LSDNE_VALIDATE;
 }
 
-static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void *user)
+static void decommit_pa(struct lsdn_phys_attachment *pa);
+static void decommit_virt(struct lsdn_virt *v);
+
+static void commit_pa(struct lsdn_phys_attachment *pa)
 {
-	LSDN_UNUSED(cb); LSDN_UNUSED(user);
 	struct lsdn_net_ops *ops = pa->net->settings->ops;
+	struct lsdn_context *ctx = pa->net->ctx;
 	if (pa->state == LSDN_STATE_NEW) {
 		lsdn_log(LSDNL_NETOPS, "create_pa(net = %s (%p), phys = %s (%p), pa = %p)\n",
 			 lsdn_nullable(pa->net->name.str), pa->net,
 			 lsdn_nullable(pa->phys->name.str), pa->phys,
 			 pa);
-		ops->create_pa(pa);
+		mark_commit_err(ctx, &pa->state, LSDNS_PA, pa, false,
+			ops->create_pa(pa));
 	}
+
+	if (!state_ok(pa->state))
+		return;
 
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v) {
 		if (v->state == LSDN_STATE_NEW) {
+			struct lsdn_if if2;
+			struct lsdn_phys_attachment *old_commited_to = v->committed_to;
+			lsdn_if_init(&if2);
+			if (lsdn_if_copy(&if2, &v->connected_if) != LSDNE_OK) {
+				v->state = LSDN_STATE_ERR;
+				lsdn_problem_report(ctx, LSDNP_COMMIT_NOMEM, LSDNS_VIRT, v, LSDNS_END);
+				continue;
+			}
 			v->committed_to = pa;
-			if (lsdn_if_copy(&v->committed_if, &v->connected_if) != LSDNE_OK)
-				abort();
+			lsdn_if_swap(&if2, &v->committed_if);
 
 			if (ops->add_virt) {
 				lsdn_log(LSDNL_NETOPS, "add_virt(net = %s (%p), phys = %s (%p), pa = %p, virt = %s (%p)\n",
@@ -1116,13 +1161,37 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 					 lsdn_nullable(pa->phys->name.str), pa->phys,
 					 pa,
 					 v->connected_if.ifname, v);
-				ops->add_virt(v);
+				if (mark_commit_err(ctx, &v->state, LSDNS_VIRT, v, false,
+					ops->add_virt(v))) {
+					// roll back commitment properties
+					lsdn_if_swap(&if2, &v->committed_if);
+					lsdn_if_free(&if2);
+					v->committed_to = old_commited_to;
+					continue;
+				}
 			}
 
-			commit_rates(v);
+			if (mark_commit_err(ctx, &v->state, LSDNS_VIRT, v, false,
+				commit_rates(v))) {
+				if (v->state == LSDN_STATE_ERR) {
+					// roll back everything
+					if (ops->remove_virt(v) != LSDNE_OK) {
+						v->state = LSDN_STATE_FAIL;
+						v->network->ctx->inconsistent = true;
+						continue;
+					}
+					lsdn_if_swap(&if2, &v->committed_if);
+					lsdn_if_free(&if2);
+					v->committed_to = old_commited_to;
+				}
+				continue;
+			}
+			lsdn_if_free(&if2);
 		}
-		commit_rules(v, v->ht_in_rules, LSDN_IN);
-		commit_rules(v, v->ht_out_rules, LSDN_OUT);
+		if (state_ok(v->state)) {
+			commit_rules(v, v->ht_in_rules, LSDN_IN);
+			commit_rules(v, v->ht_out_rules, LSDN_OUT);
+		}
 	}
 
 	lsdn_foreach(pa->net->attached_list, attached_entry, struct lsdn_phys_attachment, remote) {
@@ -1132,8 +1201,13 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 			continue;
 
 		struct lsdn_remote_pa *rpa = malloc(sizeof(*rpa));
-		if (!rpa)
-			abort();
+		if (!rpa) {
+			lsdn_problem_report(ctx, LSDNP_COMMIT_NOMEM, LSDNS_PA, pa, LSDNS_END);
+			pa->state = LSDN_STATE_ERR;
+			decommit_pa(remote);
+			continue;
+		}
+
 		rpa->local = pa;
 		rpa->remote = remote;
 		lsdn_list_init_add(&remote->pa_view_list, &rpa->pa_view_entry);
@@ -1147,7 +1221,15 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 				 lsdn_nullable(pa->phys->name.str), pa->phys,
 				 lsdn_nullable(remote->phys->name.str), remote->phys,
 				 pa, remote, rpa);
-			ops->add_remote_pa(rpa);
+			if (mark_commit_err(ctx, &remote->state, LSDNS_PA, remote, false,
+				ops->add_remote_pa(rpa)))
+			{
+				lsdn_list_remove(&rpa->pa_view_entry);
+				lsdn_list_remove(&rpa->remote_pa_entry);
+				free(rpa);
+				decommit_pa(remote);
+				continue;
+			}
 		}
 	}
 
@@ -1156,8 +1238,12 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 			if (pa->state != LSDN_STATE_NEW && v->state != LSDN_STATE_NEW)
 				continue;
 			struct lsdn_remote_virt *rvirt = malloc(sizeof(*rvirt));
-			if(!rvirt)
-				abort();
+			if(!rvirt) {
+				lsdn_problem_report(ctx, LSDNP_COMMIT_NOMEM, LSDNS_VIRT, v, LSDNS_END);
+				pa->state = LSDN_STATE_ERR;
+				decommit_virt(v);
+				continue;
+			}
 			rvirt->pa = remote;
 			rvirt->virt = v;
 			lsdn_list_init_add(&v->virt_view_list, &rvirt->virt_view_entry);
@@ -1170,7 +1256,11 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 					 lsdn_nullable(pa->phys->name.str), pa->phys,
 					 lsdn_nullable(remote->remote->phys->name.str), remote->remote->phys,
 					 pa, remote->remote, remote, v);
-				ops->add_remote_virt(rvirt);
+				if (mark_commit_err(ctx, &v->state, LSDNS_VIRT,v, false,
+					ops->add_remote_virt(rvirt)))
+				{
+					decommit_virt(v);
+				}
 			}
 		}
 	}
@@ -1179,6 +1269,7 @@ static void commit_pa(struct lsdn_phys_attachment *pa, lsdn_problem_cb cb, void 
 static void decommit_remote_virt(struct lsdn_remote_virt *rv)
 {
 	struct lsdn_net_ops *ops = rv->virt->network->settings->ops;
+	struct lsdn_context *ctx = rv->pa->local->net->ctx;
 	if (ops->remove_remote_virt) {
 		lsdn_log(LSDNL_NETOPS, "remove_remote_virt("
 				"net = %s (%p), local_phys = %s (%p), remote_phys = %s (%p), "
@@ -1187,7 +1278,8 @@ static void decommit_remote_virt(struct lsdn_remote_virt *rv)
 				lsdn_nullable(rv->pa->local->phys->name.str), rv->pa->local->phys,
 				lsdn_nullable(rv->pa->remote->phys->name.str), rv->pa->remote->phys,
 				rv->pa->local, rv->pa->local, rv->pa, rv->virt);
-		ops->remove_remote_virt(rv);
+		mark_commit_err(ctx, &rv->virt->state, LSDNS_VIRT, rv->virt, true,
+				ops->remove_remote_virt(rv));
 	}
 	lsdn_list_remove(&rv->remote_virt_entry);
 	lsdn_list_remove(&rv->virt_view_entry);
@@ -1200,6 +1292,8 @@ static void decommit_virt(struct lsdn_virt *v)
 	struct lsdn_phys_attachment *pa = v->committed_to;
 
 	decommit_rates(v);
+	decommit_rules(v, v->ht_in_rules, LSDN_IN);
+	decommit_rules(v, v->ht_out_rules, LSDN_OUT);
 
 	lsdn_foreach(v->virt_view_list, virt_view_entry, struct lsdn_remote_virt, rv) {
 		decommit_remote_virt(rv);
@@ -1212,7 +1306,7 @@ static void decommit_virt(struct lsdn_virt *v)
 				 lsdn_nullable(pa->phys->name.str), pa->phys,
 				 pa,
 				 v->committed_if.ifname, v);
-			ops->remove_virt(v);
+			mark_commit_err(v->network->ctx, &v->state, LSDNS_VIRT, v, true, ops->remove_virt(v));
 		}
 		v->committed_to = NULL;
 		lsdn_if_reset(&v->committed_if);
@@ -1224,6 +1318,7 @@ static void decommit_remote_pa(struct lsdn_remote_pa *rpa)
 	struct lsdn_phys_attachment *local = rpa->local;
 	struct lsdn_phys_attachment *remote = rpa->remote;
 	struct lsdn_net_ops *ops = local->net->settings->ops;
+	struct lsdn_context *ctx = local->net->ctx;
 
 	lsdn_foreach(rpa->remote_virt_list, remote_virt_entry, struct lsdn_remote_virt, rv) {
 		decommit_remote_virt(rv);
@@ -1237,7 +1332,7 @@ static void decommit_remote_pa(struct lsdn_remote_pa *rpa)
 			 lsdn_nullable(local->phys->name.str), local->phys,
 			 lsdn_nullable(remote->phys->name.str), remote->phys,
 			 local, remote, rpa);
-		ops->remove_remote_pa(rpa);
+		mark_commit_err(ctx, &remote->state, LSDNS_PA, remote, true, ops->remove_remote_pa(rpa));
 	}
 	lsdn_list_remove(&rpa->pa_view_entry);
 	lsdn_list_remove(&rpa->remote_pa_entry);
@@ -1247,6 +1342,7 @@ static void decommit_remote_pa(struct lsdn_remote_pa *rpa)
 
 static void decommit_pa(struct lsdn_phys_attachment *pa)
 {
+	struct lsdn_context *ctx = pa->net->ctx;
 	struct lsdn_net_ops *ops = pa->net->settings->ops;
 
 	lsdn_foreach(pa->pa_view_list, pa_view_entry, struct lsdn_remote_pa, rpa) {
@@ -1263,7 +1359,7 @@ static void decommit_pa(struct lsdn_phys_attachment *pa)
 				 lsdn_nullable(pa->net->name.str), pa->net,
 				 lsdn_nullable(pa->phys->name.str), pa->phys,
 				 pa);
-			ops->destroy_pa(pa);
+			mark_commit_err(ctx, &pa->state, LSDNS_PA, pa, true, ops->destroy_pa(pa));
 		}
 	}
 }
@@ -1286,13 +1382,21 @@ static void trigger_startup_hooks(struct lsdn_context *ctx)
 	}
 }
 
+/* Error handling strategy:
+ * If commit/decommit functions return void, it is their responsibility to report the problem and
+ * mark the object as inconsistent as needed. Typically, the will use mark_commit_err for that.
+ *
+ * If the functions return lsdn_err_t, the caller has the responsibility to report the problem.
+ * Commit functions can return any errors (typically LSDNE_NETLINK, LSDNE_INCONSISTENT or LSDNE_NOMEM),
+ * while decommit functions are allowed to only return LSDNE_INCONSISTENT.
+ */
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	trigger_startup_hooks(ctx);
 
-	lsdn_err_t lerr = lsdn_validate(ctx, cb, user);
-	if(lerr != LSDNE_OK)
-		return lerr;
+	lsdn_err_t err = lsdn_validate(ctx, cb, user);
+	if(err != LSDNE_OK)
+		return err;
 
 	/* List of objects to process:
 	 *	setting, network, phys, physical attachment, virt
@@ -1302,30 +1406,28 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 	/********* Decommit phase **********/
 	lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, n) {
 		lsdn_foreach(n->virt_list, virt_entry, struct lsdn_virt, v) {
-			decommit_rules(v, v->ht_in_rules, LSDN_IN);
-			decommit_rules(v, v->ht_out_rules, LSDN_OUT);
-			if (ack_uncommit(&v->state)) {
+			if (ack_decommit(&v->state)) {
 				decommit_virt(v);
 				ack_delete(v, virt_do_free);
 			}
 		}
 		lsdn_foreach(n->attached_list, attached_entry, struct lsdn_phys_attachment, pa) {
-			if (ack_uncommit(&pa->state)) {
+			if (ack_decommit(&pa->state)) {
 				decommit_pa(pa);
 				ack_delete(pa, pa_do_free);
 			}
 		}
-		if (ack_uncommit(&n->state))
+		if (ack_decommit(&n->state))
 			ack_delete(n, net_do_free);
 	}
 
 	lsdn_foreach(ctx->phys_list, phys_entry, struct lsdn_phys, p){
-		if (ack_uncommit(&p->state))
+		if (ack_decommit(&p->state))
 			ack_delete(p, phys_do_free);
 	}
 
 	lsdn_foreach(ctx->settings_list, settings_entry, struct lsdn_settings, s) {
-		if (ack_uncommit(&s->state))
+		if (ack_decommit(&s->state))
 			ack_delete(s, settings_do_free);
 	}
 
@@ -1339,7 +1441,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 				p->attached_to_list, attached_to_entry,
 				struct lsdn_phys_attachment, pa)
 			{
-				commit_pa(pa, cb, user);
+				commit_pa(pa);
 			}
 		}
 	}
@@ -1355,13 +1457,20 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 
 	lsdn_foreach(ctx->networks_list, networks_entry, struct lsdn_net, n){
 		ack_state(&n->state);
+
 		lsdn_foreach(n->attached_list, attached_entry, struct lsdn_phys_attachment, pa) {
 			ack_state(&pa->state);
 		}
+
 		lsdn_foreach(n->virt_list, virt_entry, struct lsdn_virt, v) {
 			ack_state(&v->state);
 		}
 	}
 
-	return (ctx->problem_count == 0) ? LSDNE_OK : LSDNE_COMMIT;
+	if (ctx->inconsistent)
+		return LSDNE_INCONSISTENT;
+	else if (ctx->problem_count > 0)
+		return LSDNE_COMMIT;
+	else
+		return LSDNE_OK;
 }

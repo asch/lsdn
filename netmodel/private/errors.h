@@ -34,5 +34,42 @@ static inline void *ret_ptr(struct lsdn_context *ctx, void *ptr){
 		ctx->nomem_cb(ctx->nomem_cb_user);
 	return ptr;
 }
+
+static inline bool mark_commit_err(
+	struct lsdn_context *ctx, enum lsdn_state *s, enum lsdn_problem_ref_type type, void *subj, bool fatal, lsdn_err_t err)
+{
+	if (*s == LSDN_STATE_FAIL)
+		return true;
+
+	if (err == LSDNE_INCONSISTENT || (fatal && err == LSDNE_NETLINK)) {
+		*s = LSDN_STATE_FAIL;
+		lsdn_problem_report(ctx, LSDNP_COMMIT_NETLINK_CLEANUP, type, subj, LSDNS_END);
+		return true;
+	} else if (err == LSDNE_NETLINK) {
+		*s = LSDN_STATE_ERR;
+		lsdn_problem_report(ctx, LSDNP_COMMIT_NETLINK, type, subj, LSDNS_END);
+		return true;
+	} else if (err == LSDNE_NOMEM) {
+		*s = LSDN_STATE_ERR;
+		lsdn_problem_report(ctx, LSDNP_COMMIT_NOMEM, type, subj, LSDNS_END);
+		return true;
+	} else if (err == LSDNE_OK) {
+		return false;
+	} else {
+		abort();
+	}
+}
+
+static inline bool state_ok(enum lsdn_state state)
+{
+	return state == LSDN_STATE_OK || state == LSDN_STATE_NEW;
+}
+
+static inline void acc_inconsistent(lsdn_err_t *dst, lsdn_err_t src)
+{
+	if (src != LSDNE_OK)
+		*dst = LSDNE_INCONSISTENT;
+}
+
 /** Return pointer here. */
 #define ret_ptr(ctx, x) return ret_ptr(ctx, x)
