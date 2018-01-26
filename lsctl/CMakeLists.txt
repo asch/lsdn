@@ -13,6 +13,7 @@ find_library(TCLSTUBS_LIBRARY
 
 add_library(lsext SHARED lsext.h lsext.c pkgIndex.tcl)
 target_link_libraries(lsext lsdn ${TCLSTUBS_LIBRARY})
+target_include_directories(lsext PRIVATE ${TCL_INCLUDE_PATH})
 install(
 	TARGETS lsext
 	DESTINATION lib/lsdn
