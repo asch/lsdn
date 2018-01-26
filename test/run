@@ -11,7 +11,7 @@ run_stages() {
 	lsctl="../lsctl/lsctl"
 
 	for s in $stages; do
-		if [ -n ${PHASES:-} ]; then
+		if [ -n "${PHASES:-}" ]; then
 			case $s in
 				connect)
 					for i in `seq $PHASES`; do
