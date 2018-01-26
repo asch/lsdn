@@ -1,3 +1,5 @@
+namespace import lsdn::*
+
 namespace eval common {
 	proc opt_env {var} {
 		if [ info exists ::env($var) ] {return $::env($var) } {return ""}

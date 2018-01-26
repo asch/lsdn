@@ -771,7 +771,7 @@ CMD(rate)
 	return TCL_OK;
 }
 
-CMD(flush)
+CMD(flushVr)
 {
 	if (check_scope(interp, ctx, S_VIRT) != TCL_OK)
 		return TCL_ERROR;
@@ -1040,10 +1040,24 @@ CMD(detach)
 
 static struct tcl_ctx default_ctx;
 
-#define REGISTER(name) Tcl_CreateObjCommand(interp, #name, (Tcl_ObjCmdProc*) tcl_##name, ctx, NULL)
+#define REGISTER(name) Tcl_CreateObjCommand(interp, "lsdn::" #name, (Tcl_ObjCmdProc*) tcl_##name, ctx, NULL)
+
+int Lsext_Init(Tcl_Interp *interp)
+{
+	return register_lsdn_tcl(interp);
+}
 
 int register_lsdn_tcl(Tcl_Interp *interp)
 {
+	Tcl_Namespace *ns;
+	if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) {
+		 return TCL_ERROR;
+	}
+
+	if ((ns = Tcl_CreateNamespace(interp, "lsdn", NULL, NULL)) == NULL) {
+		return TCL_ERROR;
+	}
+
 	struct tcl_ctx *ctx = &default_ctx;
 	ctx->lsctx = lsdn_context_new("lsdn");
 	ctx->stack_pos = 0;
@@ -1065,9 +1079,17 @@ int register_lsdn_tcl(Tcl_Interp *interp)
 	REGISTER(free);
 	REGISTER(attach);
 	REGISTER(detach);
-	REGISTER(flush);
+	REGISTER(flushVr);
 	REGISTER(rule);
 	REGISTER(rate);
+
+	if (Tcl_Export(interp, ns, "*", 0) == TCL_ERROR) {
+		return TCL_ERROR;
+	}
+
+	if (Tcl_PkgProvide(interp, "lsdn", "1.0") == TCL_ERROR) {
+		return TCL_ERROR;
+	}
 
 	return TCL_OK;
 }

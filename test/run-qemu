@@ -107,7 +107,7 @@ echo "$CMDLINE" > qemu/work
 	-virtfs local,mount_tag=build,path=..,security_model=none \
 	-serial mon:stdio  -nographic \
 	$KVM $GDB \
-	-append "root=/dev/root rw rootfstype=9p rootflags=trans=virtio,version=9p2000.L $QUIET console=ttyS0 init=$INIT"
+	-append "slub_debug=FZP root=/dev/root rw rootfstype=9p rootflags=trans=virtio,version=9p2000.L $QUIET console=ttyS0 init=$INIT"
 
 if [ ! -z "${RESULT}" ] ; then
 	ret=1
