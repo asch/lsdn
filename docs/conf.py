@@ -82,6 +82,7 @@ breathe_projects = {
 }
 breathe_default_project = 'lsdn'
 
+default_role = 'ref'
 
 # -- Options for HTML output ----------------------------------------------
 

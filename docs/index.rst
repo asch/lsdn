@@ -6,4 +6,7 @@ LSDN User's Documentation
    :maxdepth: 2
 
    intro
+   quickstart
+   netmodel
+   lsctl
    ref
