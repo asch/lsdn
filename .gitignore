@@ -4,5 +4,9 @@
 CMakeLists.txt.user
 /build
 tags
+/doxygen/html
+/doxygen/xml
 /docs/html
+/docs/_build
+/docs/pdf
 /test/pacman-cache

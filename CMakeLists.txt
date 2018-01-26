@@ -28,3 +28,7 @@ if (LIBVIRT_FOUND)
 	add_subdirectory(hooks)
 	add_subdirectory(examples)
 endif (LIBVIRT_FOUND)
+
+add_custom_target(doc
+	./build-doc.sh
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

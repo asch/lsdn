@@ -1,7 +1,6 @@
-@page lsdn-public LSDN Public API
-@short Overview of the user-facing LSDN library API.
-
-## Basic concepts
+==================
+Introduction
+==================
 
 The LSDN library is built upon a model of separate virtual networks connecting
 virtual machines distributed over multiple physical hosts. One host can be
@@ -17,7 +16,8 @@ are connected to different networks. It is possible to virtualize multiple
 existing physical networks and run them without interference in a single hosting
 location.
 
-## Network representation
+Network representation
+----------------------
 
 The public API gives you tools to build a memory model of your networks. This
 must describe the shape of the physical network as well as all virtual networks.
