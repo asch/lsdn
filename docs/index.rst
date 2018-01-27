@@ -3,10 +3,17 @@ LSDN User's Documentation
 =========================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    intro
    quickstart
    netmodel
    lsctl
    ref
+
+.. rubric:: Looking for something?
+
+- `genindex`
+- `search`
+
+.. todolist::

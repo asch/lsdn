@@ -560,6 +560,11 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	ret_ptr(net->ctx, virt);
 }
 
+struct lsdn_net *lsdn_virt_get_net(struct lsdn_virt *virt)
+{
+	return virt->network;
+}
+
 /** Perform freeing of a virt object.
  * Used when `lsdn_virt_free` is manually invoked, as the last step,
  * and also implicitly as part of the decommit phase. */

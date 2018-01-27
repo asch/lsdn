@@ -172,6 +172,7 @@ struct lsdn_virt;
 
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net);
 void lsdn_virt_free(struct lsdn_virt* vsirt);
+struct lsdn_net *lsdn_virt_get_net(struct lsdn_virt *virt);
 lsdn_err_t lsdn_virt_set_name(struct lsdn_virt *virt, const char *name);
 const char* lsdn_virt_get_name(struct lsdn_virt *virt);
 struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name);

@@ -426,8 +426,15 @@ CMD(virt)
 		return TCL_ERROR;
 	}
 
-	if (!virt)
+	if (!virt) {
 		virt = lsdn_virt_new(net_parsed);
+	} else {
+		if(net_parsed != lsdn_virt_get_net(virt)) {
+			ckfree(pos_args);
+			return tcl_error(interp, "Can not change network for existing virt");
+		}
+	}
+
 	if(name)
 		lsdn_virt_set_name(virt, name);
 	if(mac)
@@ -559,7 +566,7 @@ err:
 }
 CMD(rule)
 {
-	/* example: rule in 10 -srcIp 192.168.24.0/24 */
+	/* example: rule in 10 drop -srcIp 192.168.24.0/24 */
 	if (check_scope(interp, ctx, S_VIRT) != TCL_OK)
 		return TCL_ERROR;
 
