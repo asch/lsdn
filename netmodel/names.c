@@ -24,6 +24,11 @@ void lsdn_names_free(struct lsdn_names *tab)
  * If the new name is the same as the old name, returns `LSDNE_OK` immediately. 
  * Otherwise checks for uniqueness within `table` and if that succeeds,
  * assigns the new name to the `name` variable.
+ *
+ * Makes a private copy of `str`, so that `str` can be freed or reused after calling.
+ * This is useful because `str` is usually returned from `lsdn_mk_name`, which
+ * reuses a fixed buffer in the current context.
+ *
  * @param name Name struct.
  * @param[in] table List of names.
  * @param[in] str New name.

@@ -32,6 +32,18 @@ static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 		*to = LSDN_STATE_RENEW;
 }
 
+/** Generate unique name for an object.
+ * The name is based on the context name, type of the object (net, phys, virt, etc.) and
+ * a unique object counter on the context. It is in the form `"ctxname-type-12"`.
+ *
+ * Results are saved in `lsdn_context.namebuf`, so every subsequent call overwrites the previous
+ * results. Users need to make a copy of the returned string. This is not a problem because
+ * the usual usage is inside `lsdn_name_set` which does make a private copy.
+ *
+ * @see lsdn_mk_net_name, lsdn_mk_phys_name, lsdn_mk_virt_name, lsdn_mk_iface_name, lsdn_mk_settings_name
+ * @param ctx LSDN context
+ * @param type object type (arbitrary string, usually "net", "phys", "virt", "iface" or "settings")
+ * @return pointer to a buffer with a generated unique name. */
 const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type)
 {
 	snprintf(ctx->namebuf, sizeof(ctx->namebuf), "%s-%s-%d", ctx->name, type, ++ctx->obj_count);

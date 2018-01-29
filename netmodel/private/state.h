@@ -1,11 +1,11 @@
 /** \file
- * State-related definitions. */
+ * Commit state related definitions. */
 #pragma once
 #include <stdbool.h>
 #include "../include/errors.h"
 #include <assert.h>
 
-/** State of the LSDN object. */
+/** Commit state of the LSDN object. */
 enum lsdn_state {
 	/** Object is being committed for a first time. */
 	LSDN_STATE_NEW,
@@ -24,7 +24,7 @@ enum lsdn_state {
  * If the object is in NEW state, so it's not in tc tables yet, delete it
  * immediately. Otherwise, set to DELETE state for later deletion sweep.
  * @param obj Object to delete, expected to have a `state` member.
- * @param free Deletion function to use. */
+ * @param freefn Deallocation function. */
 #define free_helper(obj, freefn) \
 	do{ \
 		if (obj->state == LSDN_STATE_NEW) { \
@@ -42,7 +42,9 @@ enum lsdn_state {
  *
  * If the state was already `OK`, no change. If the state was `LSDN_STATE_DELETE`,
  * the object is now deleted, so `LSDN_STATE_DELETE` is the only possible appropriate
- * value. */
+ * value.
+ *
+ * @param s Pointer to commit state. */
 static inline void ack_state(enum lsdn_state *s)
 {
 	if (*s == LSDN_STATE_NEW || *s == LSDN_STATE_RENEW)
@@ -56,7 +58,7 @@ static inline void ack_state(enum lsdn_state *s)
  * deleted later instead, use ack_delete for that).  If the object was in `LSDN_STATE_RENEW`,
  * it must be reinstalled, so the state is set to `LSDN_STATE_NEW`. Does nothing for other states.
  *
- * @returns
+ * @param s Pointer to commit state.
  * @retval true The caller should decommit the object, because it is getting renewed or deleted.
  * @retval false The object was in other state.
  */
@@ -74,11 +76,11 @@ static inline bool ack_decommit(enum lsdn_state *s)
 }
 
 /** Free a deleted object.
- * If the state is `LSDN_STATE_DELETE`, call `free` on the object.
- * @param obj object to free
- * @param free deallocator function */
-#define ack_delete(obj, free) \
+ * If the object is marked with `pending_free`, deallocate it.
+ * @param obj Object to free.
+ * @param freefn Deallocator function. */
+#define ack_delete(obj, freefn) \
 	do { \
 		if (obj->pending_free) \
-			free(obj); \
+			freefn(obj); \
 	} while(0)

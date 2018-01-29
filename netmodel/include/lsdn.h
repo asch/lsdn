@@ -203,19 +203,25 @@ LSDN_DECLARE_ATTR(virt, rate_out, lsdn_qos_rate_t);
 lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 
-/** Make a unique lsdn name.
- * Creates a new name for a given context. The name is in the form
- * `"ctxname-type-12"`, where "ctxname" is `name` for the context, type is
- * the name of the type of object being created and "12" is the number of
- * already created names.
- * The generated name is stored in `namebuf` field of `ctx`, so repeated calls
- * to `lsdn_mk_name` overwrite it. You should make a private copy if you need it.
- * @param ctx LSDN context.
- * @return Pointer to the name string. */
 const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type);
 
+/** Generate unique name for a net.
+ * @param ctx LSDN context.
+ * @see lsdn_mk_name */
 #define lsdn_mk_net_name(ctx) lsdn_mk_name(ctx, "net")
+/** Generate unique name for a phys.
+ * @param ctx LSDN context.
+ * @see lsdn_mk_name */
 #define lsdn_mk_phys_name(ctx) lsdn_mk_name(ctx, "phys")
+/** Generate unique name for a virt.
+ * @param ctx LSDN context.
+ * @see lsdn_mk_name */
 #define lsdn_mk_virt_name(ctx) lsdn_mk_name(ctx, "virt")
+/** Generate unique name for an interface.
+ * @param ctx LSDN context.
+ * @see lsdn_mk_name */
 #define lsdn_mk_iface_name(ctx) lsdn_mk_name(ctx, "iface")
+/** Generate unique name for a settings object.
+ * @param ctx LSDN context.
+ * @see lsdn_mk_name */
 #define lsdn_mk_settings_name(ctx) lsdn_mk_name(ctx, "settings")

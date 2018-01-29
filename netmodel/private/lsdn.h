@@ -12,7 +12,18 @@
 #include "lbridge.h"
 #include "state.h"
 
-struct lsdn_context{
+/** LSDN Context.
+ * This is the central structure that keeps track of the in-memory network model as a whole.
+ * Its main purpose is to allow commit, teardown and deallocation of the model in one go.
+ * It also allows configuring common options (OOM callback, problem callback) and generating unique
+ * object names.
+ *
+ * Typically, the network model is represented by one context. Although it is possible to 
+ * keep multiple contexts in a single program, this is not recommended. Uniqueness of objects
+ * (such as interface names, "one phys per physical interface" etc.) is only checked inside of
+ * a single context, so multiple contexts could run into collisions. Multiple networks can exist
+ * in a single context, so in practice you probably don't need more than one context anyway. */
+struct lsdn_context {
 	/** Context name. Determines the prefix for objects created in the context. */
 	char* name;
 	/** Out-of-memory callback. */
@@ -27,11 +38,11 @@ struct lsdn_context{
 	/** Unique settings names. */
 	struct lsdn_names setting_names;
 
-	/** Head of list of networks. */
+	/** List of networks. */
 	struct lsdn_list_entry networks_list;
-	/** Head of list of settings. */
+	/** List of settings. */
 	struct lsdn_list_entry settings_list;
-	/** Head of list of physes. */
+	/** List of list of physes. */
 	struct lsdn_list_entry phys_list;
 
 	/** Netlink socket for installing tc rules. */
@@ -42,7 +53,7 @@ struct lsdn_context{
 	/** User-specified data for problem callback. */
 	void *problem_cb_user;
 
-	/** \name Error handling. Only used during validation and commit phase. */
+	/** @name Error handling. Only used during validation and commit phase. */
 	/** @{ */
 	/** Currently processed problem. */
 	struct lsdn_problem problem;
@@ -69,55 +80,111 @@ struct lsdn_context{
 };
 
 
+/** Network settings. */
 struct lsdn_settings {
+	/** Commit state of the settings object. */
 	enum lsdn_state state;
+	/** Pending delete flag. */
 	bool pending_free;
+
+	/** Membership in list of all settings.
+	 * @see #lsdn_context.settings_list */
 	struct lsdn_list_entry settings_entry;
+	/** List of users of this settings object. */
 	struct lsdn_list_entry setting_users_list;
+
+	/** LSDN context. */
 	struct lsdn_context *ctx;
+	/** Associated network operations. */
 	struct lsdn_net_ops *ops;
+	/** Name of the settings object. */
 	struct lsdn_name name;
 
+	/** Network type. */
 	enum lsdn_nettype nettype;
+	/** Switch type. */
 	enum lsdn_switch switch_type;
+
 	union {
+		/** Properties for the VXLAN network type. */
 		struct {
+			/** VXLAN UDP port. */
 			uint16_t port;
-			union{
-				struct mcast {
+			union {
+				/** Properties for multicast VXLAN. */
+				struct {
+					/** Multicast IP address. */
 					lsdn_ip_t mcast_ip;
 				} mcast;
+				/** Properties of end-to-end static VXLAN. */
 				struct {
+					/** Reference count for the tunnel interface. */
 					size_t refcount;
+					/** Tunnel interface. */
 					struct lsdn_if tunnel;
+					/** Bridge interface XXX */
 					struct lsdn_sbridge_phys_if tunnel_sbridge;
+					/** Ruleset XXX */
 					struct lsdn_ruleset ruleset_in;
 				} e2e_static;
 			};
 		} vxlan;
-		struct{
+		/** Properties for the GENEVE network type. */
+		struct {
+			/** GENEVE UDP port. */
 			uint16_t port;
 			size_t refcount;
+			/** Tunnel interface. */
 			struct lsdn_if tunnel;
+			/** Bridge interface XXX */
 			struct lsdn_sbridge_phys_if tunnel_sbridge;
+			/** Ruleset XXX */
 			struct lsdn_ruleset ruleset_in;
 		} geneve;
 	};
 
+	/** User callback hooks. */
 	struct lsdn_user_hooks *user_hooks;
 };
 
+/** LSDN phys.
+ * Phys is a representation of a physical machine hosting tenants of the LSDN network.
+ * Virts (tenant representations) can be attached to a phys, detached, and migrated
+ * between different physes, to reflect that a virtual machine is being moved to
+ * a different hardware. This is transparent to the virtual network, apart from
+ * disconnect and reconnect events.
+ *
+ * Exactly one phys should be marked as local, to indicate that it represents the
+ * point of view of the currently running LSDN instance. Routing rules for interfaces
+ * on the local phys will be commited to the kernel. */
 struct lsdn_phys {
+	/** Commit state of the phys object. */
 	enum lsdn_state state;
+	/** Pending delete flag. */
 	bool pending_free;
+
+	/** Phys name. */
 	struct lsdn_name name;
+	/** Membership in list of all physes.
+	 * @see #lsdn_context.phys_list. */
 	struct lsdn_list_entry phys_entry;
+	/** List of attached virts. */
 	struct lsdn_list_entry attached_to_list;
 
+	/** LSDN context. */
 	struct lsdn_context* ctx;
+	/** Local flag.
+	 * If set to true, this phys object represents the point of view of the running
+	 * LSDN instance. */
 	bool is_local;
+	/** Local committed flag.
+	 * Indicated that routing rules are installed in the kernel as if this is the local phys. */
 	bool committed_as_local;
+	/** Outgoing network interface name.
+	 * Represents the interface that is connected to the physical network. Other physes
+	 * should be reachable through this interface. */
 	char *attr_iface;
+	/** IP address on the physical network. */
 	lsdn_ip_t *attr_ip;
 };
 
