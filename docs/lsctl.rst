@@ -155,6 +155,17 @@ the character with backslash: ::
 If you for some reason need the full syntax definition, refer to ``man tcl.n``
 on your system.
 
+.. _lsctlex:
+
+--------
+Examples
+--------
+
+.. todo:: Describe a couple of complete lsctl examples.
+.. todo:: a) Example with different network types (e.g. vxlan, vlan).
+.. todo:: b) Example with a gateway.
+.. todo:: c) Example with a DHCP server?
+
 .. _dirref:
 
 -------------------
@@ -376,7 +387,7 @@ Directive reference
         Optional, the UDP port used for VXLAN communication.
     :scope none: This directive can only appear at root level.
 
-.. lsctl:cmd:: settings geneve | -name
+.. lsctl:cmd:: settings geneve | -name -port
 
     Use Geneve tunnelling with fully static setup.
 
@@ -429,9 +440,9 @@ Command-line tools
 
 The LSCTL configuration language is accepted by the command-line tools:
 `lsctl <prog_lsctl>` and `lsctld <prog_lsctld>`. The one you should choose
-depends on your use-case. Lsctl is used for simple run-and-forget configuration,
-while `lsctld <prog_lsctld>` runs in the background and supports virtual machine
-migration and other types of network evolution.
+depends on your use-case. `lsctl <prog_lsctl>` is used for simple run-and-forget
+configuration, while `lsctld <prog_lsctld>` runs in the background and supports
+virtual machine migration and other types of network evolution.
 
 .. _prog_lsctl:
 
