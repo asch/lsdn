@@ -268,7 +268,7 @@ static lsdn_err_t vxlan_use_stunnel(struct lsdn_phys_attachment *a)
 	struct lsdn_context *ctx = s->ctx;
 	struct lsdn_if *tunnel = &s->vxlan.e2e_static.tunnel;
 	struct lsdn_ruleset *rules_in = &s->vxlan.e2e_static.ruleset_in;
-	if (s->vxlan.e2e_static.refcount++ == 0) {
+	if (s->vxlan.e2e_static.refcount == 0) {
 		err = lsdn_link_vxlan_create(
 			ctx->nlsock,
 			tunnel,
@@ -297,6 +297,7 @@ static lsdn_err_t vxlan_use_stunnel(struct lsdn_phys_attachment *a)
 		if (err != LSDNE_OK)
 			goto cleanup_phys_if;
 	}
+	s->vxlan.e2e_static.refcount++;
 	return err;
 
 	cleanup_phys_if:
