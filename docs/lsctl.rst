@@ -43,6 +43,14 @@ The directives may combine named and regular arguments. In that case, consult
 the documentation for the particular directive, if the regular (non-keyword)
 arguments should be placed before or after the keyword ones.
 
+If you need the directive to span multiple lines, use the backslash ``\``
+continuation character as you do in shell:
+
+.. code-block:: none
+
+    virt -name critical_server_with_unknown_purpose -if enps0 \
+        -mac F9:9B:81:C2:66:F9 -net service_net
+
 -----
 Names
 -----
@@ -122,38 +130,95 @@ nestings are:
 
 Some directives are only settings for one object (and do not imply any
 relationship). These are the ``rate`` (for virt QoS) and ``rules`` (for virt
-firewall) directives. The **must** be nested under a ``virt`` directive.
+firewall) directives. They **must** be nested under a ``virt`` directive.
 
 .. rubric:: Footnotes
 
 .. [#f1] If you are familiar with TCL, you will recognize this how TCL
     control-flow commands work.
 
-----------
-Escaping
-----------
+---------------
+Argument types
+---------------
 
-Directives are separated by newlines and directive arguments
-are separated by spaces, but both behaviours can be overriden.
+.. lsctl:type:: int
 
-If you need the directive to span multiple lines, use the backslash ``\``
-continuation character as you do in shell:
+    An integer number, given as string of digits prefixed with optional sign.
+    LSCTL recognizes the ``0x`` prefix for hexadecimal and ``0`` for octal
+    integers.
+
+.. lsctl:type:: string
+
+    String arguments in LSCTL are given the same way as in shell - they don't
+    need to be quoted. Mostly they are used for names, so there is no need to
+    give string argument containing spaces.
+
+    if you want to give a directive an argument containing space, newline or
+    curly brackets, simply enclose the argument in double-quotes.  If you want
+    the argument to contain double-quotes, backslash or dollar sign, precede the
+    character with backslash: ::
+
+        virt -name "really\$bad\\idea
+        on so many levels"
+
+    If you need the full syntax definition, refer to ``man tcl.n``
+    on your system.
+
+.. lsctl:type:: direction
+
+    Either ``in`` or ``out``. In is for packets entering the
+    virtual machine ``out`` is for packets leaving the virtual machine.
+
+.. lsctl:type:: ip
+
+    IP address, either IPv6 or IPv4. Common IPv6 and IPv4 formats are supported.
+
+    For exact specification, refer to ``inet_pton`` function in C library.
+
+    Examples:
 
 .. code-block:: none
 
-    virt -name critical_server_with_unknown_purpose -if enps0 \
-        -mac F9:9B:81:C2:66:F9 -net service_net
+    2a00:1028:8380:f86::2
+    192.168.56.1
 
-You should rarely need this, but if you want to give a directive an argument
-containing space, newline or curly brackets, simply enclose the argument in double-quotes.
-If you want the argument to contain double-quotes, backslash or dollar sign, precede
-the character with backslash: ::
+.. lsctl:type:: subNet
 
-    virt -name "really\$bad\\idea
-    on so many levels"
+    IP address optionally followed by ``/`` and prefix size. If the prefix size
+    is not given, it is equivalent to 128 for IPv6 and 32 for IPv4, that is
+    subnet containing the single IP address.
 
-If you for some reason need the full syntax definition, refer to ``man tcl.n``
-on your system.
+    Examples:
+.. code-block:: none
+
+    2a00:1028:8380:f86::2
+    2a00:1028:8380:f86::0/64
+    192.168.56.0/24
+
+.. lsctl:type:: mac
+
+    MAC address in octal format. Both addresses with colons and wihtout colons
+    are supported, as long as the colons are consistent. Case-insensitive
+
+.. code-block:: none
+
+    9F:1A:C1:4C:EE:0B
+    9f1ac14cee0b
+
+.. lsctl:type:: size
+
+    An unsigned decimal integer specifying a number of bytes. Suffices ``kb``, ``mb``, ``gb``
+    and ``bit``, ``kbit``, ``mbit``, ``gbit`` can be given to change the unit.
+    All units are 1024-base (not 1000), despite their `SI
+    <https://en.wikipedia.org/wiki/International_System_of_Units>` names. This is
+    for compatibility with the ``tc`` tool from ``iproute`` package, which uses the
+    same units.
+
+.. lsctl:type:: speed
+
+    An unsigned decimal integer specifying a number of bytes per second.
+
+    Supported units are the same as for :lsctl:type:``size``.
 
 .. _dirref:
 
@@ -223,18 +288,18 @@ Directive reference
 
     C API equivalents: :c:func:`lsdn_virt_new`, :c:func:`lsdn_virt_by_name`.
 
-    :param net:
+    :param string net:
         The virtual network this virt should be part of. Mandatory if creating
         new virt, forbidden if changing an existing one. Forbidden if nested
         inside `net`.
-    :param name:
+    :param string name:
         Optional, name of the virtual machine. Does not change network behavior,
         only used byt eh confiruation to refer to this virt.
     :param mac mac:
         Optional, MAC address used by the virtual machine.
-    :param phys:
+    :param string phys:
         Optional, connect (or migrate, if already connected) at a given `phys`.
-    :param if:
+    :param string if:
         Set the network interface used by the virtual machine to connect at the
         phys. Mandatory, if ``-phys`` argument was used.
     :scope none:
@@ -256,10 +321,10 @@ Directive reference
     .. todo:: Fill in once the respective section is completed.
 
 
-    :param in/out direction: Direction of the packets.
+    :param direction direction: Direction of the packets.
     :param int prio:
         Priority of the rule. Rules with lower numbers are matched first.
-    :param action action:
+    :param string action:
         Currently only drop action is supported.
     :param subNet srcIp:
         Match if the source IP address of the packet is in the given subnet.
@@ -286,7 +351,7 @@ Directive reference
     C API equivalents:
     .. todo:: Link to the attributes once documented.
 
-    :param in/out direction: Direction to limit.
+    :param direction direction: Direction to limit.
     :param speed avg: Average allowed speed.
     :param speed burstRate: Higher speed allowed during short bursts.
     :param size burst: Size of the burst during which higher speeds are allowed.
@@ -311,7 +376,7 @@ Directive reference
 
     C API equivalents: :c:func:`lsdn_phys_claim_local`.
 
-    :param phys: The phys to mark as local.
+    :param string phys: The phys to mark as local.
     :scope none: This directive can appear at root level.
     :scope phys: Equivalent to specifying the ``-phys`` parameter.
 

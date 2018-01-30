@@ -14,7 +14,7 @@ class Cmd(ObjectDescription):
                rolename='cmd'),
         TypedField('parameter', label=('Parameters'),
                names=('param', 'parameter', 'arg', 'argument'),
-               typerolename='obj', typenames=('paramtype', 'type')),
+               typerolename='type', typenames=('paramtype', 'type')),
     ]
 
     def handle_signature(self, sig, signode):
@@ -40,40 +40,65 @@ class Cmd(ObjectDescription):
             signode['first'] = (not self.names)
             self.state.document.note_explicit_target(signode)
 
-            cmds = self.env.domaindata['lsctl']['cmds']
+            cmds = self.env.domaindata['lsctl']['cmd']
             cmds[name] = self.env.docname
 
         index_name = '{} (LSCTL directive)'.format(name)
+        self.indexnode['entries'].append(('single', index_name, target, '', None))
+
+class Type(ObjectDescription):
+    doc_field_types = []
+    def handle_signature(self, sig, signode):
+        signode += addnodes.desc_name(sig, sig)
+        return sig
+    def add_target_and_index(self, name, sig, signode):
+        target = 'lsctl.type.' + name
+
+        if target not in self.state.document.ids:
+            signode['names'].append(target)
+            signode['ids'].append(target)
+            signode['first'] = (not self.names)
+            self.state.document.note_explicit_target(signode)
+
+            types = self.env.domaindata['lsctl']['type']
+            types[name] = self.env.docname
+
+        index_name = '{} (LSCTL argument type)'.format(name)
         self.indexnode['entries'].append(('single', index_name, target, '', None))
 
 class LsctlDomain(Domain):
     name = "lsctl"
     label = "LSCTL"
     object_types = {
-        "cmd": ObjType("directive")
+        "cmd": ObjType("directive"),
+        "type": ObjType("directive")
     }
     directives = {
-        "cmd": Cmd
+        "cmd": Cmd,
+        "type": Type
     }
     roles = {
-        "cmd": XRefRole()
+        "cmd": XRefRole(),
+        "type": XRefRole()
     }
 
     initial_data = {
-        'cmds': {},    # fullname -> docname, objtype
+        'cmd': {},
+        'type': {}
     }
     indices = [
     ]
 
     def resolve_xref(self, env, fromdocname, builder,
                      typ, target, node, contnode):
-        if typ != 'cmd':
+        if typ not in ['cmd', 'type']:
             return None
-        obj = self.data['cmds'].get(target)
+        obj = self.data[typ].get(target)
         if obj is None:
             return None
 
-        return make_refnode(builder, fromdocname, obj, 'lsctl.cmd.'+target, contnode, target)
+        return make_refnode(builder, fromdocname, obj,
+                'lsctl.{}.{}'.format(typ,target), contnode, target)
 
 def setup(app):
     app.add_domain(LsctlDomain)
