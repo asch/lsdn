@@ -1049,7 +1049,7 @@ static struct tcl_ctx default_ctx;
 
 #define REGISTER(name) Tcl_CreateObjCommand(interp, "lsdn::" #name, (Tcl_ObjCmdProc*) tcl_##name, ctx, NULL)
 
-int Lsext_Init(Tcl_Interp *interp)
+int Lsctl_Init(Tcl_Interp *interp)
 {
 	return register_lsdn_tcl(interp);
 }
