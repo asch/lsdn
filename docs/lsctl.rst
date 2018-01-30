@@ -155,17 +155,6 @@ the character with backslash: ::
 If you for some reason need the full syntax definition, refer to ``man tcl.n``
 on your system.
 
-.. _lsctlex:
-
---------
-Examples
---------
-
-.. todo:: Describe a couple of complete lsctl examples.
-.. todo:: a) Example with different network types (e.g. vxlan, vlan).
-.. todo:: b) Example with a gateway.
-.. todo:: c) Example with a DHCP server?
-
 .. _dirref:
 
 -------------------

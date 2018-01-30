@@ -4,6 +4,8 @@
 Network representation
 ======================
 
+.. todo:: A bit slower introduction with more context.
+
 The public API gives you tools to build a memory model of your networks. This
 must describe the shape of the physical network as well as all virtual networks.
 
@@ -58,3 +60,7 @@ experience with computer networks.
   Moreover, all IP addresses assigned to virts in the same network must be
   be of the same IP version (both IPv4 and IPv6 versions are supported by LSDN).
 
+.. todo:
+
+    Go through the various network types and describe their functioning and
+    limitations. 

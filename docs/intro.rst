@@ -15,3 +15,5 @@ Multiple virtual machines can even have identical MAC addresses, as long as they
 are connected to different networks. It is possible to virtualize multiple
 existing physical networks and run them without interference in a single hosting
 location.
+
+.. todo:: Explain the motivation and introduce the various technologies.

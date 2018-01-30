@@ -9,7 +9,8 @@ LSDN User's Documentation
    quickstart
    netmodel
    lsctl
-   ref
+   capi
+   examples
 
 .. rubric:: Looking for something?
 
