@@ -7,7 +7,7 @@
 #include "include/errors.h"
 
 
-/* Make sure the VXLAN interface operating in metadata mode for that UDP port exists. */
+/* Make sure the Geneve interface operating in metadata mode for that UDP port exists. */
 static lsdn_err_t geneve_use_stunnel(struct lsdn_phys_attachment *a)
 {
 	lsdn_err_t err = LSDNE_OK;
