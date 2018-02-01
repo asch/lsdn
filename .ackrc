@@ -1,1 +1,5 @@
 --ignore-dir=docs/html
+--ignore-dir=docs/pdf
+--ignore-dir=docs/_static
+--ignore-dir=doxygen/xml
+--ignore-dir=doxygen/html
