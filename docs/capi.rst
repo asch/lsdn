@@ -2,12 +2,7 @@
 C API
 ================
 
-----------
-Guide
-----------
+.. toctree::
+   :glob:
 
-----------
-Reference
-----------
-
-.. doxygenfile:: include/lsdn.h
+   capi/*

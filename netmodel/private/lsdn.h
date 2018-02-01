@@ -13,10 +13,16 @@
 #include "state.h"
 
 /** LSDN Context.
+ * @ingroup context
  * This is the central structure that keeps track of the in-memory network model as a whole.
  * Its main purpose is to allow commit, teardown and deallocation of the model in one go.
  * It also allows configuring common options (OOM callback, problem callback) and generating unique
  * object names.
+ *
+ * The same structures (lsdn_phys, lsdn_virt) are used to describe both remote objects
+ * and objects running on other machines. This allows the orchestrator to make the same API calls
+ * on all physical machines to construct the network topology. The only difference between the
+ * API calls on the physical machines will be the lsdn_phys_claim_local calls.
  *
  * Typically, the network model is represented by one context. Although it is possible to 
  * keep multiple contexts in a single program, this is not recommended. Uniqueness of objects

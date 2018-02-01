@@ -1,0 +1,4 @@
+Virtual network
+---------------
+
+.. doxygengroup:: network
