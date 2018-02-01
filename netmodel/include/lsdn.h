@@ -8,15 +8,27 @@
 #include "nettypes.h"
 
 /** Attribute generator.
- * Declares a setter, getter and a "clearer" functions for attribute `name` of type `type.
+ * @private
+ * Declares a setter, getter and a "clearer" functions for attribute `attr` of type `type.
  * This is used to simplify creating accessors for attributes.
  * @param obj type on which the attribute is declared
- * @param name name of the attribute field
+ * @param attr name of the attribute field
  * @param type type of the attribute field */
-#define LSDN_DECLARE_ATTR(obj, name, type) \
-	lsdn_err_t lsdn_##obj##_set_##name(struct lsdn_##obj *obj, type value); \
-	lsdn_err_t lsdn_##obj##_clear_##name(struct lsdn_##obj *obj); \
-	const type *lsdn_##obj##_get_##name(struct lsdn_##obj *obj)
+#define LSDN_DECLARE_ATTR(desc, obj, attr, type) \
+	/** Set desc of a obj.
+@param obj obj to modify.
+@param value desc.
+@see @ref attributes. */ \
+	lsdn_err_t lsdn_##obj##_set_##attr(struct lsdn_##obj *obj, type value); \
+	/** Clear desc of a obj.
+@param obj obj to modify.
+@see @ref attributes. */ \
+	lsdn_err_t lsdn_##obj##_clear_##attr(struct lsdn_##obj *obj); \
+	/** Get desc of a obj.
+@param obj obj to read.
+@returns desc of the obj.
+@see @ref attributes. */ \
+	const type *lsdn_##obj##_get_##attr(struct lsdn_##obj *obj)
 
 struct lsdn_virt;
 struct lsdn_net;
@@ -153,8 +165,8 @@ void lsdn_phys_detach(struct lsdn_phys *phys, struct lsdn_net* net);
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
 lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys);
 
-LSDN_DECLARE_ATTR(phys, ip, lsdn_ip_t);
-LSDN_DECLARE_ATTR(phys, iface, const char*);
+LSDN_DECLARE_ATTR(IP address, phys, ip, lsdn_ip_t);
+LSDN_DECLARE_ATTR(interface, phys, iface, const char*);
 
 /** Physical interface attachment.
  * A point of connection to a virtual network through a physical interface.
@@ -196,10 +208,9 @@ typedef struct {
 	float burst_rate;
 } lsdn_qos_rate_t;
 
-LSDN_DECLARE_ATTR(virt, mac, lsdn_mac_t);
-LSDN_DECLARE_ATTR(virt, rate_in, lsdn_qos_rate_t);
-LSDN_DECLARE_ATTR(virt, rate_out, lsdn_qos_rate_t);
-
+LSDN_DECLARE_ATTR(MAC address, virt, mac, lsdn_mac_t);
+LSDN_DECLARE_ATTR(inbound bandwith limit, virt, rate_in, lsdn_qos_rate_t);
+LSDN_DECLARE_ATTR(outbound bandwith limit, virt, rate_out, lsdn_qos_rate_t);
 lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 

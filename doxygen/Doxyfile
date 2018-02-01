@@ -2029,7 +2029,7 @@ PREDEFINED             =
 
 EXPAND_AS_DEFINED      = LSDN_ENUM LSDN_ENUM_NAMES _LSDN_DUMP_ENUM _LSDN_DUMP_NAMES \
                          lsdn_enumgen_rule_target lsdn_enumgen_problem_code lsdn_enumgen_log_category \
-                         lsdn_vr_shortcuts
+                         lsdn_vr_shortcuts LSDN_DECLARE_ATTR
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES then doxygen's preprocessor will
 # remove all references to function-like macros that are alone on a line, have
