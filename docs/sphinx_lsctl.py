@@ -29,7 +29,7 @@ class Cmd(ObjectDescription):
         signode += addnodes.desc_name(cmd, cmd)
         signode += nodes.inline(' ', ' ')
         signode += nodes.Text(' '.join(sig))
-        return name
+        return cmd
 
     def add_target_and_index(self, name, sig, signode):
         target = 'lsctl.cmd.' + name

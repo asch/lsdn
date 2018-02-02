@@ -210,9 +210,9 @@ Argument types
     An unsigned decimal integer specifying a number of bytes. Suffices ``kb``, ``mb``, ``gb``
     and ``bit``, ``kbit``, ``mbit``, ``gbit`` can be given to change the unit.
     All units are 1024-base (not 1000), despite their `SI
-    <https://en.wikipedia.org/wiki/International_System_of_Units>` names. This is
-    for compatibility with the ``tc`` tool from ``iproute`` package, which uses the
-    same units.
+    <https://en.wikipedia.org/wiki/International_System_of_Units>`_ names. This
+    is for compatibility with the ``tc`` tool from ``iproute`` package, which
+    uses the same units.
 
 .. lsctl:type:: speed
 
@@ -384,6 +384,10 @@ Directive reference
 .. |sname_docs| replace::
     Optional, creates a non-default named setting. Use the `net` ``-setting``
     argument to select.
+.. lsctl:cmd:: settings | type
+
+    Set a network overlay type for newly defined networks. Use one of the
+    concrete overloads below.
 
 .. lsctl:cmd:: settings direct | -name
 
@@ -407,7 +411,7 @@ Directive reference
 
     Use VXLAN tunnelling with automatic setup using multicast.
 
-    See :ref:`ovl_vxlan_mcast` for more details.
+    See :ref:`ovl_vxlan_mcast` VXLAN for more details.
 
     :param string name: |sname_docs|
     :param ip mcastIp:
@@ -423,7 +427,7 @@ Directive reference
     Use VXLAN tunnelling with endpoint-to-endpoint communication and MAC
     learning.
 
-    See :ref:`ovl_vxlan_e2e` for more details.
+    See :ref:`ovl_vxlan_e2e` VXLAN for more details.
 
     :param string name: |sname_docs|
     :param int port:
@@ -434,7 +438,7 @@ Directive reference
 
     Use VXLAN tunnelling with fully static setup.
 
-    See :ref:`ovl_vxlan_static` for more details.
+    See :ref:`<ovl_vxlan_static>` VXLAN for more details.
 
     :param string name: |sname_docs|
     :param int port:
@@ -569,7 +573,7 @@ Or directly on the command-line:
 TCL extension (tclsh)
 ----------------------
 
-Instead of using the `prog_lsctl` command-line tool, you can use TCL directly
+Instead of using the `lsctl <prog_lsctl>` command-line tool, you can use TCL directly
 and load LSDN as an extension. This will allow you to combine LSDN with larger
 TCL programs and run it using ``tclsh``. This can be done using the regular TCL
 means: ::
