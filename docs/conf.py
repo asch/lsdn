@@ -130,8 +130,9 @@ latex_elements = {
 	'papersize': 'a4paper',
 	'pointsize': '12pt',
 	'preamble': r'''
-	    \usepackage{lmodern}
-	    \usepackage{inconsolata}
+	    \usepackage{tgpagella}
+	    \usepackage[T1]{fontenc}
+	    \usepackage{DejaVuSansMono}
 	''',
         'sphinxsetup': 'verbatimwithframe=false,VerbatimColor={RGB}{233,239,255}'
 }
