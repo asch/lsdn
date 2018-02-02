@@ -6,6 +6,7 @@ LSDN User's Documentation
    :maxdepth: 3
 
    intro
+   install
    quickstart
    netmodel
    lsctl
