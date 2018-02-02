@@ -29,7 +29,7 @@ target_link_libraries(lsctl lsext ${TCL_LIBRARY})
 target_include_directories(lsctl PRIVATE ${TCL_INCLUDE_PATH})
 install(
 	TARGETS lsctl
-	RUNTIME DESTINATION sbin
+	RUNTIME DESTINATION bin
 )
 
 
