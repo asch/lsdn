@@ -3,6 +3,8 @@ file(GLOB lsdn_PUBLIC "include/*.h")
 file(GLOB lsdn_PRIVATE "private/*.h")
 
 include_directories(${MNL_INCLUDE_DIRS} ${KERNEL_HEADERS} ${UTHASH_INCLUDE_DIR} ${JSONC_INCLUDE_DIRS})
+configure_file(lsdn.pc.in lsdn.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lsdn.pc DESTINATION lib/pkgconfig)
 
 add_library(lsdn
    ${lsdn_SRC}
