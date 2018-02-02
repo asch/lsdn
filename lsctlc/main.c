@@ -100,11 +100,11 @@ int main(int argc, char *argv[])
 		sendbuf.size = BUFSIZE;
 	}
 	sendbuf.pos = 0;
-	rcvbuf.data = malloc(BUFSIZ);
+	rcvbuf.data = malloc(BUFSIZE);
 	if (!rcvbuf.data)
 		abort();
 	rcvbuf.used = 0;
-	rcvbuf.size = BUFSIZ;
+	rcvbuf.size = BUFSIZE;
 	rcvbuf.pos = 0;
 
 	int ret = 0;
