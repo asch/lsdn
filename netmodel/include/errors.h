@@ -79,9 +79,12 @@ typedef enum {
 	x(LSDNP_VR_INCOMPATIBLE_MATCH, "Rules %o and %o on virt %o share the same priority, but have different match targets or masks.")\
 	/** Duplicate virt rules. */ \
 	x(LSDNP_VR_DUPLICATE_RULE, "Rules %o and %o on virt %o share the same priority and are completely equal") \
-	x(LSDNP_COMMIT_NETLINK, "Commiting %o failed, because kernel has refused the operation") \
-	x(LSDNP_COMMIT_NETLINK_CLEANUP, "Cleanup of %o failed, because kernel has refused the operation. It has been left in inconsistent state.") \
-	x(LSDNP_COMMIT_NOMEM, "Commiting %o failed, because memory was exhausted.")
+	/** Committing to netlink failed due to kernel error. */ \
+	x(LSDNP_COMMIT_NETLINK, "Committing %o failed because kernel has refused the operation") \
+	/** Decommitting to netlink failed due to kernel error and the state is now inconsistent. */ \
+	x(LSDNP_COMMIT_NETLINK_CLEANUP, "Cleanup of %o failed because kernel has refused the operation. It has been left in inconsistent state.") \
+	/** Committing to netlink failed due to memory error. */ \
+	x(LSDNP_COMMIT_NOMEM, "Committing %o failed because memory was exhausted.")
 
 /** Validation and commit errors. */
 LSDN_ENUM(problem_code, LSDNP);

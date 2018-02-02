@@ -51,10 +51,10 @@ const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type)
 }
 
 /** Create new LSDN context.
- * Initialize a `lsdn_context` struct, set its name to `name` and configure a netlink socket.
- * The returned struct must be freed by `lsdn_context_free` after use.
+ * Initialize a #lsdn_context struct, set its name to `name` and configure a netlink socket.
+ * The returned struct must be freed by #lsdn_context_free or #lsdn_context_cleanup after use.
  * @param name Context name.
- * @return `NULL` if allocation failed, pointer to new `lsdn_context` otherwise. */
+ * @return `NULL` if allocation failed, pointer to new #lsdn_context otherwise. */
 struct lsdn_context *lsdn_context_new(const char* name)
 {
 	struct lsdn_context *ctx = malloc(sizeof(*ctx));
@@ -1040,6 +1040,16 @@ static void cross_validate_networks(struct lsdn_net *net1, struct lsdn_net *net2
 	}
 }
 
+/** Validate network model.
+ * Walks the currently configured in-memory network model and checks for problems.
+ * If problems are found, an error code is returned. Problem callback is also invoked
+ * for every problem encountered.
+ *
+ * @param ctx LSDN context.
+ * @param cb Problem callback.
+ * @param user User data for the problem callback.
+ * @retval #LSDNE_OK No problems detected.
+ * @retval #LSDNE_VALIDATE Some problems detected. */
 lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	ctx->problem_cb = cb;
@@ -1399,16 +1409,26 @@ static void trigger_startup_hooks(struct lsdn_context *ctx)
 	}
 }
 
-/* Error handling strategy:
- * If commit/decommit functions return void, it is their responsibility to report the problem and
- * mark the object as inconsistent as needed. Typically, the will use mark_commit_err for that.
+/** Commit network model to kernel tables.
+ * Calculates tc rules based on the current network model, and its difference from
+ * the previously committed network model, and applies the changes. After returning successfully,
+ * the current network model is in effect.
  *
- * If the functions return lsdn_err_t, the caller has the responsibility to report the problem.
- * Commit functions can return any errors (typically LSDNE_NETLINK, LSDNE_INCONSISTENT or LSDNE_NOMEM),
- * while decommit functions are allowed to only return LSDNE_INCONSISTENT.
- */
+ * Performs a model validation (equivalent to calling #lsdn_validate) and returns an error
+ * if it fails.
+ * TODO continue
+ * */
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
+	/* Error handling strategy:
+	 * If commit/decommit functions return void, it is their responsibility to report the problem and
+	 * mark the object as inconsistent as needed. Typically, the will use mark_commit_err for that.
+	 *
+	 * If the functions return lsdn_err_t, the caller has the responsibility to report the problem.
+	 * Commit functions can return any errors (typically LSDNE_NETLINK, LSDNE_INCONSISTENT or LSDNE_NOMEM),
+	 * while decommit functions are allowed to only return LSDNE_INCONSISTENT.
+	 */
+
 	trigger_startup_hooks(ctx);
 
 	lsdn_err_t err = lsdn_validate(ctx, cb, user);
