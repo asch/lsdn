@@ -4,6 +4,7 @@
 CMakeLists.txt.user
 /build
 tags
+__pycache__
 /doxygen/html
 /doxygen/xml
 /docs/html
