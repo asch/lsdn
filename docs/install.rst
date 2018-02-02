@@ -71,6 +71,11 @@ as follows: ::
 	makepkg
 	pacman -U lsdn*.tar.xz
 
+If you do not want to build the package on your own, you can install lsdn with all it's dependencies
+directly from Arch User Repository (lsdn-git package): ::
+
+	pacaur -S lsdn-git # pacaur is AUR helper of our choice
+
 -------------
 Running tests
 -------------
