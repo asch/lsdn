@@ -1,0 +1,19 @@
+Source: lsdn
+Priority: optional
+Maintainer: Roman Kapl <code@rkapl.cz>
+Build-Depends: debhelper (>= 8.0.0), cmake
+Standards-Version: 3.9.4
+Section: libs
+Homepage: https://github.com/asch/lsdn
+
+Package: lsdn-dev
+Section: libdevel
+Architecture: any
+Depends: lsdn (= ${binary:Version})
+Description: Linux network overlays (V*LANS) configurator
+
+Package: lsdn
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Linux network overlays (V*LANS) configurator

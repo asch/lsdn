@@ -1,0 +1,5 @@
+usr/bin/lsctlc
+usr/bin/lsctld
+usr/bin/lsctl
+usr/lib/lib*.so*
+usr/lib/lsdn/pkgIndex.tcl

@@ -64,6 +64,9 @@ Building packages
 
 This project contains instruction files for building packages for various distributions of Linux.
 
+Arch
+~~~~
+
 On Arch Linux the PKGBUILD file is located in dist/arch/ and the package can be build and installed
 as follows: ::
 
@@ -75,6 +78,18 @@ If you do not want to build the package on your own, you can install lsdn with a
 directly from Arch User Repository (lsdn-git package): ::
 
 	pacaur -S lsdn-git # pacaur is AUR helper of our choice
+
+Debian
+~~~~~~
+
+See https://wiki.archlinux.org/index.php/installation_guide :)
+
+Jokes aside, run: ::
+
+    ln -s dist/debian .
+    dpkg-buildpackage
+
+The packages ``lsdn`` and ``lsdn-dev`` will be available in the parent folder.
 
 -------------
 Running tests
