@@ -125,7 +125,12 @@ htmlhelp_basename = 'lsdndoc'
 # -- Options for LaTeX output ---------------------------------------------
 latex_engine = 'xelatex'
 latex_elements = {
-        'fontpkg': '\setmonofont{DejaVu Sans Mono}[Scale=0.85]',
+	'papersize': 'a4paper',
+	'pointsize': '12pt',
+	'preamble': r'''
+	    \usepackage{lmodern}
+	    \usepackage{inconsolata}
+	''',
         'sphinxsetup': 'verbatimwithframe=false,VerbatimColor={RGB}{233,239,255}'
 }
 
