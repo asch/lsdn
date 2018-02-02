@@ -1,0 +1,7 @@
+@import url('haiku.css');
+
+.rightlogo {
+    height: 100px;
+    float: left !important;
+    margin-left: -125px;
+}

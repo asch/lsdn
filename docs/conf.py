@@ -91,6 +91,8 @@ default_role = 'ref'
 # a list of builtin themes.
 #
 html_theme = 'haiku'
+html_logo = 'logo.svg'
+html_style = 'theme.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

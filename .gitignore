@@ -9,6 +9,5 @@ __pycache__
 /doxygen/xml
 /docs/html
 /docs/_build
-/docs/_static
 /docs/pdf
 /test/pacman-cache
