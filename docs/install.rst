@@ -62,6 +62,15 @@ If you have additional kernel headers installed manually (see previous section),
 Building packages
 ------------------
 
+This project contains instruction files for building packages for various distributions of Linux.
+
+On Arch Linux the PKGBUILD file is located in dist/arch/ and the package can be build and installed
+as follows: ::
+
+	cd dist/arch/
+	makepkg
+	pacman -U lsdn*.tar.xz
+
 -------------
 Running tests
 -------------
