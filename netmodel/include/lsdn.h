@@ -11,6 +11,7 @@
  * @private
  * Declares a setter, getter and a "clearer" functions for attribute `attr` of type `type.
  * This is used to simplify creating accessors for attributes.
+ * @param desc human name for the attribute. Used in generated docs.
  * @param obj type on which the attribute is declared
  * @param attr name of the attribute field
  * @param type type of the attribute field */
@@ -73,7 +74,8 @@ struct lsdn_phys_attachment;
  * and only differ by their identifier (vlan id, vni ...). */
 struct lsdn_settings;
 
-/** Virt rule direction. */
+/** Virt rule direction.
+ * @ingroup rules */
 enum lsdn_direction {
 	/** Inbound rule. */
 	LSDN_IN,
@@ -85,6 +87,7 @@ enum lsdn_direction {
 typedef void (*lsdn_nomem_cb)(void *user);
 
 /** User callback hooks.
+ * @ingroup network
  * Configured as part of `lsdn_settings`, this structure holds the callback hooks for startup
  * and shutdown, and their custom data. */
 struct lsdn_user_hooks {
@@ -103,7 +106,8 @@ struct lsdn_user_hooks {
 	void *lsdn_shutdown_hook_user;
 };
 
-/** @defgroup context Context management
+/** @defgroup context Context
+ * LSDN context is a core object that manages the network model.
  * @{ */
 struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user);
@@ -116,7 +120,8 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 /** @} */
 
-/** Type of network encapsulation. */
+/** Type of network encapsulation.
+ * @ingroup network */
 enum lsdn_nettype {
 	/** VXLAN encapsulation. */
 	LSDN_NET_VXLAN,
@@ -128,7 +133,8 @@ enum lsdn_nettype {
 	LSDN_NET_GENEVE
 };
 
-/** Switch type for the virtual network. */
+/** Switch type for the virtual network.
+ * @ingroup network */
 enum lsdn_switch {
 	/** Learning switch with single tunnel shared from the phys.
 	 * The network is essentially autoconfiguring in this mode. */
@@ -149,8 +155,22 @@ enum lsdn_switch {
 	 * interface to be switched by some sort of learning switch. May be added if it appears. */
 };
 
-/** @defgroup settings Network settings
+/** @defgroup network Virtual network */
+
+/** @name Network object management
  * @{ */
+/** @ingroup network */
+struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
+lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name);
+const char* lsdn_net_get_name(struct lsdn_net *net);
+struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name);
+/* Will automatically delete all child objects */
+void lsdn_net_free(struct lsdn_net *net);
+/** @}*/
+
+/** @name Network settings
+ * @{ */
+/** @ingroup network */
 struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx);
 struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx);
 struct lsdn_settings *lsdn_settings_new_vxlan_mcast(struct lsdn_context *ctx, lsdn_ip_t mcast_ip, uint16_t port);
@@ -163,16 +183,6 @@ lsdn_err_t lsdn_settings_set_name(struct lsdn_settings *s, const char *name);
 const char* lsdn_settings_get_name(struct lsdn_settings *s);
 struct lsdn_settings *lsdn_settings_by_name(struct lsdn_context *ctx, const char *name);
 /** @} */
-
-/** @defgroup network Virtual networks 
- * @{ */
-struct lsdn_net *lsdn_net_new(struct lsdn_settings *settings, uint32_t vnet_id);
-lsdn_err_t lsdn_net_set_name(struct lsdn_net *net, const char *name);
-const char* lsdn_net_get_name(struct lsdn_net *net);
-struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name);
-/* Will automatically delete all child objects */
-void lsdn_net_free(struct lsdn_net *net);
-/** @}*/
 
 /** @defgroup phys Phys management
  * @{ */
@@ -225,25 +235,31 @@ LSDN_DECLARE_ATTR(inbound bandwith limit, virt, rate_in, lsdn_qos_rate_t);
 LSDN_DECLARE_ATTR(outbound bandwith limit, virt, rate_out, lsdn_qos_rate_t);
 /** @} */
 
+/** @defgroup misc Miscellaneous */
 const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type);
 
 /** Generate unique name for a net.
+ * @ingroup network
  * @param ctx LSDN context.
  * @see lsdn_mk_name */
 #define lsdn_mk_net_name(ctx) lsdn_mk_name(ctx, "net")
 /** Generate unique name for a phys.
+ * @ingroup phys
  * @param ctx LSDN context.
  * @see lsdn_mk_name */
 #define lsdn_mk_phys_name(ctx) lsdn_mk_name(ctx, "phys")
 /** Generate unique name for a virt.
+ * @ingroup virt
  * @param ctx LSDN context.
  * @see lsdn_mk_name */
 #define lsdn_mk_virt_name(ctx) lsdn_mk_name(ctx, "virt")
 /** Generate unique name for an interface.
+ * @ingroup misc
  * @param ctx LSDN context.
  * @see lsdn_mk_name */
 #define lsdn_mk_iface_name(ctx) lsdn_mk_name(ctx, "iface")
 /** Generate unique name for a settings object.
+ * @ingroup network
  * @param ctx LSDN context.
  * @see lsdn_mk_name */
 #define lsdn_mk_settings_name(ctx) lsdn_mk_name(ctx, "settings")
