@@ -13,9 +13,11 @@ LSDN User's Documentation
    examples
    capi
 
-.. rubric:: Looking for something?
+.. ifconfig:: ispdf in ('no')
 
-- `genindex`
-- `search`
+    .. rubric:: Looking for something?
+
+    - `genindex`
+    - `search`
 
 .. todolist::

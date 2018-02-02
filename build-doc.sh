@@ -5,5 +5,5 @@ doxygen doxygen/Doxyfile
 mkdir -p docs/_static
 
 sphinx-build -b html docs/ docs/html
-sphinx-build -b latex docs/ docs/pdf
+sphinx-build -D ispdf=yes -b latex docs/ docs/pdf
 make -C docs/pdf
