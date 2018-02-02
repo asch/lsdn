@@ -179,7 +179,6 @@ No tunneling
 
 .. _restricts:
 
---------------------
 Network Restrictions
 --------------------
 Certain restrictions apply to the set of possible networks and their
@@ -195,7 +194,7 @@ experience with computer networks.
   :ref:`ovl_vxlan_static` and the other is either of type
   :ref:`ovl_vxlan_e2e` or :ref:`ovl_vxlan_mcast`, must use different UDP
   ports.
-- Any virt inside a :ref:`ovl_vxlan_static` network must be explicitly
+- Any virt inside a :ref:`ovl_vxlan_static` VXLAN network must be explicitly
   assigned a unique MAC address.
 - All virts inside the same network must by assigned an unique IP address.
   Moreover, all IP addresses assigned to virts in the same network must be
