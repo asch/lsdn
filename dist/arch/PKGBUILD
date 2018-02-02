@@ -1,0 +1,50 @@
+# Maintainer: Vojtech Aschenbrenner <v@asch.cz>
+
+pkgname=lsdn-git
+pkgver=r374.91d25d5
+pkgrel=1
+pkgdesc="Tool for software defined networking on top of TC"
+arch=('any')
+url="https://github.com/asch/lsdn"
+license=('unknown')
+groups=()
+depends=()
+makedepends=('git' 'cmake' 'linux>=4.14')
+optdepends=()
+provides=("${pkgname%-git}")
+conflicts=("${pkgname%-git}")
+replaces=()
+backup=()
+options=()
+install=
+changelog=
+source=('git+https://github.com/asch/lsdn')
+noextract=()
+md5sums=('SKIP')
+
+pkgver() {
+	cd "$srcdir/${pkgname%-git}"
+	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+#prepare() {
+#	cd "$srcdir/${pkgname%-VCS}"
+#	patch -p1 -i "$srcdir/${pkgname%-VCS}.patch"
+#}
+#
+#build() {
+#	cd "$srcdir/${pkgname%-VCS}"
+#	./autogen.sh
+#	./configure --prefix=/usr
+#	make
+#}
+#
+#check() {
+#	cd "$srcdir/${pkgname%-VCS}"
+#	make -k check
+#}
+#
+#package() {
+#	cd "$srcdir/${pkgname%-VCS}"
+#	make DESTDIR="$pkgdir/" install
+#}
