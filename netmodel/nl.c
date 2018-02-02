@@ -105,6 +105,7 @@ struct mnl_socket *lsdn_socket_init()
 	int yes = 1;
 	err = mnl_socket_setsockopt(sock, NETLINK_EXT_ACK, &yes, sizeof(yes));
 	if (err) {
+		lsdn_log(LSDN_NLERR, "Extended messages not available, %d\n", err);
 		mnl_socket_close(sock);
 		return NULL;
 	}
@@ -112,6 +113,7 @@ struct mnl_socket *lsdn_socket_init()
 	/* This asks the kernel not to send back messages in ACKs, just headers */
 	err = mnl_socket_setsockopt(sock, NETLINK_CAP_ACK, &yes, sizeof(yes));
 	if (err) {
+		lsdn_log(LSDN_NLERR, "CAP_ACK not available %d\n", err);
 		mnl_socket_close(sock);
 		return NULL;
 	}

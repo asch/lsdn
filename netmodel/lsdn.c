@@ -72,13 +72,7 @@ struct lsdn_context *lsdn_context_new(const char* name)
 		return NULL;
 	}
 
-	ctx->nlsock = lsdn_socket_init();
-	if(!ctx->nlsock){
-		free(ctx->name);
-		free(ctx);
-		return NULL;
-	}
-
+	ctx->nlsock = NULL;
 	ctx->obj_count = 0;
 	lsdn_names_init(&ctx->phys_names);
 	lsdn_names_init(&ctx->net_names);
@@ -87,6 +81,17 @@ struct lsdn_context *lsdn_context_new(const char* name)
 	lsdn_list_init(&ctx->settings_list);
 	lsdn_list_init(&ctx->phys_list);
 	return ctx;
+}
+
+static lsdn_err_t lsdn_context_ensure_socket(struct lsdn_context *ctx)
+{
+	if (ctx->nlsock)
+		return LSDNE_OK;
+	ctx->nlsock = lsdn_socket_init();
+	if(!ctx->nlsock)
+		return LSDNE_NETLINK;
+
+	return LSDNE_OK;
 }
 
 /** Problem handler that aborts when a problem is found.
@@ -684,14 +689,17 @@ lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
  * Calculates the appropriate MTU value, taking into account the network's tunneling 
  * method overhead. */
 lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu)
-{
+{	
 	struct lsdn_context *ctx = virt->network->ctx;
 	struct lsdn_net_ops *ops = virt->network->settings->ops;
 	if (!virt->connected_through)
 		ret_err(ctx, LSDNE_NOIF);
 	struct lsdn_phys *phys = virt->connected_through->phys;
 	struct lsdn_if phys_if = {0};
-	lsdn_err_t ret;
+	lsdn_err_t ret = lsdn_context_ensure_socket(virt->network->ctx);
+	if (ret != LSDNE_OK)
+		ret_err(ctx, ret);
+
 	if (phys && phys->attr_iface) {
 		phys_if.ifname = phys->attr_iface;
 		ret = lsdn_if_resolve(&phys_if);
@@ -1428,12 +1436,17 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 	 * Commit functions can return any errors (typically LSDNE_NETLINK, LSDNE_INCONSISTENT or LSDNE_NOMEM),
 	 * while decommit functions are allowed to only return LSDNE_INCONSISTENT.
 	 */
-
 	trigger_startup_hooks(ctx);
 
 	lsdn_err_t err = lsdn_validate(ctx, cb, user);
 	if(err != LSDNE_OK)
 		return err;
+
+	err = lsdn_context_ensure_socket(ctx);
+	if(err != LSDNE_OK) {
+		lsdn_problem_report(ctx, LSDNP_NO_NLSOCK, LSDNS_END);
+		return err;
+	}
 
 	/* List of objects to process:
 	 *	setting, network, phys, physical attachment, virt

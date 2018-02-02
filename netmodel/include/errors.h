@@ -84,7 +84,9 @@ typedef enum {
 	/** Decommitting to netlink failed due to kernel error and the state is now inconsistent. */ \
 	x(LSDNP_COMMIT_NETLINK_CLEANUP, "Cleanup of %o failed because kernel has refused the operation. It has been left in inconsistent state.") \
 	/** Committing to netlink failed due to memory error. */ \
-	x(LSDNP_COMMIT_NOMEM, "Committing %o failed because memory was exhausted.")
+	x(LSDNP_COMMIT_NOMEM, "Committing %o failed because memory was exhausted.") \
+	/** Can not establish netlink communication */ \
+	x(LSDNP_NO_NLSOCK, "Can not establish netlink socket.")
 
 /** Validation and commit errors. */
 LSDN_ENUM(problem_code, LSDNP);
