@@ -6,7 +6,7 @@ pkgrel=1
 pkgdesc="Tool for software defined networking on top of TC"
 arch=('any')
 url="https://github.com/asch/lsdn"
-license=('unknown')
+license=('GPL2')
 groups=()
 depends=('tcl' 'linux>=4.14' 'uthash' 'libmnl' 'json-c' 'libdaemon' 'libvirt')
 makedepends=('git' 'cmake' 'linux>=4.14')
