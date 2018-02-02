@@ -92,7 +92,7 @@ variants in LSDN, depending on the routing method used. All of the variants
 needs the connected participating physical machines to have the `attr_ip` set
 and they must all see each other on the IP network directly (no NAT).
 
-VXLAN tags have 16 bits (16 million networks). VXLANs by default use UDP port
+VXLAN tags have 24 bits (16 million networks). VXLANs by default use UDP port
 *4789*, but this is configurable and could in theory be used to expand the
 `vid` space (but LSDN currently does not do this.
 
@@ -116,7 +116,7 @@ the source IP addresses.  Hence the only additional information is the multicast
 group IP address.
 
 **Restrictions**:
- - 16 bit `vid`
+ - 24 bit `vid`
  - Physical nodes in the same virtual network must be reachable on the IP layer
  - UDP and IP header overhead
  - Requires multicast support
@@ -134,7 +134,7 @@ the `attr_ip`. All unknown and broadcast packets are sent to all the physical
 machines and the VXLAN iteratively learns the IP address - MAC address mapping.
 
 **Restrictions**:
- - 16 bit `vid`
+ - 24 bit `vid`
  - Physical nodes in the same virtual network must be reachable on the IP layer
  - UDP and IP header overhead
  - Unknown and broadcast packets are duplicated for each physical machine
@@ -153,7 +153,7 @@ constructs a routing table from this information. Broadcast packets are
 duplicated and sent to all machines.
 
 **Restrictions**:
- - 16 bit `vid`
+ - 24 bit `vid`
  - Physical nodes in the same virtual network must be reachable on the IP layer
  - UDP and IP header overhead
  - Unknown and broadcast packets are duplicated for each physical machine
