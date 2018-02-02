@@ -166,7 +166,7 @@ Argument types
 
 .. lsctl:type:: direction
 
-    Either ``in`` or ``out``. In is for packets entering the
+    Either ``in`` or ``out``. ``in`` is for packets entering the
     virtual machine ``out`` is for packets leaving the virtual machine.
 
 .. lsctl:type:: ip

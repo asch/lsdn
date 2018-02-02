@@ -83,6 +83,7 @@ breathe_default_project = 'lsdn'
 
 default_role = 'ref'
 
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -121,23 +122,10 @@ htmlhelp_basename = 'lsdndoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
-
+latex_engine = 'xelatex'
 latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #
-    # 'papersize': 'letterpaper',
-
-    # The font size ('10pt', '11pt' or '12pt').
-    #
-    # 'pointsize': '10pt',
-
-    # Additional stuff for the LaTeX preamble.
-    #
-    # 'preamble': '',
-
-    # Latex figure (float) alignment
-    #
-    # 'figure_align': 'htbp',
+        'fontpkg': '\setmonofont{DejaVu Sans Mono}[Scale=0.85]',
+        'sphinxsetup': 'verbatimwithframe=false,VerbatimColor={RGB}{233,239,255}'
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
