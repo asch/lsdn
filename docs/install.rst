@@ -94,3 +94,11 @@ The packages ``lsdn`` and ``lsdn-dev`` will be available in the parent folder.
 -------------
 Running tests
 -------------
+
+LSCTL includes a testsuite that constructs various virtual networks and tries
+pinging VMs inside those networks. ``sudo make check`` starts these tests.
+
+If you plan on developing LSDN, you might want to run the tests inside another
+level of VM. There is already a testing ready for those purposes, built on QEMU
+and minimal Arch root file system. More information can be found in the
+Developer documentation :ref:`test_harness`.
