@@ -153,7 +153,7 @@ Argument types
     need to be quoted. Mostly they are used for names, so there is no need to
     give string argument containing spaces.
 
-    if you want to give a directive an argument containing space, newline or
+    If you want to give a directive an argument containing space, newline or
     curly brackets, simply enclose the argument in double-quotes.  If you want
     the argument to contain double-quotes, backslash or dollar sign, precede the
     character with backslash: ::
@@ -177,10 +177,10 @@ Argument types
 
     Examples:
 
-.. code-block:: none
+    .. code-block:: none
 
-    2a00:1028:8380:f86::2
-    192.168.56.1
+        2a00:1028:8380:f86::2
+        192.168.56.1
 
 .. lsctl:type:: subNet
 
@@ -189,21 +189,21 @@ Argument types
     subnet containing the single IP address.
 
     Examples:
-.. code-block:: none
+    .. code-block:: none
 
-    2a00:1028:8380:f86::2
-    2a00:1028:8380:f86::0/64
-    192.168.56.0/24
+        2a00:1028:8380:f86::2
+        2a00:1028:8380:f86::0/64
+        192.168.56.0/24
 
 .. lsctl:type:: mac
 
     MAC address in octal format. Both addresses with colons and wihtout colons
     are supported, as long as the colons are consistent. Case-insensitive
 
-.. code-block:: none
+    .. code-block:: none
 
-    9F:1A:C1:4C:EE:0B
-    9f1ac14cee0b
+        9F:1A:C1:4C:EE:0B
+        9f1ac14cee0b
 
 .. lsctl:type:: size
 
