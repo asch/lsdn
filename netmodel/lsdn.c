@@ -893,7 +893,6 @@ static void decommit_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio, enum
 
 static void rates_action(struct lsdn_filter *f, uint16_t order, struct lsdn_virt *v, const lsdn_qos_rate_t *rate)
 {
-	/* TODO: specify a tigher mtu */
 	unsigned int mtu = 0xFFFF;
 	(void) lsdn_virt_get_recommended_mtu(v, &mtu);
 	lsdn_action_police(f,
@@ -946,11 +945,13 @@ static lsdn_err_t commit_rates_inout(
 static void decommit_rates(struct lsdn_virt *virt);
 static lsdn_err_t commit_rates(struct lsdn_virt *virt)
 {
+	/* If you think the ins/outs are reversed here, please see comments at virt->rules_out and
+	 * virt->attr_rate_out.*/
 	lsdn_err_t err;
 	if (virt->attr_rate_in) {
 		err = commit_rates_inout(
 			virt, &virt->commited_policing_in, &virt->commited_policing_rule_in,
-			&virt->rules_out, rates_action_out);
+			&virt->rules_out, rates_action_in);
 		if (err != LSDNE_OK)
 			return err;
 	}
@@ -959,7 +960,7 @@ static lsdn_err_t commit_rates(struct lsdn_virt *virt)
 	if (virt->attr_rate_out) {
 		err = commit_rates_inout(
 			virt, &virt->commited_policing_out, &virt->commited_policing_rule_out,
-			&virt->rules_in, rates_action_in);
+			&virt->rules_in, rates_action_out);
 		if (err != LSDNE_OK) {
 			decommit_rates(virt);
 			return err;
