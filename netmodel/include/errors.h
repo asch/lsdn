@@ -32,26 +32,24 @@ typedef enum {
 	LSDNE_INCOMPATIBLE_MATCH,
 	/** Network model validation failed, and the old model is in effect. */
 	LSDNE_VALIDATE,
-	/** Network model commit failed and a mix of old, new and disfunctional objects are in effect.
+	/** Network model commit failed and a mix of old, new and dysfunctional objects are in effect.
 	 *
-	 * If object state is OK, the new model is in effect for that object, if it is LSDN_RENEW
-	 * or LSDN_NEW, the old model is in effect.
+	 * If object state is `LSDN_OK`, the new model is in effect for that object, if it is `LSDN_RENEW`
+	 * or `LSDN_NEW`, the old model is in effect.
 	 *
-	 * The object can also get to LSDN_NEW state during updating, if the updating failed. This
+	 * The object can also get to `LSDN_NEW` state during updating, if the updating failed. This
 	 * makes the object behave as if it did not exist.
 	 *
 	 * In either case, you can retry the commit and it will work if the error was temporary.
 	 *
 	 * The error could also be permanent, if, for example, a user have created a network interface
 	 * that shares a name with what LSDN was going to use. In that case, you will be getting the
-	 * error repeatedly. You can either ignore it or delete the failing part of the model.
-	 */
+	 * error repeatedly. You can either ignore it or delete the failing part of the model. */
 	LSDNE_COMMIT,
 	/** Cleanup operation has failed and this left an object in state inconsistent with the model.
 	 *
-	 * This failure is more serious that LSDNC_COMMIT failure, since the commit operation can
-	 * not be sucesfully retried. The only operation possible is to rebuild the whole model again.
-	 */
+	 * This failure is more serious than `LSDNE_COMMIT` failure, since the commit operation can
+	 * not be sucesfully retried. The only operation possible is to rebuild the whole model again. */
 	LSDNE_INCONSISTENT,
 } lsdn_err_t;
 
