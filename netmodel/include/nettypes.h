@@ -20,6 +20,19 @@
 #define LSDN_GBYTES(x) ((x) * 1000 * 1000 * 1000)
 #endif
 
+/** Ethernet frame length in bytes. */
+#define ETHERNET_FRAME_LEN 14
+/** IPv4 header length in bytes. */
+#define IPv4_HEADER_LEN 20
+/** IPv6 header length in bytes. */
+#define IPv6_HEADER_LEN 40
+/** UDP header length in bytes. */
+#define UDP_HEADER_LEN 8
+/** VXLAN header length in bytes. */
+#define VXLAN_HEADER_LEN 8
+/** GENEVE header length in bytes. */
+#define GENEVE_HEADER_LEN 8
+
 /** MAC address size in bytes. */
 #define LSDN_MAC_LEN 6
 /** IPv4 address size in bytes. */

@@ -6,7 +6,6 @@
 #include "include/nettypes.h"
 #include "include/errors.h"
 
-
 /* Make sure the Geneve interface operating in metadata mode for that UDP port exists. */
 static lsdn_err_t geneve_use_stunnel(struct lsdn_phys_attachment *a)
 {
@@ -163,6 +162,19 @@ static uint16_t geneve_get_port(struct lsdn_settings *s)
 	return s->geneve.port;
 }
 
+/** Calculate tunneling overhead for GENEVE networks.
+ *
+ * Returns different results based on whether the network is IPv4 or IPv6,
+ * because of different IP header sizes. */
+static unsigned int geneve_tunneling_overhead(struct lsdn_phys_attachment *pa)
+{
+	enum lsdn_ipv ipv = pa->phys->attr_ip->v;
+	if (ipv == LSDN_IPv4)
+		return ETHERNET_FRAME_LEN + IPv4_HEADER_LEN + UDP_HEADER_LEN + GENEVE_HEADER_LEN;
+	else
+		return ETHERNET_FRAME_LEN + IPv6_HEADER_LEN + UDP_HEADER_LEN + GENEVE_HEADER_LEN;
+}
+
 struct lsdn_net_ops lsdn_net_geneve_ops = {
 	.type = "geneve",
 	.get_port = geneve_get_port,
@@ -175,7 +187,8 @@ struct lsdn_net_ops lsdn_net_geneve_ops = {
 	.add_remote_virt = geneve_add_remote_virt,
 	.remove_remote_virt = geneve_remove_remote_virt,
 	.validate_pa = geneve_validate_pa,
-	.validate_virt = geneve_validate_virt
+	.validate_virt = geneve_validate_virt,
+	.compute_tunneling_overhead = geneve_tunneling_overhead
 };
 
 struct lsdn_settings *lsdn_settings_new_geneve(struct lsdn_context *ctx, uint16_t port)

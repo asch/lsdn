@@ -10,12 +10,6 @@
 #include "include/errors.h"
 #include <stdarg.h>
 
-#define UDP_HEADER_LEN 8
-#define VXLAN_HEADER_LEN 8
-#define ETHERNET_FRAME_LEN 14
-#define IPv4_HEADER_LEN 20
-#define IPv6_HEADER_LEN 40
-
 /** Calculate tunneling overhead for VXLAN networks.
  * Basis for VXLAN variants of `lsdn_net_ops.compute_tunneling_overhead`.
  *
