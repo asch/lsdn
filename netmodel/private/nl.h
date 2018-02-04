@@ -175,7 +175,8 @@ void lsdn_action_set_tunnel_key(
  * The parameter names are as follows:
  *
  * tc_police member  | iproute (tc) | meaning
- * --------------------------------------------------------------------------------
+ * ---------------------------------------------------------------------------------
+ * index             | index        | unique action identifier per network namespace
  * burst             | burst        | burst bucket maximum (in tokens)
  * mtu               | mtu          | peak bucket maximum (in transmit time ticks)
  * rate              | rate         | burst bucket depletion rate
