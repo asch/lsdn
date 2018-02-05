@@ -862,7 +862,6 @@ void lsdn_action_police(struct lsdn_filter *f, uint16_t order,
 	uint32_t avg_rate, uint32_t burst, uint32_t peakrate, uint32_t mtu,
 	int gact_conforming, int gact_overlimit)
 {
-	static uint32_t index = 0;
 	tc_core_init_once();
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
 	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "police");
@@ -881,7 +880,7 @@ void lsdn_action_police(struct lsdn_filter *f, uint16_t order,
 
 	p.mtu = mtu;
 	p.action = gact_overlimit;
-	p.index = ++index;
+	p.index = 0;
 	mnl_attr_put(f->nlh, TCA_POLICE_TBF, sizeof(p), &p);
 	mnl_attr_put_u32(f->nlh, TCA_POLICE_RESULT, gact_conforming);
 	mnl_attr_put(f->nlh, TCA_POLICE_RATE, sizeof(vestigial_rtab), vestigial_rtab);
