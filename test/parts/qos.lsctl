@@ -5,16 +5,26 @@ phys -if out -name a -ip 172.16.0.1
 
 net 1 {
 	attach a
-	set rateParam {-avg 100kbit -burst 600kbit -burstRate 200kbit}
+	set rateParam1 {-avg 600kbit -burst 600kbit -burstRate 600kbit}
+	set rateParam2 {-avg 300kbit -burst 300kbit -burstRate 300kbit}
+	set rateParam3 {-avg 8bit -burst 8bit -burstRate 8bit}
+	set rateParam4 {-avg 16bit -burst 16bit -burstRate 16bit}
 	virt -phys a -if 1 -mac 00:00:00:00:00:a1 {
-		rate out {*}$rateParam
-		#rate in {*}$rateParam
+		rate out {*}$rateParam1
+		rate in {*}$rateParam2
 	}
 	virt -phys a -if 2 -mac 00:00:00:00:00:a2 {
-		rate out {*}$rateParam
-		rate in {*}$rateParam
+		rate out {*}$rateParam1
+		rate in {*}$rateParam2
 	}
-
+	virt -phys a -if 3 -mac 00:00:00:00:00:a3 {
+		rate out {*}$rateParam3
+		rate in {*}$rateParam4
+	}
+	virt -phys a -if 4 -mac 00:00:00:00:00:a4 {
+		rate out {*}$rateParam3
+		rate in {*}$rateParam4
+	}
 }
 
 
