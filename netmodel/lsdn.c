@@ -51,7 +51,7 @@ const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type)
 }
 
 /** Create new LSDN context.
- * Initialize a #lsdn_context struct, set its name to `name` and configure a netlink socket.
+ * Initialize a #lsdn_context struct and set its name to `name`.
  * The returned struct must be freed by #lsdn_context_free or #lsdn_context_cleanup after use.
  * @param name Context name.
  * @return `NULL` if allocation failed, pointer to new #lsdn_context otherwise. */
