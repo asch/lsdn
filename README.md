@@ -14,7 +14,7 @@ sudo make install
 However chances are, you don't have a recent kernel. In that case, get new
 kernel sources and install new kernel headers
 `make headers_install INSTALL_HDR_PATH=$header_dir`. Instead of running `cmake
-..` run `cmake -DKERNEL_HEADERS=$header_dir ..` and LSDN should build.
+..` run `cmake -DKERNEL_HEADERS=$header_dir/include ..` and LSDN should build.
 
 ## Running tests
 Running `sudo make test` might simply work for you, if you have a recent kernel (4.14) and you are
