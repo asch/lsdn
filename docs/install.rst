@@ -28,14 +28,13 @@ If you are running Arch Linux, run: ::
 
     pacman -S tcl uthash libmnl json-c libdaemon libvirt cmake
 
-You will also need fairly recent Linux Kernel headers (at least 4.14) to build
-LSDN. For acutally running LSDN, we recommand 4.15, as 4.14 still has some bugs
-in the used networking technologies and you might encounter crashes. This means
-you will either need to run a recent version of your distro or install the
-kernel manually.
+You will also need fairly recent Linux Kernel headers (at least 4.14) to build LSDN. For actually
+running LSDN, we recommend 4.15, as 4.14 still has some bugs in the used networking technologies and
+you might encounter crashes. This means you will either need to run a recent version of your
+distribution or install the kernel manually.
 
 If you do not plan on running LSDN on this machine, it is also possible to
-install just the kernel headers.  by running: ::
+install just the kernel headers by running: ::
 
     make headers_install INSTALL_HDR_PATH=$header_dir
 
