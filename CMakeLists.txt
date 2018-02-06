@@ -5,7 +5,7 @@ enable_testing()
 option(BUILD_SHARED_LIBS "Build lsdn library as shared" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-find_package(TCL)
+find_package(TCL 8.6.0)
 find_package(PkgConfig)
 find_package(Uthash REQUIRED)
 pkg_check_modules(JSONC json-c REQUIRED)

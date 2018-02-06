@@ -1,4 +1,4 @@
-find_package(TCL)
+find_package(TCL 8.6.0)
 pkg_check_modules(DAEMON libdaemon REQUIRED)
 
 add_executable(lsctld lsctld.c)
