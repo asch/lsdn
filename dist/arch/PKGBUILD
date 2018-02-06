@@ -8,7 +8,7 @@ arch=('any')
 url="https://github.com/asch/lsdn"
 license=('GPL2')
 groups=()
-depends=('tcl' 'linux>=4.14' 'uthash' 'libmnl' 'json-c' 'libdaemon' 'libvirt')
+depends=('tcl>=8.6.0' 'linux>=4.14' 'uthash' 'libmnl' 'json-c' 'libdaemon' 'libvirt')
 makedepends=('git' 'cmake' 'linux>=4.14')
 optdepends=()
 provides=("${pkgname%-git}")

@@ -10,12 +10,13 @@ System requirements
 
 Following libraries are needed for compiling LSDN:
 
- - tcl
+ - tcl >= 8.6.0
  - uthash
  - libmnl
  - json-c
  - libdaemon
  - libvirt (optional, only for libvirt demos)
+ - linux-headers >= 4.14
 
 You will also need CMake and (naturally) GCC for building the packages.
 

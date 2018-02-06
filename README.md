@@ -17,8 +17,8 @@ kernel sources and install new kernel headers
 ..` run `cmake -DKERNEL_HEADERS=$header_dir ..` and LSDN should build.
 
 ## Running tests
-Running `sudo make test` might simply work for you, if you have a recent kernel
-(4.14) and you are prepared to stress you kernel a bit.
+Running `sudo make test` might simply work for you, if you have a recent kernel (4.14) and you are
+prepared to stress you kernel a bit. Also TCL >= 8.6.0 is needed.
 
 However, as an alternative, we provide helper scripts to run LSDN tests under
 QEMU. This way you can avoid being root, stressing you kernel or installing a
