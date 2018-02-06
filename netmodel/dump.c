@@ -698,13 +698,6 @@ static int parse_json_lsdn_physes(struct json_object *jobj, struct strbuf *sbuf)
 	return 0;
 }
 
-static int parse_json_lsdn_name(struct json_object *jobj, struct strbuf *sbuf)
-{
-	const char *name = json_object_get_string(jobj);
-	strbuf_append_safe(sbuf, "-name", SPACE, name, NEWLINE, NULL);
-	return 0;
-}
-
 char *lsdn_dump_context_tcl(struct lsdn_context *ctx)
 {
 	char *res = NULL;
@@ -725,10 +718,7 @@ char *lsdn_dump_context_tcl(struct lsdn_context *ctx)
 	}
 	assert(json_object_is_type(jobj, json_type_object));
 	json_object_object_foreach(jobj, key, val) {
-		if (!strcmp(key, "lsdnName")) {
-			// TODO context name is not in the current lsctl
-			//parse_json_lsdn_name(val, sbuf);
-		} else if (!strcmp(key, "lsdnSettings")) {
+		if (!strcmp(key, "lsdnSettings")) {
 			if (parse_json_lsdn_settings(val, sbuf))
 				goto err;
 		} else if (!strcmp(key, "lsdnPhyses")) {
