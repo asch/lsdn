@@ -126,7 +126,7 @@ htmlhelp_basename = 'lsdndoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
-latex_engine = 'xelatex'
+latex_engine = 'pdflatex'
 latex_elements = {
 	'papersize': 'a4paper',
 	'pointsize': '12pt',
