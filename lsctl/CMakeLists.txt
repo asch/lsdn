@@ -17,11 +17,11 @@ target_link_libraries(lsext lsdn ${TCLSTUBS_LIBRARY})
 target_include_directories(lsext PRIVATE ${TCL_INCLUDE_PATH})
 install(
 	TARGETS lsext
-	DESTINATION lib
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 install(
 	FILES pkgIndex.tcl
-	DESTINATION lib/lsdn)
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/lsdn)
 
 
 add_executable(lsctl lsctl.c)
@@ -29,7 +29,7 @@ target_link_libraries(lsctl lsext ${TCL_LIBRARY})
 target_include_directories(lsctl PRIVATE ${TCL_INCLUDE_PATH})
 install(
 	TARGETS lsctl
-	RUNTIME DESTINATION bin
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 

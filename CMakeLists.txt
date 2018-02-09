@@ -2,6 +2,8 @@ project(lsdn LANGUAGES C)
 cmake_minimum_required(VERSION 2.8)
 enable_testing()
 
+include(GNUInstallDirs)
+
 option(BUILD_SHARED_LIBS "Build lsdn library as shared" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")

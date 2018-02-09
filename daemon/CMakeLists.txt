@@ -6,5 +6,5 @@ target_link_libraries(lsctld lsdn lsext ${DAEMON_LIBRARIES} ${TCL_LIBRARY})
 target_include_directories(lsctld PRIVATE ${TCL_INCLUDE_PATH} ${DAEMON_INCLUDE_DIRS})
 install(
 	TARGETS lsctld
-	RUNTIME DESTINATION bin
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

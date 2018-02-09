@@ -3,5 +3,5 @@ target_link_libraries(lsctlc ${TCL_LIBRARY})
 target_include_directories(lsctlc PRIVATE ${TCL_INCLUDE_PATH})
 install(
 	TARGETS lsctlc
-	RUNTIME DESTINATION bin
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
