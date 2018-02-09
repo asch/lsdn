@@ -167,7 +167,7 @@ static void lsdn_abort_cb(void *user)
 }
 
 /** Configure the context to abort on out-of-memory.
- * This sets the out-of-memory callback to `lsdn_abort_cb`. If an allocation
+ * This sets the out-of-memory callback to #lsdn_abort_cb. If an allocation
  * fails, this will abort the program.
  *
  * It is recommended to use this, unless you have a specific way to handle
@@ -1424,9 +1424,32 @@ static void trigger_startup_hooks(struct lsdn_context *ctx)
  * the current network model is in effect.
  *
  * Performs a model validation (equivalent to calling #lsdn_validate) and returns an error
- * if it fails.
- * TODO continue
- * */
+ * if it fails. Afterwards, works through the memory model in two phases:
+ * * In _decommit_ phase, rules belonging to modified (or deleted) objects are removed from kernel tables.
+ *   Deleted objects are also freed from memory.
+ * * In _recommit_ phase, new rules are installed that correspond to new objects -- or new properties
+ *   of objects that were removed in the previous phase.
+ *
+ * If an error occurs in the recommit phase, a limited rollback is performed and the kernel rules remain
+ * in mixed state. Some objects may have been successfully committed, others might still be in the old state
+ * because the commit failed. In such case, #LSDNE_COMMIT is returned and the user can retry the commit, to
+ * install the remaining objects.
+ *
+ * If an error occurs in the decommit phase, however, there is no safe way to recover. Given that kernel rules
+ * are not installed atomically and there are usually several rules tied to an object, LSDN can't know what is
+ * the installed state after rule removal fails. In this case, #LSDNE_INCONSISTENT is returned and the model
+ * is considered to be in an inconsistent state. The only way to proceed is to tear down the whole model
+ * and reconstruct it from scratch.
+ *
+ * @param ctx LSDN context.
+ * @param cb Problem callback.
+ * @param user User data for the problem callback.
+ *
+ * @retval LSDNE_OK Commit was successful. New network model is now active in kernel.
+ * @retval LSDNE_VALIDATE Model validation found problems. Old network model remains active in kernel.
+ * @retval LSDNE_COMMIT Errors were encountered during commit. Kernel is in mixed state, it is possible to retry.
+ * @retval LSDNE_INCONSISTENT Errors were encountered when decommitting rules. Model state is inconsistent with kernel state. You have to
+ * start over. */
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 {
 	/* Error handling strategy:
