@@ -1,6 +1,7 @@
 # LSDN - Linux Software Defined Networking
 
 [![Build Status](https://travis-ci.org/asch/lsdn.svg?branch=master)](https://travis-ci.org/asch/lsdn)
+[![Build Status](https://readthedocs.org/projects/lsdn/badge/?version=latest)](https://lsdn.readthedocs.io)
 
 ## Build
 ```
@@ -16,14 +17,10 @@ kernel sources and install new kernel headers
 `make headers_install INSTALL_HDR_PATH=$header_dir`. Instead of running `cmake
 ..` run `cmake -DKERNEL_HEADERS=$header_dir/include ..` and LSDN should build.
 
-## Running tests
-Running `sudo make test` might simply work for you, if you have a recent kernel (4.14) and you are
-prepared to stress you kernel a bit. Also TCL >= 8.6.0 is needed.
+## Documentation
 
-However, as an alternative, we provide helper scripts to run LSDN tests under
-QEMU. This way you can avoid being root, stressing you kernel or installing a
-new kernel. Run `tests/run-qemu --help` in your build directory, it will tell
-you what to prepare.
+The complete documentation, including more detailed build and
+instalation instructions is available at https://lsdn.readthedocs.io .
 
 ## Description
 
@@ -32,4 +29,4 @@ networks. It is suitable for home/small office networks as well as for huge virt
 centers.
 
 ## Contact
-We can be reached on mailing list <sp@asch.cz> and IRC channel `#lsdn` on Freenode.
+We can be reached on mailing list <sp@asch.cz>.
