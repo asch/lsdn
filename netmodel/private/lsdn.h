@@ -13,7 +13,6 @@
 #include "state.h"
 
 /** LSDN Context.
- * @ingroup context
  * This is the central structure that keeps track of the in-memory network model as a whole.
  * Its main purpose is to allow commit, teardown and deallocation of the model in one go.
  * It also allows configuring common options (OOM callback, problem callback) and generating unique
