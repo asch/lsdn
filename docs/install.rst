@@ -20,15 +20,15 @@ Following libraries are needed for compiling LSDN:
 
 You will also need CMake and (naturally) GCC for building the packages.
 
-If you are running Ubuntu or Debain, run: ::
+If you are running **Ubuntu** or **Debain**, run: ::
 
     apt install tcl-dev uthash-dev libmnl-dev libjson0-dev libdaemon-dev libvirt-dev cmake build-essential
 
-If you are running Arch Linux, run: ::
+If you are running **Arch Linux**, run: ::
 
     pacman -S tcl uthash libmnl json-c libdaemon libvirt cmake
 
-If you are running CentOS 7, run: ::
+If you are running **CentOS 7**, run: ::
 
     gcc cmake uthash-devel libmnl-devel libdaemon-devel json-c-devel
 
