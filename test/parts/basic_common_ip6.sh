@@ -39,3 +39,8 @@ function test_ping() {
 	fail in_virt a 1 $qping ${ipa3}
 	fail in_virt a 1 $qping ${ipb2}
 }
+
+# Some distributions still do not have merged ping and ping6
+if [ -a /bin/ping6 ] || [ -a /usr/bin/ping6 ]; then
+	qping="ping6 $ping_params"
+fi
