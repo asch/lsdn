@@ -107,7 +107,21 @@ struct lsdn_user_hooks {
 };
 
 /** @defgroup context Context
+ * Context, commits and high level network model management.
+ *
  * LSDN context is a core object that manages the network model.
+ * It allows the app to keep track of constraints (such as unique names, no two virts using
+ * the same interface, etc.), validate the model and commit it to kernel tables.
+ *
+ * Context also keeps track of all the child objects (settings, networks, virts, physes, names,
+ * etc.) and automatically frees them when it is deleted through #lsdn_context_free or
+ * #lsdn_context_cleanup.
+ *
+ * In practically every conceivable case, a single app should only have one context; in fact,
+ * only one context should exist per physical host. The library allows you to have multiple contexts
+ * at the same time (which is equivalent to having multiple instances of an app), but in such case,
+ * the user is responsible for conflicting rules on interfaces.
+ * In other words: don't do this, things will probably crash and burn if you do.
  * @{ */
 struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user);
