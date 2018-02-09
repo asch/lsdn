@@ -5,35 +5,35 @@ Lsctl Configuration Files
 ==========================
 
 LSDN has its own configuration language for describing the network topology. If
-you have seen the `quickstart` or `netmodel` sections, you have already seen
-examples of the configuration files.
+you saw the `quickstart` or `netmodel` sections, you have already seen examples
+of the configuration files.
 
 -------
 Syntax
 -------
 
 The configuration syntax is actually based on the TCL_ language -- but you do
-not have to be afraid, this guide is self contained. You might not even guess
-TCL is there if we did not tell you. However, it is good to known TCL is there
+not have to be afraid, this guide is self-contained. You might not even guess
+TCL is there if we did not tell you. However, it is good to know TCL is there
 if you need more advanced stuff, like variable substitution or loops. And if you
 know TCL, you will recognize some of the conventions and feel at home.
 
 .. _TCL: https://www.tcl.tk/
 
-The only downside is that you have to include a short boilerplate at top of each
-configuration file, to tell TCL you don't want to prefix everything with
+The only downside is that you have to include a short boilerplate at the top of each
+configuration file, to tell TCL that you don't want to prefix everything with
 ``lsdn::``.  Start your configuration file with this line: ::
 
     namespace import lsdn::*
 
 The configuration file itself is a list of directives that tell LSDN what
 objects the network consists of, how they are configured and how they connect.
-The directive are terminated by a newline, but other whitespace is not
+The directives are terminated by a newline. Other whitespace is not
 significant. All available directives are listed in section `dirref`.
 
-All lsdn directives follow the same basic patterns. They start with the
+All LSDN directives follow the same basic patterns. They start with the
 directive name (for example ``net`` or ``settings``) and are folowed with
-arguments for that directive. The directive and their arguments are separated by
+arguments for that directive. Directives and their arguments are separated by
 whitespace. Most directives make use of named arguments (or as they are called in some
 languages "keyword arguments"): ::
 
@@ -61,15 +61,15 @@ directive is used to create an object. You are free to choose any name you like,
 as the names do not have any direct effect on the network.
 
 Please note that forward references are not allowed, because LSCTL in its core
-an imperative language. For example this snippet is illegal: ::
+an imperative language. For example, this snippet is illegal: ::
 
     virt -net test
     net -vid 1 test
 
 The order must be swapped like this: ::
 
-    virt -net test
     net -vid 1 test
+    virt -net test
 
 --------
 Nesting
@@ -87,8 +87,8 @@ directive, like this [#f1]_: ::
 
 Nested directives are used to simplify definition of related elements. The example
 above specifies a virtual machine *a* connected to network *42*. The connection
-is implied from the nesting. The nesting is quiete flexible and you can decide
-to use a style that most suites you and that reflects organization of your
+is implied from the nesting. The nesting is quite flexible and you can decide
+to use a style that most suits you and that reflects organization of your
 network. An equivalent way to write the example above would be: ::
 
     phys -name p
@@ -115,7 +115,7 @@ Or: ::
 Note that there is no need for lsctl:cmd:`attach` in the last example, since
 nesting took care of it for us.
 
-In general nesting can be used where you would otherwise have to specify a
+In general, nesting can be used anywhere you would otherwise have to specify a
 relationship using arguments. Other nestings are disallowed. The supported
 nestings are:
 
@@ -134,7 +134,7 @@ firewall) directives. They **must** be nested under a ``virt`` directive.
 
 .. rubric:: Footnotes
 
-.. [#f1] If you are familiar with TCL, you will recognize this how TCL
+.. [#f1] If you are familiar with TCL, you will recognize this is how TCL
     control-flow commands work.
 
 ---------------
