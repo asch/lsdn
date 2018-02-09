@@ -14,6 +14,7 @@
 # serve to show the default.
 
 import os
+import subprocess
 import sys
 sys.path.insert(0, os.path.abspath('.'))
 
@@ -145,5 +146,18 @@ latex_documents = [
      'LSDN Collective', 'manual'),
 ]
 
+def generate_doxygen_xml(app):
+    """Run the doxygen make commands if we're on the ReadTheDocs server"""
+
+    if os.environ.get('READTHEDOCS', None) == 'True':
+        try:
+            retcode = subprocess.call("cd ..; doxygen doxygen/Doxyfile", shell=True)
+            if retcode < 0:
+                sys.stderr.write("doxygen terminated by signal %s" % (-retcode))
+        except OSError as e:
+            sys.stderr.write("doxygen execution failed: %s" % e)
+
 def setup(app):
     app.add_config_value('ispdf', 'no', 'env')
+    # Add hook for building doxygen xml when needed
+    app.connect("builder-inited", generate_doxygen_xml)
