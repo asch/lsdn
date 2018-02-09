@@ -1,7 +1,7 @@
 # Maintainer: Vojtech Aschenbrenner <v@asch.cz>
 
 pkgname=lsdn-git
-pkgver=r381.ed2f0ee
+pkgver=r415.a988e50
 pkgrel=1
 pkgdesc="Tool for software defined networking on top of TC"
 arch=('any')
@@ -31,12 +31,11 @@ build() {
 	cd "$srcdir/${pkgname%-git}"
 	mkdir -p build
 	cd build
-	cmake -DCMAKE_INSTALL_PREFIX:PATH=/$pkgdir/usr ..
+	cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 	make
 }
 
 package() {
 	cd "$srcdir/${pkgname%-git}/build"
-	#make DESTDIR="$pkgdir/" install
-	make install
+	make DESTDIR="$pkgdir/" install
 }
