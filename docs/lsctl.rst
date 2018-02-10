@@ -61,15 +61,22 @@ directive is used to create an object. You are free to choose any name you like,
 as the names do not have any direct effect on the network.
 
 Please note that forward references are not allowed, because LSCTL in its core
-an imperative language. For example, this snippet is illegal: ::
+is a procedural language. For example, this snippet will not work: ::
 
     virt -net test
-    net -vid 1 test
+    net -vid 1 test {}
+
+Any directive referencing and undefined object will return an error like this: ::
+
+    can not find network
 
 The order must be swapped like this: ::
 
-    net -vid 1 test
+    net -vid 1 test {}
     virt -net test
+
+If a directive references an undefined object, it will print a stacktrace and
+the script execution will end.
 
 --------
 Nesting
@@ -461,6 +468,9 @@ Directive reference
     Apply all changes done so far. This will usually be at the end of each LSCTL
     script.
 
+    If the validation or commit fails, the errors will be printed to stderr and
+    the directive will end with an error. The script will be terminated.
+
     C API equivalents: :c:func:`lsdn_commit`
 
     :scope none: This directive can only appear at root level.
@@ -469,6 +479,9 @@ Directive reference
 
     Check the changes done so far for errors.
 
+    If the validation fails, the errors will be printed to stderr and
+    the directive will end with an error. The script will be terminated.
+
     C API equivalents: :c:func:`lsdn_validate`
 
     :scope none: This directive can only appear at root level.
@@ -476,6 +489,9 @@ Directive reference
 .. lsctl:cmd:: cleanup |
 
     Revert all changes done so far.
+
+    If the cleanup fails, the errors will be printed to stderr and
+    the directive will end with an error. The script will be terminated.
 
     C API equivalents: :c:func:`lsdn_context_cleanup`
 
