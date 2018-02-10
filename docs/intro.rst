@@ -40,3 +40,6 @@ your orchestrator to use LSDN as a backend.
 LSDN intentionally does not use `Open vSwitch <http://www.openvswitch.org/>`_ to
 configure the tunnels, but only basic Linux networking (TC + flower classifier)
 to show that this is possible and can be made reasonably convenient.
+
+Configuring let's say VLANs in this way is not very difficult, but it can be
+daunting if done for Geneve or static VXLANs.
