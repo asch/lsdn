@@ -35,7 +35,7 @@ If you are running **CentOS 7**, run: ::
 However, you will need the ``EPEL`` repository for the ``uthash`` package and
 you will need to install ``tcl-devel`` package from a differen source (for
 example
-`Psychotic Ninja <https://centos.pkgs.org/7/psychotic-ninja-plus-x86_64/tcl-devel-8.6.5-2.el7.psychotic.x86_64.rpm.html>`_.
+`Psychotic Ninja <https://centos.pkgs.org/7/psychotic-ninja-plus-x86_64/tcl-devel-8.6.5-2.el7.psychotic.x86_64.rpm.html>`_).
 
 You will also need fairly recent Linux Kernel headers (at least 4.14) to build LSDN. For actually
 running LSDN, we recommend 4.15, as 4.14 still has some bugs in the used networking technologies and
