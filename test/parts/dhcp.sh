@@ -21,9 +21,18 @@ EOF
 }
 
 function dhcp_client(){
-	rm /var/lib/dhcpcd/dhcpcd-*.lease || true
+
+	if [ -a /bin/dhclient ] || [ -a /usr/bin/dhclient ]; then
+		local client="dhclient -1 -4"
+		rm /var/lib/dhclient/dhclient.leases || true
+		echo "timeout 5;" > /etc/dhclient.conf
+	else
+		local client="dhcpcd -A -4 --oneshot -t 5"
+		rm /var/lib/dhcpcd/dhcpcd-*.lease || true
+	fi
+
 	# -A disables ARP probes and makes the lease quicker
-	in_virt $1 $2 dhcpcd -A -4 --oneshot -t 5 $3
+	in_virt $1 $2 $client $3
 }
 
 function prepare(){
