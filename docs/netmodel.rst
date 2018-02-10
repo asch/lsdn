@@ -171,11 +171,30 @@ Geneve
 **Available as**: :lsctl:cmd:`settings geneve` (lsctl),
 :c:func:`lsdn_settings_new_genve` (C API).
 
+VXLAN is a Layer-3 UDP-based tunneling protocol. All participating physical
+machine must see each other on the IP network directly (no NAT).
+
+Geneve uses fully static routing. LSDN must be informed about the IP address of
+each physical machine (using `attr_ip`) and MAC address of each virtual machine
+(using `attr_mac`) participating in the network.
+
+**Restrictions**:
+  - 24 bit `vid`
+  - Physical nodes in the same virtual network must be reachable on the IP layer
+  - UDP and IP header overhead
+  - Unknown and broadcast packets are duplicated for each physical machine
+  - The virtual network is not fully opaque (MAC addresses of virtual machines
+    must be knownn).
+
 .. _ovl_direct:
 
 No tunneling
 ------------
 **Available as**: :lsctl:cmd:`settings direct` (lsctl), :c:func:`lsdn_settings_new_direct` (C API).
+
+No separation between the networks. You can use this type of network for
+corner cases, like connecting a VM serving as internet gateway to a dedicated
+interface. In this case no separation is needed nor desired.
 
 .. _restricts:
 

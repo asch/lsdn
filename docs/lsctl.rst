@@ -1,5 +1,7 @@
 .. highlight:: tcl
 
+.. _lsctl:
+
 ==========================
 Lsctl Configuration Files
 ==========================
@@ -119,7 +121,7 @@ Or: ::
         }
     }
 
-Note that there is no need for lsctl:cmd:`attach` in the last example, since
+Note that there is no need for :lsctl:cmd:`attach` in the last example, since
 nesting took care of it for us.
 
 In general, nesting can be used anywhere you would otherwise have to specify a
@@ -318,6 +320,39 @@ Directive reference
         Equivalent with giving the ``-phys`` parameter and thus mutually
         exclusive
 
+.. lsctl:cmd:: attach | -phys -net
+.. lsctl:cmd:: attach | -phys netlist
+.. lsctl:cmd:: attach | -net physlist
+
+    Attaches a given physical machine(s) to a virtual network(s). The command
+    can either attach a single phys to a single net (using the ``-phys`` and
+    ``-net`` arguments) or to multiple nets at once (using the ``-phys``
+    argument and positional arguments) or attach multiple physes to a single
+    network (using the ``-net`` argument and positional arguments).
+
+    If scoped, the ``-net`` or ``-phys`` arguments are implicit, so you can
+    easily attach a phys to multiple nets like this: ::
+
+        phys test {
+            attach net1 net2
+        }
+
+    :scope root:
+        This directive can appear at root level.
+    :scope net:
+        Equivalent with giving the ``-net`` parameter and thus mutually
+        exclusive.
+    :scope phys:
+        Equivalent with giving the ``-phys`` parameter and thus mutually
+        exclusive
+
+.. lsctl:cmd:: detach | -phys -net
+.. lsctl:cmd:: detach | -phys netlist
+.. lsctl:cmd:: detach | -net physlist
+
+    Detaches the virtual networks from physical machines. See `attach` for
+    syntax of the command.
+
 .. lsctl:cmd:: rule | direction prio action -srcIp -dstIp -srcMac -dstMac
 
     Add a new firewall rule for a given virt. The rule applies if all the
@@ -445,7 +480,7 @@ Directive reference
 
     Use VXLAN tunnelling with fully static setup.
 
-    See :ref:`<ovl_vxlan_static>` VXLAN for more details.
+    See :ref:`ovl_vxlan_static` VXLAN for more details.
 
     :param string name: |sname_docs|
     :param int port:

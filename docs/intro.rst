@@ -2,12 +2,13 @@
 Introduction
 ==================
 
-The LSDN library is built upon a model of separate virtual networks connecting
-virtual machines distributed over multiple physical hosts. One host can be
-part of multiple networks and every network can span many hosts. The virtual
-networks have a simple topology: each virtual machine is connected to a central
-switching hub which allows it to connect to any other machine within the same
-network.
+LSDN is a tool to easily configure networking for virtual machines (or
+containers) in Linux. It allows you to easily configure network tunnels
+(`ovl_vxlan`, `ovl_geneve` ...) for separating groups of VMs into their own
+virtual network.
+
+Each virtual network functions (from the VM perspective) as if all the computers
+were connected to a simple switch and were on the same LAN.
 
 LSDN ensures isolation between networks. Virtual machines never see traffic from
 devices that are not part of their network, even if they exist on the same host.
@@ -16,4 +17,26 @@ are connected to different networks. It is possible to virtualize multiple
 existing physical networks and run them without interference in a single hosting
 location.
 
-.. todo:: Explain the motivation and introduce the various technologies.
+Usage
+~~~~~
+
+LSDN provides a `configuration language <lsctl>`, that allows you to describe
+the desired network configuration (we call it a `netmodel`): the `virtual
+networks <net>`, `physical machines <phys>` and `virtual machines <virt>` and
+their relationships. It can also be driven programatically, using a `capi`.
+
+You run LSDN on each physical machine and provide it with the same netmodel,
+either by passing the same configuration file or calling the same C api calls.
+LSDN than takes care of the configuration so that the physical machines hosting
+the VMs can correctly talk to each other.
+
+If you run a static ZOO of VMs, you can simply copy over the file to the
+physical machines. If you have more complex virtualization setup, you are likely
+to have an orchestrator on each physical machine. In that case, you can modify
+your orchestrator to use LSDN as a backend.
+
+Open vSwitch
+~~~~~~~~~~~~
+LSDN intentionally does not use `Open vSwitch <http://www.openvswitch.org/>`_ to
+configure the tunnels, but only basic Linux networking (TC, flower classifier)
+to show that this is possible and can be made reasonably convenient.
