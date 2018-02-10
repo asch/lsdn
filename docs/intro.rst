@@ -17,8 +17,8 @@ are connected to different networks. It is possible to virtualize multiple
 existing physical networks and run them without interference in a single hosting
 location.
 
-Usage
-~~~~~
+Intended usage
+~~~~~~~~~~~~~~
 
 LSDN provides a `configuration language <lsctl>`, that allows you to describe
 the desired network configuration (we call it a `netmodel`): the `virtual
@@ -35,8 +35,8 @@ physical machines. If you have more complex virtualization setup, you are likely
 to have an orchestrator on each physical machine. In that case, you can modify
 your orchestrator to use LSDN as a backend.
 
-Open vSwitch
-~~~~~~~~~~~~
+.. rubric:: Open vSwitch
+
 LSDN intentionally does not use `Open vSwitch <http://www.openvswitch.org/>`_ to
-configure the tunnels, but only basic Linux networking (TC, flower classifier)
+configure the tunnels, but only basic Linux networking (TC + flower classifier)
 to show that this is possible and can be made reasonably convenient.

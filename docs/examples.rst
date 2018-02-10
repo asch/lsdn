@@ -61,7 +61,7 @@ split the example into smaller chunks and explain each section in detail.
 It might also be handy to actually see in picture how our networking
 infrastructure will look like once we're done:
 
-.. figure:: Example1.pdf
+.. figure:: Example1.svg
     :scale: 50 %
 
     Virtual networks in Example 1

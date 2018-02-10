@@ -3,6 +3,7 @@ from sphinx.domains import Domain, ObjType, Index
 from sphinx.directives import ObjectDescription
 from sphinx.roles import XRefRole
 from sphinx.util.docfields import Field, GroupedField, TypedField
+from sphinx.transforms import SphinxTransform
 from sphinx import addnodes
 from docutils import nodes
 from sphinx.util.nodes import make_refnode
@@ -100,5 +101,19 @@ class LsctlDomain(Domain):
         return make_refnode(builder, fromdocname, obj,
                 'lsctl.{}.{}'.format(typ,target), contnode, target)
 
+class SvgNodeTransform(SphinxTransform):
+    default_priority = 50
+
+    def apply(self):
+        for node in self.document.traverse(nodes.image):
+            node['uri'] = self.replaceSvg(node['uri'])
+
+    def replaceSvg(self, text):
+        if self.app.builder.name == 'latex' and text.endswith('.svg'):
+            return text[:-4]
+        return text
+
 def setup(app):
     app.add_domain(LsctlDomain)
+    app.add_post_transform(SvgNodeTransform)
+    return {'parallel_read_safe': True}
