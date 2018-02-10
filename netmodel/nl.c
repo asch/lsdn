@@ -197,10 +197,10 @@ static void link_create_header(
 	ifm->ifi_change = 0;
 	ifm->ifi_flags = 0;
 
-	mnl_attr_put_str(nlh, IFLA_IFNAME, if_name);
+	mnl_attr_put_strz(nlh, IFLA_IFNAME, if_name);
 
 	*linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
-	mnl_attr_put_str(nlh, IFLA_INFO_KIND, if_type);
+	mnl_attr_put_strz(nlh, IFLA_INFO_KIND, if_type);
 }
 
 static lsdn_err_t link_create_send(
@@ -259,10 +259,10 @@ lsdn_err_t lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if
 	ifm->ifi_flags = 0;
 
 	mnl_attr_put_u32(nlh, IFLA_LINK, ifindex);
-	mnl_attr_put_str(nlh, IFLA_IFNAME, vlan_name);
+	mnl_attr_put_strz(nlh, IFLA_IFNAME, vlan_name);
 
 	linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
-	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "vlan");
+	mnl_attr_put_strz(nlh, IFLA_INFO_KIND, "vlan");
 
 	struct nlattr *vlanid_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
 	mnl_attr_put_u16(nlh, IFLA_VLAN_ID, vlanid);
@@ -300,10 +300,10 @@ lsdn_err_t lsdn_link_vxlan_create(
 	ifm->ifi_flags = 0;
 	if (if_name)
 		mnl_attr_put_u32(nlh, IFLA_LINK, ifindex);
-	mnl_attr_put_str(nlh, IFLA_IFNAME, vxlan_name);
+	mnl_attr_put_strz(nlh, IFLA_IFNAME, vxlan_name);
 
 	linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
-	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "vxlan");
+	mnl_attr_put_strz(nlh, IFLA_INFO_KIND, "vxlan");
 
 	struct nlattr *vxlanid_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
 	mnl_attr_put_u32(nlh, IFLA_VXLAN_LINK, ifindex);
@@ -348,10 +348,10 @@ lsdn_err_t lsdn_link_geneve_create(
 	ifm->ifi_family = AF_UNSPEC;
 	ifm->ifi_change = 0;
 	ifm->ifi_flags = 0;
-	mnl_attr_put_str(nlh, IFLA_IFNAME, new_if);
+	mnl_attr_put_strz(nlh, IFLA_IFNAME, new_if);
 
 	linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
-	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "geneve");
+	mnl_attr_put_strz(nlh, IFLA_INFO_KIND, "geneve");
 
 	geneve_linkinfo = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
 	if (port)
@@ -506,10 +506,10 @@ lsdn_err_t lsdn_link_veth_create(
 	ifm->ifi_change = 0;
 	ifm->ifi_flags = 0;
 
-	mnl_attr_put_str(nlh, IFLA_IFNAME, if_name2);
+	mnl_attr_put_strz(nlh, IFLA_IFNAME, if_name2);
 
 	struct nlattr* peer_linkinfo = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
-	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "veth");
+	mnl_attr_put_strz(nlh, IFLA_INFO_KIND, "veth");
 	mnl_attr_nest_end(nlh, peer_linkinfo);
 
 	mnl_attr_nest_end(nlh, peer);
@@ -622,7 +622,7 @@ lsdn_err_t lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifind
 	tcm->tcm_handle = LSDN_INGRESS_HANDLE;
 	tcm->tcm_parent = TC_H_INGRESS;
 
-	mnl_attr_put_str(nlh, TCA_KIND, "ingress");
+	mnl_attr_put_strz(nlh, TCA_KIND, "ingress");
 
 	return send_await_response(sock, nlh);
 }
@@ -631,10 +631,11 @@ lsdn_err_t lsdn_qdisc_egress_create(struct mnl_socket *sock, unsigned int ifinde
 {
 	unsigned int seq = 0;
 	nl_buf(buf);
+	sleep(2);
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	nlh->nlmsg_type = RTM_NEWQDISC;
-	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_EXCL | NLM_F_REQUEST | NLM_F_ACK;
 	nlh->nlmsg_seq = seq;
 
 	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(nlh, sizeof(*tcm));
@@ -643,7 +644,7 @@ lsdn_err_t lsdn_qdisc_egress_create(struct mnl_socket *sock, unsigned int ifinde
 	tcm->tcm_handle = LSDN_ROOT_HANDLE;
 	tcm->tcm_parent = TC_H_ROOT;
 
-	mnl_attr_put_str(nlh, TCA_KIND, "prio");
+	mnl_attr_put_strz(nlh, TCA_KIND, "prio");
 
 	struct tc_prio_qopt qopt;
 	qopt.bands = 2;
@@ -685,7 +686,7 @@ static struct lsdn_filter *filter_init(const char *kind, uint32_t if_index, uint
 	tcm->tcm_parent = parent;
 	tcm->tcm_info = TC_H_MAKE(priority << 16, ETH_P_ALL << 8);
 
-	mnl_attr_put_str(f->nlh, TCA_KIND, kind);
+	mnl_attr_put_strz(f->nlh, TCA_KIND, kind);
 	mnl_attr_put_u32(f->nlh, TCA_CHAIN, chain);
 	f->nested_opts = mnl_attr_nest_start(f->nlh, TCA_OPTIONS);
 	f->nested_acts = NULL;
@@ -774,7 +775,7 @@ void lsdn_action_set_tunnel_key(
 		uint32_t vni, lsdn_ip_t *src_ip, lsdn_ip_t *dst_ip)
 {
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
-	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "tunnel_key");
+	mnl_attr_put_strz(f->nlh, TCA_ACT_KIND, "tunnel_key");
 
 	struct nlattr* nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
 
@@ -864,7 +865,7 @@ void lsdn_action_police(struct lsdn_filter *f, uint16_t order,
 {
 	tc_core_init_once();
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
-	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "police");
+	mnl_attr_put_strz(f->nlh, TCA_ACT_KIND, "police");
 	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
 
 	struct tc_police p;
@@ -893,7 +894,7 @@ void lsdn_action_police(struct lsdn_filter *f, uint16_t order,
 void lsdn_action_drop(struct lsdn_filter *f, uint16_t order)
 {
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
-	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "gact");
+	mnl_attr_put_strz(f->nlh, TCA_ACT_KIND, "gact");
 
 	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
 	struct tc_gact gact_act;
@@ -909,7 +910,7 @@ void lsdn_action_drop(struct lsdn_filter *f, uint16_t order)
 void lsdn_action_continue(struct lsdn_filter *f, uint16_t order)
 {
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
-	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "gact");
+	mnl_attr_put_strz(f->nlh, TCA_ACT_KIND, "gact");
 
 	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
 	struct tc_gact gact_act;
@@ -925,7 +926,7 @@ void lsdn_action_continue(struct lsdn_filter *f, uint16_t order)
 void lsdn_action_goto_chain(struct lsdn_filter *f, uint16_t order, uint32_t chain)
 {
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
-	mnl_attr_put_str(f->nlh, TCA_ACT_KIND, "gact");
+	mnl_attr_put_strz(f->nlh, TCA_ACT_KIND, "gact");
 
 	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
 	struct tc_gact gact_act;
