@@ -27,8 +27,8 @@ their relationships. It can also be driven programatically, using a `capi`.
 
 You run LSDN on each physical machine and provide it with the same netmodel,
 either by passing the same configuration file or calling the same C api calls.
-LSDN than takes care of the configuration so that the physical machines hosting
-the VMs can correctly talk to each other.
+LSDN than takes care of the configuration so that the VMs in the same virtual
+network can correctly talk to each other even if on different computers.
 
 If you run a static ZOO of VMs, you can simply copy over the file to the
 physical machines. If you have more complex virtualization setup, you are likely
