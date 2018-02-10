@@ -110,8 +110,9 @@ class SvgNodeTransform(SphinxTransform):
             uri = node['uri'] = self.replaceSvg(orig_uri)
             node['candidates'] = dict(
                 [(k, self.replaceSvg(v)) for (k,v) in node['candidates'].items()])
-            self.env.original_image_uri[uri] = orig_uri
-            self.env.images.add_file(self.env.docname, uri)
+            if orig_uri != uri:
+                self.env.original_image_uri[uri] = orig_uri
+                self.env.images.add_file(self.env.docname, uri)
 
     def replaceSvg(self, text):
         if self.app.builder.name == 'latex' and text.endswith('.svg'):
