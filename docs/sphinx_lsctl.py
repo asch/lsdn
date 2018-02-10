@@ -102,15 +102,20 @@ class LsctlDomain(Domain):
                 'lsctl.{}.{}'.format(typ,target), contnode, target)
 
 class SvgNodeTransform(SphinxTransform):
-    default_priority = 50
+    default_priority = 500
 
     def apply(self):
         for node in self.document.traverse(nodes.image):
-            node['uri'] = self.replaceSvg(node['uri'])
+            orig_uri = node['uri']
+            uri = node['uri'] = self.replaceSvg(orig_uri)
+            node['candidates'] = dict(
+                [(k, self.replaceSvg(v)) for (k,v) in node['candidates'].items()])
+            self.env.original_image_uri[uri] = orig_uri
+            self.env.images.add_file(self.env.docname, uri)
 
     def replaceSvg(self, text):
         if self.app.builder.name == 'latex' and text.endswith('.svg'):
-            return text[:-4]
+            return text[:-4] + '.pdf'
         return text
 
 def setup(app):
