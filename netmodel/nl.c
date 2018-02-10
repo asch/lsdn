@@ -106,16 +106,12 @@ struct mnl_socket *lsdn_socket_init()
 	err = mnl_socket_setsockopt(sock, NETLINK_EXT_ACK, &yes, sizeof(yes));
 	if (err) {
 		lsdn_log(LSDN_NLERR, "Extended messages not available, %d\n", err);
-		mnl_socket_close(sock);
-		return NULL;
 	}
 
 	/* This asks the kernel not to send back messages in ACKs, just headers */
 	err = mnl_socket_setsockopt(sock, NETLINK_CAP_ACK, &yes, sizeof(yes));
 	if (err) {
 		lsdn_log(LSDN_NLERR, "CAP_ACK not available %d\n", err);
-		mnl_socket_close(sock);
-		return NULL;
 	}
 
 	return sock;
@@ -145,14 +141,18 @@ static lsdn_err_t process_response(struct nlmsghdr *nlh)
 		if (resp->error) {
 			const char* msg = NULL;
 			struct nlattr *attr;
-			mnl_attr_for_each(attr, nlh, sizeof(*resp)) {
-				uint16_t type = mnl_attr_get_type(attr);
-				if (type == NLMSGERR_ATTR_MSG) {
-					if (mnl_attr_validate(attr, MNL_TYPE_STRING) < 0)
-						break;
-					msg = mnl_attr_get_str(attr);
+			uint32_t flags = NLM_F_CAPPED | NLM_F_ACK_TLVS;
+			bool has_extack = (nlh->nlmsg_flags & flags) == flags;
+			if (has_extack) {
+				mnl_attr_for_each(attr, nlh, sizeof(*resp)) {
+					uint16_t type = mnl_attr_get_type(attr);
+					if (type == NLMSGERR_ATTR_MSG) {
+						if (mnl_attr_validate(attr, MNL_TYPE_STRING) < 0)
+							break;
+						msg = mnl_attr_get_str(attr);
+					}
+					}
 				}
-			}
 			report_nl_error(resp->error, msg);
 			ret = LSDNE_NETLINK;
 		} else {
