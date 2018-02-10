@@ -15,8 +15,8 @@ Following libraries are needed for compiling LSDN:
  - libmnl
  - json-c
  - libdaemon
- - libvirt (optional, only for libvirt demos)
  - linux-headers >= 4.14
+ - libvirt (optional, only for libvirt demos)
 
 You will also need CMake and (naturally) GCC for building the packages.
 
@@ -65,7 +65,7 @@ Now try running ``lsctl`` to see if the package was installed correctly.
 If you have additional kernel headers installed manually (see previous section), instead of running
 ``cmake``, run: ::
 
-    cmake -DKERNEL_HEADERS=$header_dir ..
+    cmake -DKERNEL_HEADERS=$header_dir/include ..
 
 ------------------
 Building packages
