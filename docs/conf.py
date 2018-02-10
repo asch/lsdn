@@ -158,11 +158,5 @@ def generate_doxygen_xml(app):
             sys.stderr.write("doxygen execution failed: %s" % e)
 
 def setup(app):
-    # This hack is here, because we must find out which kind of builder we are
-    # running even on ReadTheDocs, where we can't get additional -D options
-    if 'latex' in sys.argv:
-        app.add_config_value('ispdf', 'yes', 'env')
-    else:
-        app.add_config_value('ispdf', 'no', 'env')
     # Add hook for building doxygen xml when needed
     app.connect("builder-inited", generate_doxygen_xml)

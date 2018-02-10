@@ -13,7 +13,7 @@ LSDN User's Documentation
    examples
    capi
 
-.. ifconfig:: ispdf in ('no')
+.. only:: html
 
     .. rubric:: Looking for something?
 
