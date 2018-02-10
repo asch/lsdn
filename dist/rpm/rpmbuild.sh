@@ -11,7 +11,10 @@ pushd "$_dir"
 
 # prepare tarball
 TMPDIR=`mktemp -d`
-tar -cvJ -f $TMPDIR/lsdn-${VERSION}.tar.xz --exclude-vcs --exclude-vcs-ignores \
+# tar will not like the leading slash in .gitignore
+sed 's%^/%%' "$SOURCE_ROOT"/.gitignore > $TMPDIR/ignorefile
+tar -cvJ -f $TMPDIR/lsdn-${VERSION}.tar.xz \
+    --exclude-from $TMPDIR/ignorefile --exclude=".git" \
     -C "$SOURCE_ROOT" \
     --transform "s%^\\.%lsdn-${VERSION}%" \
     .
@@ -21,7 +24,9 @@ rm -r $TMPDIR
 # prepare rpm topdir
 mkdir -p rpmbuild/{BUILD,BUILDROOT,RPMS,SRPMS}
 rpmbuild -D "_topdir $PWD/rpmbuild" -D "_sourcedir $PWD" -ba lsdn.spec \
+    $@ \
     || exit 1
 
 # collect built RPMs
 cp rpmbuild/RPMS/*/*.rpm rpmbuild/SRPMS/*.rpm .
+rm -r rpmbuild

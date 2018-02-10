@@ -34,7 +34,7 @@ BuildRequires:  linux-glibc-devel >= 4.14
 BuildRequires:  pkgconfig(libdaemon)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libmnl)
-BuildRequires:  pkg-config
+BuildRequires:  pkgconfig
 BuildRequires:  tcl-devel >= 8.6
 BuildRequires:  uthash-devel
 
