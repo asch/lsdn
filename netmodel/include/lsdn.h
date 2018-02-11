@@ -83,7 +83,8 @@ enum lsdn_direction {
 	LSDN_OUT
 };
 
-/** Signature for out-of-memory callback. */
+/** Signature for out-of-memory callback.
+ * @ingroup context */
 typedef void (*lsdn_nomem_cb)(void *user);
 
 /** User callback hooks.
@@ -198,7 +199,27 @@ const char* lsdn_settings_get_name(struct lsdn_settings *s);
 struct lsdn_settings *lsdn_settings_by_name(struct lsdn_context *ctx, const char *name);
 /** @} */
 
-/** @defgroup phys Phys management
+/** @defgroup phys Phys (host machine)
+ * Functions for manipulating and configuring phys objects.
+ *
+ * Phys is a representation of a physical machine that hosts tenants of virtual
+ * networks.  Its `interface` attribute specifies the name of the network
+ * interface that is connected to the host network. In addition, some network
+ * types require IP addresses of physes.
+ *
+ * In order to start connecting virts, a phys must be _attached_ to a virtual
+ * network. That only marks the phys as a participant in that network; a single
+ * phys can be attached to any number of networks.
+ *
+ * In the network model, all physes must be represented on all machines. To
+ * select the current machine and configure network viewpoint, you must call
+ * #lsdn_phys_claim_local. Kernel rules are then generated from the viewpoint of
+ * that phys.
+ *
+ * It is possible to have multiple physes on the same machine and claimed local.
+ * This is useful in situations where the host machine has more than one
+ * interface connecting to a host network, or if the machine connects to more
+ * than one host network.
  * @{ */
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx);
 lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name);
@@ -250,6 +271,7 @@ LSDN_DECLARE_ATTR(outbound bandwith limit, virt, rate_out, lsdn_qos_rate_t);
 /** @} */
 
 /** @defgroup misc Miscellaneous */
+
 const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type);
 
 /** Generate unique name for a net.
