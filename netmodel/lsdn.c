@@ -33,6 +33,7 @@ static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 }
 
 /** Generate unique name for an object.
+ * @ingroup misc
  * The name is based on the context name, type of the object (net, phys, virt, etc.) and
  * a unique object counter on the context. It is in the form `"ctxname-type-12"`.
  *
@@ -167,11 +168,12 @@ static void lsdn_abort_cb(void *user)
 }
 
 /** Configure the context to abort on out-of-memory.
- * This sets the out-of-memory callback to #lsdn_abort_cb. If an allocation
- * fails, this will abort the program.
+ * This sets the out-of-memory callback to a predefined function that prints
+ * an error to `stderr` and aborts the program.
  *
  * It is recommended to use this, unless you have a specific way to handle
  * out-of-memory conditions.
+ * @see lsdn_abort_cb
  * @param ctx LSDN context. */
 void lsdn_context_abort_on_nomem(struct lsdn_context *ctx)
 {
@@ -377,7 +379,12 @@ void lsdn_phys_free(struct lsdn_phys *phys)
 	free_helper(phys, phys_do_free);
 }
 
-/** Set a name for the _phys_. */
+/** Set a name for phys.
+ * @param phys Phys.
+ * @param name New name string. Can be `NULL`.
+ * @retval LSDNE_OK Name set successfully.
+ * @retval LSDNE_DUPLICATE Phys with the same name already exists.
+ * @retval LSDNE_NOMEM Failed to allocate memory for name. */
 lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name)
 {
 	ret_err(phys->ctx, lsdn_name_set(&phys->name, &phys->ctx->phys_names, name));
@@ -514,8 +521,7 @@ lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, lsdn_ip_t ip)
  * All participants in a LSDN network must share a compatible memory model.
  * That means that every host's model contains all the physes in the network.
  * This function configures a particular phys to be the local machine. Only
- * rules related to virts on the local phys are entered into the kernel tables.
- * @see \ref lsdn-public */
+ * rules related to virts on the local phys are entered into the kernel tables. */
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys)
 {
 	if (!phys->is_local) {
@@ -527,8 +533,7 @@ lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys)
 }
 
 /** Unassign a local phys.
- * @see lsdn_phys_claim_local
- * @see \ref lsdn-public */
+ * @see lsdn_phys_claim_local */
 lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys)
 {
 	if (phys->is_local) {
