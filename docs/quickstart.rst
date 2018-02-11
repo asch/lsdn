@@ -5,7 +5,7 @@ Quick-Start
 ============
 
 Let's use LSDN to configure a simple network: four VMs, running on two physical
-machines. We will call the physical machines *A* and B* and the virtual machines
+machines. We will call the physical machines *A* and *B* and the virtual machines
 *1*, *2*, *3* and *4*. The machines *1* and *2* are running on physical machine
 *A*, machines *2* and *3* are located on physical machine *B*. The configuration
 is illustrated in :numref:`qnm`.
