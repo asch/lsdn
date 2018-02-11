@@ -410,10 +410,6 @@ CMD(virt)
 		return TCL_ERROR;
 	}
 
-	if(name) {
-		virt = lsdn_virt_by_name(ctx->net, name);
-	}
-
 	if(mac) {
 		if(lsdn_parse_mac(&mac_parsed, mac) != LSDNE_OK)
 			return tcl_error(interp, "mac address is in invalid format");
@@ -427,6 +423,15 @@ CMD(virt)
 	if(resolve_phys_arg(interp, ctx, phys, &phys_parsed, false)) {
 		ckfree(pos_args);
 		return TCL_ERROR;
+	}
+
+	if(!net_parsed) {
+		ckfree(pos_args);
+		return tcl_error(interp, "virt must either have -net argument or be in net scope");
+	}
+
+	if(name) {
+		virt = lsdn_virt_by_name(net_parsed, name);
 	}
 
 	if (!virt) {
