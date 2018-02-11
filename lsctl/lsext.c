@@ -332,8 +332,8 @@ CMD(net)
 	if(resolve_phys_arg(interp, ctx, phys, &phys_parsed, false))
 		return TCL_ERROR;
 
-	if(argc != 3) {
-		Tcl_WrongNumArgs(interp, 1, argv, "name contents");
+	if(argc != 3 && argc != 2) {
+		Tcl_WrongNumArgs(interp, 1, argv, "name [contents]");
 		ckfree(pos_args);
 		return TCL_ERROR;
 	}
@@ -362,12 +362,15 @@ CMD(net)
 	if(phys_parsed)
 		lsdn_phys_attach(phys_parsed, net);
 
+	int r = TCL_OK;
 	lsdn_net_set_name(net, Tcl_GetString(pos_args[1]));
-	push_scope(ctx, S_NET);
-	ctx->net = net;
-	int r = Tcl_EvalObj(interp, pos_args[2]);
-	ctx->net = NULL;
-	pop_scope(ctx);
+	if (argc == 3) {
+		push_scope(ctx, S_NET);
+		ctx->net = net;
+		r = Tcl_EvalObj(interp, pos_args[2]);
+		ctx->net = NULL;
+		pop_scope(ctx);
+	}
 
 	ckfree(pos_args);
 	return r;
