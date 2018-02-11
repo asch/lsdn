@@ -12,6 +12,7 @@ LSDN User's Documentation
    lsctl
    examples
    capi
+   internals
 
 .. only:: html
 
