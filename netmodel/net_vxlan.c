@@ -94,7 +94,7 @@ struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
 };
 
 /** Create settings for a new VXLAN-multicast network.
- * @return new `lsdn_settings` instance. The caller is responsible for freeing it. */
+ * @return new `lsdn_settings` instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 	struct lsdn_context *ctx,
 	lsdn_ip_t mcast_ip, uint16_t port)
@@ -225,7 +225,7 @@ struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 };
 
 /** Create settings for a new VXLAN-e2e network.
- * @return new `lsdn_settings` instance. The caller is responsible for freeing it. */
+ * @return new `lsdn_settings` instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));
@@ -486,7 +486,7 @@ struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 };
 
 /** Create settings for a new VXLAN-static network.
- * @return new `lsdn_settings` instance. The caller is responsible for freeing it. */
+ * @return new `lsdn_settings` instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));

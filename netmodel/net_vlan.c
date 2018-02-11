@@ -51,7 +51,7 @@ static struct lsdn_net_ops lsdn_net_vlan_ops = {
 };
 
 /** Create settings for a new VLAN network.
- * @return new `lsdn_settings` instance. The caller is responsible for freeing it. */
+ * @return new `lsdn_settings` instance. */
 struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));

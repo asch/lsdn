@@ -244,9 +244,7 @@ void lsdn_settings_free(struct lsdn_settings *settings)
  * Multiple networks can share the same `lsdn_settings`, as long as they differ
  * by `vnet_id`.
  *
- * @return newly allocated `lsdn_net` structure.
- * Caller is responsible for freeing it, or it is freed implicitly 
- * when freeing the context. */
+ * @return newly allocated `lsdn_net` structure. */
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 {
 	struct lsdn_net *net = malloc(sizeof(*net));
@@ -327,9 +325,8 @@ struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name)
 /** Create a new _phys_.
  * Allocates and initializes a `lsdn_phys` structure.
  *
- * @return newly allocated `lsdn_phys` structure.
- * Caller is responsible for freeing it, or it is freed implicitly 
- * when freeing the context. */
+ * @param ctx LSDN context.
+ * @return newly allocated `lsdn_phys` structure. */
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 {
 	struct lsdn_phys *phys = malloc(sizeof(*phys));
@@ -544,9 +541,7 @@ lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys)
 /** Create a new virt.
  * Creates a virt as part of `net`.
  *
- * @return newly allocated `lsdn_virt` structure.
- * Caller is responsible for freeing it, or it is freed implicitly 
- * when freeing the context. */
+ * @return newly allocated `lsdn_virt` structure. */
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	struct lsdn_virt *virt = malloc(sizeof(*virt));
 	if(!virt)
