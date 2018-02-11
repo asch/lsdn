@@ -105,13 +105,14 @@ The platform independent builds with all the dependency and version checks are d
 autoconf tools.
 
 Furthermore we kept everything since the beginning in the **GIT** repository on GitHub. We used
-pretty intensely with all it's features like branches etc.
+pretty intensely with all it's features like branches etc. CVS is a must for any project and GIT is
+the most common choice.
 
 When we were developing daemon (for migration support) we found library called **libdaemon** which
 helps you to write system daemon in a proper way with all the signal handling, sockets management
 and elimination of code full of race conditions. 
 
-As an code editor only **VIM** was allowed.
+As a code editor only **VIM** was allowed.
 
 Testing Environment
 ...................
@@ -178,10 +179,21 @@ Github logs, graphs, topics per name.
 Team Members
 ------------
 
-Vojtěch Aschenbrenner
-Roman Kápl
-Jan Matějek
-Adam Vyškovský
+The project was originally started with people who are no longer in the team from various of
+reasons. We would like to honorably mention them, because the initial project topics brainstorming
+were done with them.
+
+	* *Martin Pelikán* left to Google Sydney few weeks after the project was started. Although he is a non-sleeper which can work on several projects together he was not able to find a spare time for this one. This was a big loss because his thesis was about TC. 
+	* *David Krška* left to Google London few weeks after his bachelor studies graduation.
+	* *David Čepelík* left the project because of his lost of motivation and interest in the topic.
+
+The rest of the people who started the project were able to stay as a part of the team and finish
+it.
+
+	* *Vojtěch Aschenbrenner* 
+	* *Roman Kápl*
+	* *Jan Matějek*
+	* *Adam Vyškovský*
 
 Conclusion and Future Work
 --------------------------
