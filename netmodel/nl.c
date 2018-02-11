@@ -631,7 +631,6 @@ lsdn_err_t lsdn_qdisc_egress_create(struct mnl_socket *sock, unsigned int ifinde
 {
 	unsigned int seq = 0;
 	nl_buf(buf);
-	sleep(2);
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	nlh->nlmsg_type = RTM_NEWQDISC;
