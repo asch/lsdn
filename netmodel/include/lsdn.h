@@ -9,8 +9,10 @@
 
 /** Attribute generator.
  * @private
- * Declares a setter, getter and a "clearer" functions for attribute `attr` of type `type.
+ * Declares a setter and a "clearer" functions for attribute `attr` of type `type.
  * This is used to simplify creating accessors for attributes.
+ * @note getter function must be declared manually. This is to prevent problems
+ * with value types that are already pointers or consts (like `const char *`).
  * @param desc human name for the attribute. Used in generated docs.
  * @param obj type on which the attribute is declared
  * @param attr name of the attribute field
@@ -18,19 +20,11 @@
 #define LSDN_DECLARE_ATTR(desc, obj, attr, type) \
 	/** Set desc of a obj.
 @param obj obj to modify.
-@param value desc.
-@see @ref attributes. */ \
+@param value desc. */ \
 	lsdn_err_t lsdn_##obj##_set_##attr(struct lsdn_##obj *obj, type value); \
 	/** Clear desc of a obj.
-@param obj obj to modify.
-@see @ref attributes. */ \
-	lsdn_err_t lsdn_##obj##_clear_##attr(struct lsdn_##obj *obj); \
-	/** Get desc of a obj.
-@param obj obj to read.
-@returns desc of the obj.
-@see @ref attributes. */ \
-	const type *lsdn_##obj##_get_##attr(struct lsdn_##obj *obj)
-
+@param obj obj to modify. */ \
+	lsdn_err_t lsdn_##obj##_clear_##attr(struct lsdn_##obj *obj)
 
 /* XXX the following struct documentation snippets are NOT USED.
  * I'm not sure why. Instead, descriptions in private/lsdn.h are used,
