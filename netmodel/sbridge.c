@@ -169,6 +169,7 @@ static void mkaction_goto_switch(struct lsdn_filter *filter, uint16_t order, voi
 lsdn_err_t lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *iface)
 {
 	lsdn_err_t err;
+	struct lsdn_rule* fallback = &iface->rule_fallback;
 	lsdn_list_init(&iface->route_list);
 	lsdn_clist_init(&iface->cl_owner, CL_OWNER);
 	iface->bridge = br;
@@ -195,7 +196,6 @@ lsdn_err_t lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *
 	if (err != LSDNE_OK)
 		goto cleanup_idalloc;
 
-	struct lsdn_rule* fallback = &iface->rule_fallback;
 	fallback->subprio = LSDN_SBRIDGE_IF_SUBPRIO;
 	fallback->matches[0] = iface->additional_matchdata;
 	lsdn_action_init(&fallback->action, 1, mkaction_goto_switch, iface);
