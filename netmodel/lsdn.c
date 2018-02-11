@@ -367,7 +367,8 @@ static void phys_do_free(struct lsdn_phys *phys)
 }
 
 /** Free a phys.
- * Ensures that all virts on this phys are disconnected first. */
+ * Ensures that all virts on this phys are disconnected first.
+ * @param phys Phys. */
 void lsdn_phys_free(struct lsdn_phys *phys)
 {
 	lsdn_foreach(phys->attached_to_list, attached_to_entry, struct lsdn_phys_attachment, pa) {
@@ -390,15 +391,18 @@ lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name)
 	ret_err(phys->ctx, lsdn_name_set(&phys->name, &phys->ctx->phys_names, name));
 }
 
-/** Get the phys's name. */
+/** Get the phys's name.
+ * @param phys Phys.
+ * @return pointer to phys's name. */
 const char* lsdn_phys_get_name(struct lsdn_phys *phys)
 {
 	return phys->name.str;
 }
 
 /** Find a phys by name.
- * @return `lsdn_phys` structure if a phys with this name exists.
- * @return `NULL` otherwise. */
+ * @param ctx LSDN context.
+ * @param name Requested name.
+ * @return `lsdn_phys` structure if a phys with this name exists. `NULL` otherwise. */
 struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name)
 {
 	struct lsdn_name *r = lsdn_names_search(&ctx->phys_names, name);
@@ -433,6 +437,17 @@ static struct lsdn_phys_attachment* find_or_create_attachement(
 	return a;
 }
 
+/** Attach phys to a virtual network.
+ * Marks the phys as a participant in virtual network `net`. This must be done
+ * before any virts are allowed to connect to `net` through this phys.
+ *
+ * You can attach a phys to multiple virtual networks.
+ *
+ * @param phys Phys.
+ * @param net Virtual network.
+ *
+ * @retval LSDNE_OK Attachment succeeded
+ * @retval LSDNE_NOMEM Failed to allocate memory for attachment. */
 lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 {
 	struct lsdn_phys_attachment *a = find_or_create_attachement(phys, net);
