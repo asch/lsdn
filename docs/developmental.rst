@@ -100,7 +100,18 @@ In this section we present all the tools used in our project which are worth men
 Development Tools
 .................
 
-cmake, libdaemon, git(hub), linux namespaces, vim, packages, archlinux userspace,
+The platform independent builds with all the dependency and version checks are done thanks to
+**cmake** in cooperation with **pkgfile**. This is much nicer and more featureful alternative to
+autoconf tools.
+
+Furthermore we kept everything since the beginning in the **GIT** repository on GitHub. We used
+pretty intensely with all it's features like branches etc.
+
+When we were developing daemon (for migration support) we found library called **libdaemon** which
+helps you to write system daemon in a proper way with all the signal handling, sockets management
+and elimination of code full of race conditions. 
+
+As an code editor only **VIM** was allowed.
 
 Testing Environment
 ...................
