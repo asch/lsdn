@@ -213,6 +213,7 @@ lsdn_err_t lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *
 	}
 
 	lsdn_list_init_add(&br->if_list, &iface->if_entry);
+
 	return err;
 
 	cleanup_idalloc:
@@ -304,6 +305,7 @@ lsdn_err_t lsdn_sbridge_phys_if_init(
 	struct lsdn_if* iface, bool match_vni,
 	struct lsdn_ruleset *rules_in)
 {
+	lsdn_err_t err = LSDNE_OK;
 	sbridge_if->iface = iface;
 	lsdn_idalloc_init(&sbridge_if->br_chain_ids, 1, 0xFFFF);
 
@@ -317,7 +319,6 @@ lsdn_err_t lsdn_sbridge_phys_if_init(
 	struct lsdn_ruleset_prio *prio_fallback = sbridge_if->rules_fallback =
 		lsdn_ruleset_define_prio(rules_in, LSDN_IF_PRIO_FALLBACK);
 	if(!prio_fallback) {
-		lsdn_err_t err = LSDNE_OK;
 		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_match));
 		return err;
 	}
@@ -329,6 +330,14 @@ lsdn_err_t lsdn_sbridge_phys_if_init(
 
 	if (match_vni)
 		prio_fallback->targets[0]= LSDN_MATCH_ENC_KEY_ID;
+
+	err = lsdn_link_set(ctx->nlsock, iface->ifindex, true);
+	if(err != LSDNE_OK) {
+		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_match));
+		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_fallback));
+		return err;
+	}
+
 	return LSDNE_OK;
 }
 
