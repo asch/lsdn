@@ -90,6 +90,7 @@ read -d '' DOMAIN <<EOF
       <target type='serial' port='0'/>
     </console>
     <interface type='ethernet'>
+      <script path='/usr/bin/true'/>
       <mac address='${MAC}'/>
       <target dev='${TAP}'/>
       <model type='e1000'/>

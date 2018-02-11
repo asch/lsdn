@@ -5,17 +5,92 @@ Quick-Start
 ============
 
 Let's use LSDN to configure a simple network: four VMs, running on two physical
-machines. We will call the physical machines A and B and the virtual machines 1,
-2, 3 and 4. The machines 1 and 2 are running on physical machine A, machines 2
-and 3 are located on physical machine B.
+machines. We will call the physical machines *A* and B* and the virtual machines
+*1*, *2*, *3* and *4*. The machines *1* and *2* are running on physical machine
+*A*, machines *2* and *3* are located on physical machine *B*.
 
 .. figure:: quickstart.svg
 
     Network setup. Solid lines are physical machine connections, dashed lines
     denotes communication between virtual machines.
 
-VMs 1 and 3 can communicate with each other and so can VMs 2 and 3. This means we
-will create two virtual networks, one for VM 2 and second for VM 3.
+VMs *1* and *3* can communicate with each other and so can VMs *2* and *3*. This
+means we will create two virtual networks, one for VM *2* and second for VM *3*.
+
+As mentioned in the `intro`, there are two major ways to use LSDN --
+`configuration files <quickstart_lsctl>` and `C API <quickstart_c>`. Let's look
+at both ways.
+
+Setting up virtual machines
+---------------------------
+
+You are free to use any Virtual Machine Manager you like: bare Qemu/KVM, libvirt
+or VirtualBox or run containers (via LXC for example). The only thing LSDN needs
+is to know which network interfaces on the host are assigned to the virtual
+machine. Typically, this will be a *tap* interface for a VM an *veth* interface
+for a container.
+
+.. _qemu:
+
+Qemu
+~~~~
+
+.. index:: Qemu
+.. index:: KVM
+
+If you are just trying out LSDN, we suggest you download some live distro (like
+`Alpine Linux <https://alpinelinux.org/downloads/>`_) and run Qemu/KVM. Make sure
+QEMU is installed and on physical machine *A* run:
+
+.. code-block:: bash
+
+    sudo qemu-system-x86_64 -enable-kvm \
+        -cdrom $iso_path.iso -nographic \
+        -netdev type=tap,ifname=tap0,mac=14:9B:DD:6B:81:71,script=no,downscript=no,id=net0 \
+        -device virtio-net-pci,netdev=net0
+
+This will start up the Live ISO. Now login and setup a simple IP configuration:
+
+.. code-block:: bash
+
+    ip addr change dev eth0 192.168.0.1/24
+    ip link set eth0 up
+
+Do the same for the remaining virtual machines, but with a different MAC and TAP
+interface name:
+
+ - on *A* create VM using ``ifname=tap0``, ``mac=14:9B:DD:6B:81:71``
+   and set up IP address as ``192.168.0.1`` (we just did that in example above).
+ - on *A* create VM using ``ifname=tap1``, ``mac=7D:42:B4:0F:EC:9A``
+   and set up IP address as ``192.168.0.2``
+ - on *B* create VM using ``ifname=tap0``, ``mac=14:9B:DD:6B:81:71``
+   and set up IP address as ``192.168.0.3``
+ - on *B* create VM using ``ifname=tap1``, ``mac=7D:42:B4:0F:EC:9A``
+   and set up IP address as ``192.168.0.4``
+
+Libvirt
+~~~~~~~
+
+If you are using Libvirt, set up the virtual machines as usual. Unfortunatelly,
+``virt-manager`` can not be told to leave the VM's networking alone, it will try
+to connect it to a network, but that's what LSDN will be used for! It can also
+not change an interface MAC address.  Instead, use ``virsh edit`` to manually
+change the VM's XML. Change the ``interface`` tag of VM *1* on *A* to look like
+this:
+
+.. code-block:: xml
+
+    <interface type='ethernet'>
+      <mac address='14:9b:dd:6b:81:71'/>
+      <script path='/usr/bin/true'/>
+      <target dev='tap0'/>
+      <!-- original <model> and <address> -->
+     </interface>
+
+Change also the other virtual machines but with different MAC and TAP interface
+names (look at the `qemu` section for correct values).
+
+.. _quickstart_lsctl:
 
 Using configuration files
 -------------------------
@@ -27,7 +102,7 @@ First, create the file ``config.lsctl`` with the following contents:
     # Boilerplate
     namespace import lsdn::*
     # Choose the network tunneling technology
-    settings vlan
+    settings geneve
 
     # Define the two virtual networks we have mentioned
     net 1
@@ -44,9 +119,31 @@ First, create the file ``config.lsctl`` with the following contents:
         virt -name 4 -if tap1 -mac 7D:42:B4:0F:EC:9A -net 2
     }
 
-    # Tell LSDN that we are running on phys given as first script argument
+    # Tell LSDN what machine we are configuring right now.
     claimLocal [lindex $argv 1]
     # Activate everything
     commit
 
+Naturally, if you are using different IP addresses for your physical machines,
+change the configuration file. Also pay attention to the ``-if eth0`` arguments
+-- they tell LSDN what interface you use for connecting machines *A* and *B*
+together and you may also need to change the interface to reflect your physical
+setup.
 
+Then make sure the file is available on both physical machines *A* and *B* and
+run following commands:
+
+ - on *A*: ``lsctl config.lsctl A``
+ - on *B*: ``lsctl config.lsctl B``
+
+Congratulations, your network is set-up. Try it:
+
+ - in VM *1*: ``ping 192.168.0.3``
+ - in VM *2*: ``ping 192.168.0.4``
+
+And they are correctly isolated too ``ping 192.168.0.2`` won't work in VM *1*.
+
+.. _quickstart_c:
+
+Using the C API
+---------------
