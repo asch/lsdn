@@ -105,12 +105,41 @@ cmake, libdaemon, git(hub), linux namespaces, vim, packages, archlinux userspace
 Testing Environment
 ...................
 
-qemu, ctest, travis-ci
+Our testing environment is based on the highly modular complex of **bash scripts**, where every part
+which should be tested defines prescribed functions which are further executed together with other
+parts. Like this we can create complex tests just with combination of several parts.
+
+For automatic test execution and it's simplification we used **ctest** tool which is part of cmake
+package.
+
+The continuous integration was used through the **Travic-CI** service which after every code commit
+executed all the tests.
+
+We have also extensive support for testing on not supported kernels via **QEMU**. Automatic scripts
+are able to create minimalistic and up-to-date Arch Linux root filesystem, boot up-to-date kernel
+and ran all tests.
+
+Of course various networking tools like dhcpd, dhcpcd, dhclient, tcpdump, iproute, ping etc. were
+used for diagnostics as well as directly in tests.
+
+Note that during tests we were highly dependent on **Linux namespaces**, hence we were able to
+simulate several virtual machines without any overhead and speed up all the tests.
 
 Communication Tools
 ...................
 
-mailman, irc
+Communication among all team members and leaders was performed via old-school mailing lists and IRC
+combo. We used our own self-hosted **mailman** instance for several mailing lists:
+
+	* lsdn-general for general talk, organization, communication with leaders and all important decisions.
+	* lsdn-travis for automatic reports from Travis-CI notifying us about commits which break the correct functionality.
+	* lsdn-commits for summary of every commit we made. This was highly motivation element in our
+	  setup, because seeing your colleague committing for the whole day can make you feel really
+	  bad. Furthermore discussion about particular commit were done in the same thread, which
+	  enhances the organization of decisions we made and why.
+
+For real-time communication we used **IRC** channel #lsdn on Freenode. This is useful especially for
+flame-wars and arguing about future design of the tool.
 
 Documentation Tools
 ...................
