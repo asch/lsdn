@@ -1,0 +1,4 @@
+Miscellaneous functions
+-----------------------
+
+.. doxygengroup:: misc

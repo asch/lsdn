@@ -121,6 +121,10 @@ Sections
 Learn more about individual kinds of objects.
 
 .. toctree::
-   :glob:
 
-   capi/*
+    capi/context.rst
+    capi/phys.rst
+    capi/network.rst
+    capi/virt.rst
+    capi/errors.rst
+    capi/misc.rst
