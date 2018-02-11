@@ -433,7 +433,7 @@ static struct lsdn_phys_attachment* find_or_create_attachement(
 	lsdn_list_init(&a->connected_virt_list);
 	lsdn_list_init(&a->remote_pa_list);
 	lsdn_list_init(&a->pa_view_list);
-	a->explicitely_attached = false;
+	a->explicitly_attached = false;
 	return a;
 }
 
@@ -454,17 +454,17 @@ lsdn_err_t lsdn_phys_attach(struct lsdn_phys *phys, struct lsdn_net* net)
 	if(!a)
 		ret_err(net->ctx, LSDNE_NOMEM);
 
-	if (!a->explicitely_attached)
+	if (!a->explicitly_attached)
 		renew(&phys->state);
 
-	a->explicitely_attached = true;
+	a->explicitly_attached = true;
 	ret_err(net->ctx, LSDNE_OK);
 }
 
 static void pa_do_free(struct lsdn_phys_attachment *a)
 {
 	assert(lsdn_is_list_empty(&a->connected_virt_list));
-	assert(!a->explicitely_attached);
+	assert(!a->explicitly_attached);
 	lsdn_list_remove(&a->attached_entry);
 	lsdn_list_remove(&a->attached_to_entry);
 	free(a);
@@ -475,16 +475,16 @@ static void free_pa_if_possible(struct lsdn_phys_attachment *a)
 	/* If not empty, we will wait for the user to remove the virts (or wait for them to be
 	 * removed at commit).
 	 * Validation will catch the user if he tries to commit a virt connected throught
-	 * the phys if the PA is not explicitely attached.
+	 * the phys if the PA is not explicitly attached.
 	 */
-	if (lsdn_is_list_empty(&a->connected_virt_list) && !a->explicitely_attached) {
+	if (lsdn_is_list_empty(&a->connected_virt_list) && !a->explicitly_attached) {
 		free_helper(a, pa_do_free);
 	}
 }
 
 static void phys_detach_by_pa(struct lsdn_phys_attachment *a)
 {
-	a->explicitely_attached = false;
+	a->explicitly_attached = false;
 	free_pa_if_possible(a);
 }
 
@@ -782,7 +782,7 @@ static void validate_virts_pa(struct lsdn_phys_attachment *pa)
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v){
 		if(!should_be_validated(v->state))
 			continue;
-		if(pa->explicitely_attached && pa->phys->is_local)
+		if(pa->explicitly_attached && pa->phys->is_local)
 		{
 			lsdn_err_t err = lsdn_if_resolve(&v->connected_if);
 			if(err != LSDNE_OK)
@@ -1117,7 +1117,7 @@ lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *use
 			continue;
 		lsdn_foreach(p->attached_to_list, attached_to_entry, struct lsdn_phys_attachment, a)
 		{
-			if(!a->explicitely_attached){
+			if(!a->explicitly_attached){
 				report_virts(a);
 			}else{
 				if (p->is_local && !p->attr_iface)

@@ -227,9 +227,9 @@ struct lsdn_phys_attachment {
 	/** Was this attachment created by lsdn_phys_attach at some point, or was it implicitely
 	 * created by lsdn_virt_connect, just for bookkeeping? All fields below are valid only for
 	 * explicit attachments. If you try to commit a network and some attachment is not
-	 * explicitely attached, we assume you just made a mistake.
+	 * explicitly attached, we assume you just made a mistake.
 	 */
-	bool explicitely_attached;
+	bool explicitly_attached;
 
 	struct lsdn_if tunnel_if;
 	struct lsdn_lbridge lbridge;
