@@ -132,7 +132,7 @@ In a very similar fashion we've created a *Bakery* virtual network:
 It has two virtual machines, but this time the virtual network spans only the
 physical machines **A** and **B**. Note that the **Bakery** virtual network is again
 going to be tunneled inside a VXLAN tunnel, only with a different network
-idetifier *2*.
+identifier *2*.
 
 This line:
 
