@@ -5,3 +5,7 @@
     float: left !important;
     margin-left: -125px;
 }
+
+body {
+    min-width: 10em !important;
+}
