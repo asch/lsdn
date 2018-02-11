@@ -324,7 +324,7 @@ struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name)
 	return lsdn_container_of(r, struct lsdn_net, name);
 }
 
-/** Create a new _phys_.
+/** Create a new phys.
  * Allocates and initializes a `lsdn_phys` structure.
  *
  * @param ctx LSDN context.
@@ -354,7 +354,7 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 	ret_ptr(ctx, phys);
 }
 
-/** Perform freeing of a _phys_ object.
+/** Perform freeing of a phys object.
  * Used when `lsdn_phys_free` is manually invoked, as the last step,
  * and also implicitly as part of the decommit phase. */
 static void phys_do_free(struct lsdn_phys *phys)
@@ -366,8 +366,8 @@ static void phys_do_free(struct lsdn_phys *phys)
 	free(phys);
 }
 
-/** Free a _phys_.
- * Ensures that all virts on this _phys_ are disconnected first. */
+/** Free a phys.
+ * Ensures that all virts on this phys are disconnected first. */
 void lsdn_phys_free(struct lsdn_phys *phys)
 {
 	lsdn_foreach(phys->attached_to_list, attached_to_entry, struct lsdn_phys_attachment, pa) {
@@ -390,14 +390,14 @@ lsdn_err_t lsdn_phys_set_name(struct lsdn_phys *phys, const char *name)
 	ret_err(phys->ctx, lsdn_name_set(&phys->name, &phys->ctx->phys_names, name));
 }
 
-/** Get the _phys_'s name. */
+/** Get the phys's name. */
 const char* lsdn_phys_get_name(struct lsdn_phys *phys)
 {
 	return phys->name.str;
 }
 
-/** Find a _phys_ by name.
- * @return `lsdn_phys` structure if a _phys_ with this name exists.
+/** Find a phys by name.
+ * @return `lsdn_phys` structure if a phys with this name exists.
  * @return `NULL` otherwise. */
 struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name)
 {
