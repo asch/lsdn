@@ -49,7 +49,7 @@ QEMU is installed and on physical machine *A* run:
 
     sudo qemu-system-x86_64 -enable-kvm \
         -cdrom $iso_path.iso -nographic \
-        -netdev type=tap,ifname=tap0,mac=14:9B:DD:6B:81:71,script=no,downscript=no,id=net0 \
+        -netdev type=tap,ifname=tap0,mac=14:9b:dd:6b:81:71,script=no,downscript=no,id=net0 \
         -device virtio-net-pci,netdev=net0
 
 This will start up the Live ISO. Now login and setup a simple IP configuration:
@@ -62,13 +62,13 @@ This will start up the Live ISO. Now login and setup a simple IP configuration:
 Do the same for the remaining virtual machines, but with a different MAC and TAP
 interface name:
 
- - on *A* create VM using ``ifname=tap0``, ``mac=14:9B:DD:6B:81:71``
+ - on *A* create VM using ``ifname=tap0``, ``mac=14:9b:dd:6b:81:71``
    and set up IP address as ``192.168.0.1`` (we just did that in example above).
- - on *A* create VM using ``ifname=tap1``, ``mac=7D:42:B4:0F:EC:9A``
+ - on *A* create VM using ``ifname=tap1``, ``mac=92:89:90:93:61:75``
    and set up IP address as ``192.168.0.2``
- - on *B* create VM using ``ifname=tap0``, ``mac=14:9B:DD:6B:81:71``
+ - on *B* create VM using ``ifname=tap0``, ``mac=42:94:a5:f9:69:c6``
    and set up IP address as ``192.168.0.3``
- - on *B* create VM using ``ifname=tap1``, ``mac=7D:42:B4:0F:EC:9A``
+ - on *B* create VM using ``ifname=tap1``, ``mac=f2:9b:4f:48:2d:d1``
    and set up IP address as ``192.168.0.4``
 
 Libvirt
@@ -112,14 +112,14 @@ First, create the file ``config.lsctl`` with the following contents:
     net 2
 
     # Describe the network
-    phys -name A -if eth0 -ip 192.168.0.1 {
-        virt -name 1 -if tap0 -mac 14:9B:DD:6B:81:71 -net 1
-        virt -name 2 -if tap1 -mac 7D:42:B4:0F:EC:9A -net 2
+    phys -name A -if eth0 -ip "192.168.0.1" {
+        virt -name 1 -if tap0 -mac "14:9b:dd:6b:81:71" -net 1
+        virt -name 2 -if tap1 -mac "92:89:90:93:61:75" -net 2
     }
 
-    phys -name A -if eth0 -ip 192.168.0.2 {
-        virt -name 3 -if tap0 -mac 14:9B:DD:6B:81:71 -net 1
-        virt -name 4 -if tap1 -mac 7D:42:B4:0F:EC:9A -net 2
+    phys -name A -if eth0 -ip "192.168.0.2" {
+        virt -name 3 -if tap0 -mac "42:94:a5:f9:69:c6" -net 1
+        virt -name 4 -if tap1 -mac "f2:9b:4f:48:2d:d1" -net 2
     }
 
     # Tell LSDN what machine we are configuring right now.
