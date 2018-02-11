@@ -124,7 +124,7 @@ First, create the file ``config.lsctl`` with the following contents:
     }
 
     # Tell LSDN what machine we are configuring right now.
-    claimLocal [lindex $argv 1]
+    claimLocal [lindex $argv 0]
     # Activate everything
     commit
 

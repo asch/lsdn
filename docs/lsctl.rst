@@ -408,7 +408,7 @@ Directive reference
     use the following command to allow the control of the local phys using the 
     first commandline argument to the script: ::
 
-        claimLocal [lindex $argv 1]
+        claimLocal [lindex $argv 0]
 
     After that, invoke :ref:`lsctl <prog_lsctl>` like this:
 

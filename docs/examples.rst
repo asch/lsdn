@@ -54,7 +54,7 @@ split the example into smaller chunks and explain each section in detail.
         virt -phys B -if 2 -mac 00:00:00:00:00:b2
     }
 
-    claimLocal [lindex $argv 1]
+    claimLocal [lindex $argv 0]
     commit
     free
 
@@ -138,7 +138,7 @@ This line:
 
 .. code-block:: tcl
 
-    claimLocal [lindex $argv 1]
+    claimLocal [lindex $argv 0]
 
 will instruct LSDN which machine it should consider as being local. How this
 command exactly works is described in :lsctl:cmd:`claimLocal`.
@@ -366,7 +366,7 @@ A transcription of this network setup with LSDN:
         }
     }
 
-    claimLocal [lindex $argv 1]
+    claimLocal [lindex $argv 0]
     commit
     free
 
