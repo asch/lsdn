@@ -474,7 +474,7 @@ static void free_pa_if_possible(struct lsdn_phys_attachment *a)
 {
 	/* If not empty, we will wait for the user to remove the virts (or wait for them to be
 	 * removed at commit).
-	 * Validation will catch the user if he tries to commit a virt connected throught
+	 * Validation will catch the user if he tries to commit a virt connected through
 	 * the phys if the PA is not explicitly attached.
 	 */
 	if (lsdn_is_list_empty(&a->connected_virt_list) && !a->explicitly_attached) {
@@ -488,6 +488,15 @@ static void phys_detach_by_pa(struct lsdn_phys_attachment *a)
 	free_pa_if_possible(a);
 }
 
+/** Detach phys from a virtual network.
+ * After detaching, virts won't be allowed to connect to a given network through
+ * this phys.
+ *
+ * @warning This will not disconnect currently connected virts. They must be
+ * disconnected explicitly. Otherwise, the next commit will fail validation.
+ *
+ * @param phys Phys.
+ * @param net Virtual network. */
 void lsdn_phys_detach(struct lsdn_phys *phys, struct lsdn_net* net)
 {
 	lsdn_foreach(phys->attached_to_list, attached_to_entry, struct lsdn_phys_attachment, a) {
