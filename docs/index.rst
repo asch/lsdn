@@ -13,6 +13,7 @@ LSDN User's Documentation
    examples
    capi
    internals
+   developmental
 
 .. only:: html
 

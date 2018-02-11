@@ -8,15 +8,17 @@ control over containers in the software developer's virtual environment. Natural
 interface providers have to run Linux Kernel as we use it for the real networking work.
 
 Two core goals which LSDN resolved are:
-	1) Make Linux Kernel Traffic Control (TC) Subsystem usable:
-		* LSDN provides library with high-level C API for linking together with recent
-		  orchestrators.
-		* Domain Specific Language (DSL) for standalone configuration is designed and can be used as
-		  is.
 
-	2) Audit the TC subsystem and verify that it is viable for management of complex virtual network scenarios as is.
-		* Bugs in Linux kernel were found and fixed.
-		* TC is viable to be used for complex virtual network management.
+1) Make Linux Kernel Traffic Control (TC) Subsystem usable:
+
+   * LSDN provides library with high-level C API for linking together with recent orchestrators.
+   * Domain Specific Language (DSL) for standalone configuration is designed and can be used as is.
+
+2) Audit the TC subsystem and verify that it is viable for management of complex virtual network
+   scenarios as is.
+
+   * Bugs in Linux kernel were found and fixed.
+   * TC is viable to be used for complex virtual network management.
 
 Problem Introduction
 --------------------
