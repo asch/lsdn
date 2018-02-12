@@ -112,9 +112,9 @@ the most common choice.
 
 When we were developing daemon (for migration support) we found library called **libdaemon** which
 helps you to write system daemon in a proper way with all the signal handling, sockets management
-and elimination of code full of race conditions. 
+and elimination of code full of race conditions.
 
-As a code editor only **VIM** was allowed.
+As a code editor only **VIM** and **ed** were allowed.
 
 Testing Environment
 ...................
