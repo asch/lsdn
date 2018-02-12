@@ -198,6 +198,7 @@ Argument types
     subnet containing the single IP address.
 
     Examples:
+
     .. code-block:: none
 
         2a00:1028:8380:f86::2
@@ -227,7 +228,7 @@ Argument types
 
     An unsigned decimal integer specifying a number of bytes per second.
 
-    Supported units are the same as for :lsctl:type:``size``.
+    Supported units are the same as for :lsctl:type:`size`.
 
 .. _dirref:
 
@@ -246,8 +247,8 @@ Directive reference
     :param int vid:
         Virtual network identifier. Network technologies like VXLANs or VLANs
         use these number to separate different networks. The ID must be unique
-        among all networks. The parameter is forbidden if network already
-        exists.
+        among all networks of the same network type. The parameter is forbidden
+        if network already exists.
     :param string name:
         Name of the network. Does not change network behavior, only used by the
         configuration to refer to the network. However, if the ``-vid`` argument
