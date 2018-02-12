@@ -107,7 +107,7 @@ The platform independent builds with all the dependency and version checks are d
 autoconf tools.
 
 Furthermore we kept everything since the beginning in the **GIT** repository on GitHub. We used
-pretty intensely with all it's features like branches etc. CVS is a must for any project and GIT is
+pretty intensely with all it's features like branches etc. VCS is a must for any project and GIT is
 the most common choice.
 
 When we were developing daemon (for migration support) we found library called **libdaemon** which
