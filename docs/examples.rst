@@ -34,13 +34,15 @@ split the example into smaller chunks and explain each section in detail.
 
 .. code-block:: tcl
 
+    namespace import lsdn::*
+
     settings vxlan/static -name vxlan
 
     phys -if eth0 -name A -ip 172.16.0.1
     phys -if eth0 -name B -ip 172.16.0.2
     phys -if eth0 -name C -ip 172.16.0.3
 
-    net -vid 1 Bookstore {
+    net -vid 1 Bookstore -settings vxlan {
         attach A B C
         virt -phys A -if 1 -mac 00:00:00:00:00:a1
         virt -phys A -if 2 -mac 00:00:00:00:00:a2
@@ -48,7 +50,7 @@ split the example into smaller chunks and explain each section in detail.
         virt -phys C -if 1 -mac 00:00:00:00:00:c1
     }
 
-    net -vid 2 Bakery {
+    net -vid 2 Bakery -settings vxlan {
         attach A B
         virt -phys A -if 3 -mac 00:00:00:00:00:a3
         virt -phys B -if 2 -mac 00:00:00:00:00:b2
@@ -98,7 +100,7 @@ using the VXLAN tunnels.
 
 .. code-block:: tcl
 
-    net -vid 1 Bookstore {
+    net -vid 1 Bookstore -settings vxlan {
         attach A B C
         virt -phys A -if 1 -mac 00:00:00:00:00:a1
         virt -phys A -if 2 -mac 00:00:00:00:00:a2
@@ -123,7 +125,7 @@ In a very similar fashion we've created a *Bakery* virtual network:
 
 .. code-block:: tcl
 
-    net -vid 2 Bakery {
+    net -vid 2 Bakery -settings vxlan {
         attach A B
         virt -phys A -if 3 -mac 00:00:00:00:00:a3
         virt -phys B -if 2 -mac 00:00:00:00:00:b2
@@ -220,14 +222,16 @@ we're going to name *example2-1.lsctl*:
 
 .. code-block:: tcl
 
+    namespace import lsdn::*
+
     settings vxlan/static
 
     phys -if eth0 -name A -ip 172.16.0.1
     phys -if eth0 -name B -ip 172.16.0.2
     phys -if eth0 -name C -ip 172.16.0.3
 
-    net -vid 1 {
-        attach A B
+    net 1 {
+        attach A B C
         virt -phys A -if 1 -mac 00:00:00:00:00:a1 -name migrator
         virt -phys A -if 2 -mac 00:00:00:00:00:a2
         virt -phys B -if 1 -mac 00:00:00:00:00:b1
@@ -328,6 +332,8 @@ A transcription of this network setup with LSDN:
 
 .. code-block:: tcl
 
+    namespace import lsdn::*
+
     settings vlan
 
     phys -if eth0 -name a
@@ -410,4 +416,3 @@ packet. What patterns do you expect to see in this log file after some time?
 .. todo:: make references throughtout the examples to other parts of the doc
 .. todo:: add e.g. a dhcp, gateway example?
 .. todo:: choose better parameters for the third example
-.. todo:: rerun all the examples and make sure there is no mistake
