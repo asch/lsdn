@@ -780,10 +780,18 @@ CMD(rate)
 		rate.burst_rate = 0;
 	}
 
-	if (direction == LSDN_IN)
-		lsdn_virt_set_rate_in(ctx->virt, rate);
-	else
-		lsdn_virt_set_rate_out(ctx->virt, rate);
+	bool no_args = !avg && !burst_size && !burst_rate;
+	if (direction == LSDN_IN) {
+		if (no_args)
+			lsdn_virt_clear_rate_in(ctx->virt);
+		else
+			lsdn_virt_set_rate_in(ctx->virt, rate);
+	} else {
+		if (no_args)
+			lsdn_virt_clear_rate_out(ctx->virt);
+		else
+			lsdn_virt_set_rate_out(ctx->virt, rate);
+	}
 
 	return TCL_OK;
 }
