@@ -600,7 +600,7 @@ Or directly on the command-line:
 
 .. code-block:: bash
 
-    lsctlc /var/run/lsdn virt vm1 -phys b
+    lsctlc /var/run/lsdn virt -name vm1 -phys b -net customer
     lsctlc /var/run/lsdn commit
 
 ``lsctld`` can be controled with the following options:
