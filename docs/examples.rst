@@ -184,7 +184,7 @@ Similarly on machine **B**:
 
     lsctl example1.lsctl B
 
-and on machine *C*:
+and on machine **C**:
 
 .. code-block:: bash
 
