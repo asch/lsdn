@@ -520,10 +520,17 @@ lsdn_err_t lsdn_phys_set_iface(struct lsdn_phys *phys, const char *iface){
 	ret_err(phys->ctx, LSDNE_OK);
 }
 
-lsdn_err_t lsdn_phys_clear_iface(struct lsdn_phys *phys){
+void lsdn_phys_clear_iface(struct lsdn_phys *phys)
+{
+	if (phys->attr_iface)
+		renew(&phys->state);
 	free(phys->attr_iface);
 	phys->attr_iface = NULL;
-	ret_err(phys->ctx, LSDNE_OK);
+}
+
+const char *lsnd_phys_get_iface(struct lsdn_phys *phys)
+{
+	return phys->attr_iface;
 }
 
 lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, lsdn_ip_t ip)
@@ -539,6 +546,19 @@ lsdn_err_t lsdn_phys_set_ip(struct lsdn_phys *phys, lsdn_ip_t ip)
 	free(phys->attr_ip);
 	phys->attr_ip = ip_dup;
 	ret_err(phys->ctx, LSDNE_OK);
+}
+
+void lsdn_phys_clear_ip(struct lsdn_phys *phys)
+{
+	if (phys->attr_ip)
+		renew(&phys->state);
+
+	free(phys->attr_ip);
+	phys->attr_ip = NULL;
+}
+
+const lsdn_ip_t *lsdn_phys_get_ip(struct lsdn_phys *phys) {
+	return phys->attr_ip;
 }
 
 /** Assign a local phys.
@@ -709,6 +729,19 @@ lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 	ret_err(virt->network->ctx, LSDNE_OK);
 }
 
+void lsdn_virt_clear_mac(struct lsdn_virt *virt)
+{
+	if (virt->attr_mac)
+		renew(&virt->state);
+	free(virt->attr_mac);
+	virt->attr_mac = NULL;
+}
+
+const lsdn_mac_t *lsdn_virt_get_mac(struct lsdn_virt *virt)
+{
+	return virt->attr_mac;
+}
+
 /** Get recommended MTU for a given virt.
  * Calculates the appropriate MTU value, taking into account the network's tunneling 
  * method overhead. */
@@ -751,6 +784,19 @@ lsdn_err_t lsdn_virt_set_rate_in(struct lsdn_virt *virt, lsdn_qos_rate_t rate)
 	ret_err(virt->network->ctx, LSDNE_OK);
 }
 
+void lsdn_virt_clear_rate_in(struct lsdn_virt *virt)
+{
+	if (virt->attr_rate_in)
+		renew(&virt->state);
+	free(virt->attr_rate_in);
+	virt->attr_rate_in = NULL;
+}
+
+const lsdn_qos_rate_t *lsdn_virt_get_rate_in(struct lsdn_virt *virt)
+{
+	return virt->attr_rate_in;
+}
+
 lsdn_err_t lsdn_virt_set_rate_out(struct lsdn_virt *virt, lsdn_qos_rate_t rate)
 {
 	lsdn_qos_rate_t *rate_dup = malloc(sizeof(*rate_dup));
@@ -761,6 +807,19 @@ lsdn_err_t lsdn_virt_set_rate_out(struct lsdn_virt *virt, lsdn_qos_rate_t rate)
 	virt->attr_rate_out = rate_dup;
 	renew(&virt->state);
 	ret_err(virt->network->ctx, LSDNE_OK);
+}
+
+void lsdn_virt_clear_rate_out(struct lsdn_virt *virt)
+{
+	if (virt->attr_rate_out)
+		renew(&virt->state);
+	free(virt->attr_rate_out);
+	virt->attr_rate_out = NULL;
+}
+
+const lsdn_qos_rate_t *lsdn_virt_get_rate_out(struct lsdn_virt *virt)
+{
+	return virt->attr_rate_out;
 }
 
 static bool should_be_validated(enum lsdn_state state) {

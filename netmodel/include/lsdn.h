@@ -11,20 +11,25 @@
  * @private
  * Declares a setter and a "clearer" functions for attribute `attr` of type `type.
  * This is used to simplify creating accessors for attributes.
- * @note getter function must be declared manually. This is to prevent problems
+ * @note Input and output types are specified manully. This is to prevent problems
  * with value types that are already pointers or consts (like `const char *`).
  * @param desc human name for the attribute. Used in generated docs.
  * @param obj type on which the attribute is declared
  * @param attr name of the attribute field
- * @param type type of the attribute field */
-#define LSDN_DECLARE_ATTR(desc, obj, attr, type) \
+ * @param type type of the attribute field (when set)
+ * @param type type of the attribute field (when read)
+ */
+#define LSDN_DECLARE_ATTR(desc, obj, attr, type_in, type_out) \
 	/** Set desc of a obj.
 @param obj obj to modify.
 @param value desc. */ \
-	lsdn_err_t lsdn_##obj##_set_##attr(struct lsdn_##obj *obj, type value); \
-	/** Clear desc of a obj.
+	lsdn_err_t lsdn_##obj##_set_##attr(struct lsdn_##obj *obj, type_in value); \
+	/** Get a desc of obj, or NULL if clear
+@note The pointer is valid until the attribute is changed or object freed. */ \
+	type_out lsdn_##obj##_get_##attr(struct lsdn_##obj *obj); \
+	/** Clear desc of a obj. \
 @param obj obj to modify. */ \
-	lsdn_err_t lsdn_##obj##_clear_##attr(struct lsdn_##obj *obj)
+	void lsdn_##obj##_clear_##attr(struct lsdn_##obj *obj)
 
 /* XXX the following struct documentation snippets are NOT USED.
  * I'm not sure why. Instead, descriptions in private/lsdn.h are used,
@@ -226,8 +231,8 @@ void lsdn_phys_detach(struct lsdn_phys *phys, struct lsdn_net* net);
 lsdn_err_t lsdn_phys_claim_local(struct lsdn_phys *phys);
 lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys);
 
-LSDN_DECLARE_ATTR(IP address, phys, ip, lsdn_ip_t);
-LSDN_DECLARE_ATTR(interface, phys, iface, const char*);
+LSDN_DECLARE_ATTR(IP address, phys, ip, lsdn_ip_t, const lsdn_ip_t*);
+LSDN_DECLARE_ATTR(interface, phys, iface, const char*, const char*);
 /** @} */
 
 
@@ -259,9 +264,9 @@ typedef struct {
 	float burst_rate;
 } lsdn_qos_rate_t;
 
-LSDN_DECLARE_ATTR(MAC address, virt, mac, lsdn_mac_t);
-LSDN_DECLARE_ATTR(inbound bandwidth limit, virt, rate_in, lsdn_qos_rate_t);
-LSDN_DECLARE_ATTR(outbound bandwidth limit, virt, rate_out, lsdn_qos_rate_t);
+LSDN_DECLARE_ATTR(MAC address, virt, mac, lsdn_mac_t, const lsdn_mac_t*);
+LSDN_DECLARE_ATTR(inbound bandwidth limit, virt, rate_in, lsdn_qos_rate_t, const lsdn_qos_rate_t*);
+LSDN_DECLARE_ATTR(outbound bandwidth limit, virt, rate_out, lsdn_qos_rate_t, const lsdn_qos_rate_t*);
 /** @} */
 
 /** @defgroup misc Miscellaneous */
