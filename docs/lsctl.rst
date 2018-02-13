@@ -388,8 +388,7 @@ Directive reference
 
 .. lsctl:cmd:: rate | direction -avg -burst -burstRate
 
-    Limit bandwith flowing in a given direction. If no arguments are given, all
-    limits are lifted.
+    Limit bandwidth in a given direction.
 
     C API equivalents:
     .. todo:: Link to the attributes once documented.

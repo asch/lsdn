@@ -247,7 +247,7 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt);
  * committed stated). The phys interface must already exist. */
 lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu);
 
-/** Bandwith limit for virt's interface (for one direction).
+/** Bandwidth limit for virt's interface (for one direction).
  * @ingroup virt
  * @see lsdn_set_qos_rate */
 typedef struct {
@@ -260,8 +260,8 @@ typedef struct {
 } lsdn_qos_rate_t;
 
 LSDN_DECLARE_ATTR(MAC address, virt, mac, lsdn_mac_t);
-LSDN_DECLARE_ATTR(inbound bandwith limit, virt, rate_in, lsdn_qos_rate_t);
-LSDN_DECLARE_ATTR(outbound bandwith limit, virt, rate_out, lsdn_qos_rate_t);
+LSDN_DECLARE_ATTR(inbound bandwidth limit, virt, rate_in, lsdn_qos_rate_t);
+LSDN_DECLARE_ATTR(outbound bandwidth limit, virt, rate_out, lsdn_qos_rate_t);
 /** @} */
 
 /** @defgroup misc Miscellaneous */

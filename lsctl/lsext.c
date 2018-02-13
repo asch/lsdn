@@ -760,23 +760,25 @@ CMD(rate)
 	if (avg) {
 		if (parse_units(interp, avg, &rate.avg_rate, utab_bytes) != TCL_OK)
 			return TCL_ERROR;
+	} else {
+		return tcl_error(interp, "-avg argument must be specified");
 	}
-	else
-		rate.avg_rate = 0;
 
-	float burst_size_f = 0;
+	float burst_size_f;
 	if (burst_size) {
 		if (parse_units(interp, burst_size, &burst_size_f, utab_bytes) != TCL_OK)
 			return TCL_ERROR;
+	} else {
+		return tcl_error(interp, "-burst argument must be specified");
 	}
 	rate.burst_size = burst_size_f;
 
 	if (burst_rate) {
 		if (parse_units(interp, burst_rate, &rate.burst_rate, utab_bytes) != TCL_OK)
 			return TCL_ERROR;
-	}
-	else
+	} else {
 		rate.burst_rate = 0;
+	}
 
 	if (direction == LSDN_IN)
 		lsdn_virt_set_rate_in(ctx->virt, rate);

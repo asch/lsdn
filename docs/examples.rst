@@ -397,7 +397,7 @@ virtual network these are exactly the firewall rules that will ensure that
 **VM A** and will be able receive packets only from **VM A**. The last rule
 installs a QoS rule. It sets the bandwidth for **VM B** with an average rate,
 burst rate and burst all set to *20kb*. All the rate parameters are described
-in :lsctl:cmd:`rate`
+in :lsctl:cmd:`rate`.
 
 Similarly you can check the rules for **VM A**, **VM C** and **VM D** and see
 for yourself they match with our intentation from the sketch above.
