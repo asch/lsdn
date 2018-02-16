@@ -37,7 +37,7 @@ The pointer is valid until the attribute is changed or object freed.
  * I'm not sure why. Instead, descriptions in private/lsdn.h are used,
  * and these structs are not even listed in the public header documentation.
  * What do.? */
-e
+
 /** Context.
  * This is documented elsewhere. */
 struct lsdn_context;
