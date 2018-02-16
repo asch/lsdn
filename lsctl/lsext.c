@@ -318,18 +318,17 @@ CMD(net)
 	const char *settings_name = NULL;
 	const char *phys = NULL;
 	struct lsdn_phys *phys_parsed = NULL;
+	int net_remove = 0;
 	Tcl_Obj **pos_args = NULL;
 	const Tcl_ArgvInfo opts[] = {
 		{TCL_ARGV_INT, "-vid", NULL, &vnet_id},
 		{TCL_ARGV_STRING, "-settings", NULL, &settings_name},
 		{TCL_ARGV_STRING, "-phys", NULL, &phys},
+		{TCL_ARGV_CONSTANT, "-remove", (void *) 1, &net_remove},
 		{TCL_ARGV_END}
 	};
 
 	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, &pos_args) != TCL_OK)
-		return TCL_ERROR;
-
-	if(resolve_phys_arg(interp, ctx, phys, &phys_parsed, false))
 		return TCL_ERROR;
 
 	if(argc != 3 && argc != 2) {
@@ -338,25 +337,45 @@ CMD(net)
 		return TCL_ERROR;
 	}
 
+	struct lsdn_net *net = lsdn_net_by_name(ctx->lsctx, Tcl_GetString(pos_args[1]));
+
+	if (net_remove) {
+		if (!net) {
+			ckfree(pos_args);
+			return tcl_error(interp, "net not found, can not remove net");
+		}
+		lsdn_net_free(net);
+		ckfree(pos_args);
+		return TCL_OK;
+	}
+	if(resolve_phys_arg(interp, ctx, phys, &phys_parsed, false)) {
+		ckfree(pos_args);
+		return TCL_ERROR;
+	}
 	if (!vnet_id)
 		vnet_id = strtol(Tcl_GetString(pos_args[1]), NULL, 10);
-	struct lsdn_net *net = lsdn_net_by_name(ctx->lsctx, Tcl_GetString(pos_args[1]));
 	if(!net) {
 		struct lsdn_settings *s;
 		if (!settings_name) {
 			s = lsdn_settings_by_name(ctx->lsctx, "default");
-			if (!s)
+			if (!s) {
+				ckfree(pos_args);
 				return tcl_error(interp, "Please define default network settings first");
+			}
 		} else {
 			s = lsdn_settings_by_name(ctx->lsctx, settings_name);
-			if (!s)
+			if (!s) {
+				ckfree(pos_args);
 				return tcl_error(interp, "settings not found");
+			}
 		}
 
 		net = lsdn_net_new(s, vnet_id);
 	} else {
-		if (settings_name)
+		if (settings_name) {
+			ckfree(pos_args);
 			return tcl_error(interp, "Can not change settings, the network already exists");
+		}
 	}
 
 	if(phys_parsed)
@@ -389,6 +408,8 @@ CMD(virt)
 	struct lsdn_phys *phys_parsed = NULL;
 	const char *iface = NULL;
 	const char *name = NULL;
+	int virt_remove = 0;
+	int mac_clear = 0;
 	struct lsdn_virt *virt = NULL;
 	Tcl_Obj **pos_args = NULL;
 
@@ -398,6 +419,8 @@ CMD(virt)
 		{TCL_ARGV_STRING, "-net", NULL, &net},
 		{TCL_ARGV_STRING, "-if", NULL, &iface},
 		{TCL_ARGV_STRING, "-name", NULL, &name},
+		{TCL_ARGV_CONSTANT, "-remove", (void *) 1, &virt_remove},
+		{TCL_ARGV_CONSTANT, "-macClear", (void *) 1, &mac_clear},
 		{TCL_ARGV_END}
 	};
 
@@ -410,28 +433,30 @@ CMD(virt)
 		return TCL_ERROR;
 	}
 
-	if(mac) {
-		if(lsdn_parse_mac(&mac_parsed, mac) != LSDNE_OK)
-			return tcl_error(interp, "mac address is in invalid format");
-	}
-
 	if(resolve_net_arg(interp, ctx, net, &net_parsed, true)) {
 		ckfree(pos_args);
 		return TCL_ERROR;
 	}
 
+	if (mac && mac_clear) {
+		ckfree(pos_args);
+		return tcl_error(interp, "can not clear and set MAC address at the same time");
+	}
+
+	virt = lsdn_virt_by_name(net_parsed, name);
+	if (virt_remove) {
+		if (!virt) {
+			ckfree(pos_args);
+			return tcl_error(interp, "virt not found, can not remove virt");
+		}
+		lsdn_virt_free(virt);
+		ckfree(pos_args);
+		return TCL_OK;
+	}
+
 	if(resolve_phys_arg(interp, ctx, phys, &phys_parsed, false)) {
 		ckfree(pos_args);
 		return TCL_ERROR;
-	}
-
-	if(!net_parsed) {
-		ckfree(pos_args);
-		return tcl_error(interp, "virt must either have -net argument or be in net scope");
-	}
-
-	if(name) {
-		virt = lsdn_virt_by_name(net_parsed, name);
 	}
 
 	if (!virt) {
@@ -443,10 +468,24 @@ CMD(virt)
 		}
 	}
 
-	if(name)
+	if (mac) {
+		if(lsdn_parse_mac(&mac_parsed, mac) != LSDNE_OK) {
+			ckfree(pos_args);
+			return tcl_error(interp, "mac address is in invalid format");
+		}
+	}
+
+	if(!net_parsed) {
+		ckfree(pos_args);
+		return tcl_error(interp, "virt must either have -net argument or be in net scope");
+	}
+
+	if (name)
 		lsdn_virt_set_name(virt, name);
 	if(mac)
 		lsdn_virt_set_mac(virt, mac_parsed);
+	else if (mac_clear)
+		lsdn_virt_clear_mac(virt);
 	if(phys_parsed)
 		lsdn_virt_connect(virt, phys_parsed, iface);
 
@@ -814,6 +853,9 @@ CMD(phys)
 	const char *ip = NULL;
 	const char *net = NULL;
 	struct lsdn_net *net_parsed = NULL;
+	int phys_remove = 0;
+	int iface_clear = 0;
+	int ip_clear = 0;
 	lsdn_ip_t ip_parsed;
 	Tcl_Obj **pos_args = NULL;
 
@@ -822,36 +864,61 @@ CMD(phys)
 		{TCL_ARGV_STRING, "-if", NULL, &iface},
 		{TCL_ARGV_STRING, "-ip", NULL, &ip},
 		{TCL_ARGV_STRING, "-net", NULL, &net},
+		{TCL_ARGV_CONSTANT, "-remove", (void *) 1, &phys_remove},
+		{TCL_ARGV_CONSTANT, "-ifClear", (void *) 1, &iface_clear},
+		{TCL_ARGV_CONSTANT, "-ipClear", (void *) 1, &ip_clear},
 		{TCL_ARGV_END}
 	};
 	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, &pos_args))
 		return TCL_ERROR;
+
+	if (iface && iface_clear) {
+		ckfree(pos_args);
+		return tcl_error(interp, "can not clear and set interface at the same time");
+	}
+
+	if (ip && ip_clear) {
+		ckfree(pos_args);
+		return tcl_error(interp, "can not clear and set IP address at the same time");
+	}
+
+	struct lsdn_phys *phys = lsdn_phys_by_name(ctx->lsctx, name);
+	if (phys_remove) {
+		if (!phys) {
+			ckfree(pos_args);
+			return tcl_error(interp, "phys not found, can not remove phys");
+		}
+		lsdn_phys_free(phys);
+		ckfree(pos_args);
+		return TCL_OK;
+	}
 
 	if(resolve_net_arg(interp, ctx, net, &net_parsed, false)) {
 		ckfree(pos_args);
 		return TCL_ERROR;
 	}
 
-	if(ip) {
+	if (!phys)
+		phys = lsdn_phys_new(ctx->lsctx);
+
+	if (ip) {
 		if(lsdn_parse_ip(&ip_parsed, ip) != LSDNE_OK) {
 			ckfree(pos_args);
 			return tcl_error(interp, "ip address not in valid format");
 		}
 	}
 
-	struct lsdn_phys *phys = NULL;
 	if (name)
-		phys = lsdn_phys_by_name(ctx->lsctx, name);
-
-	if (!phys)
-		phys = lsdn_phys_new(ctx->lsctx);
-	if(name)
 		lsdn_phys_set_name(phys, name);
-	if(iface)
+	if (iface)
 		lsdn_phys_set_iface(phys, iface);
-	if(ip)
+	else if (iface_clear)
+		lsdn_phys_clear_iface(phys);
+	if (ip)
 		lsdn_phys_set_ip(phys, ip_parsed);
-	if(net_parsed)
+	else if (ip_clear)
+		lsdn_phys_clear_ip(phys);
+	if (net_parsed)
 		lsdn_phys_attach(phys, net_parsed);
 
 	push_scope(ctx, S_PHYS);

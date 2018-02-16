@@ -88,6 +88,8 @@ void lsdn_name_free(struct lsdn_name *name)
  * @return `NULL` if the name is not found in the list. */
 struct lsdn_name *lsdn_names_search(struct lsdn_names *table, const char* key)
 {
+	if (!key)
+		return NULL;
 	lsdn_foreach(table->head, entry, struct lsdn_name, name)
 	{
 		if(strcmp(name->str, key) == 0)
