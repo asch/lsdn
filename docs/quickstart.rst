@@ -7,7 +7,7 @@ Quick-Start
 Let's use LSDN to configure a simple network: four VMs, running on two physical
 machines. We will call the physical machines *A* and *B* and the virtual machines
 *1*, *2*, *3* and *4*. The machines *1* and *2* are running on physical machine
-*A*, machines *2* and *3* are located on physical machine *B*. The configuration
+*A*, machines *3* and *4* are located on physical machine *B*. The configuration
 is illustrated in :numref:`qnm`.
 
 .. _qnm:
@@ -17,8 +17,9 @@ is illustrated in :numref:`qnm`.
     Network setup. Solid lines are physical machine connections, dashed lines
     denotes communication between virtual machines.
 
-VMs *1* and *3* can communicate with each other and so can VMs *2* and *3*. This
-means we will create two virtual networks, one for VM *2* and second for VM *3*.
+VMs *1* and *3* can communicate with each other and so can VMs *2* and *4*. This
+means we will create two virtual networks, one for VM *1* and *3*, second for VM
+*2* and *4*.
 
 As mentioned in the `intro`, there are two major ways to use LSDN --
 `configuration files <quickstart_lsctl>` and `C API <quickstart_c>`. Let's look
