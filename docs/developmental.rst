@@ -127,11 +127,12 @@ For automatic test execution and it's simplification we used **ctest** tool whic
 package.
 
 The continuous integration was used through the **Travic-CI** service which after every code commit
-executed all the tests.
+executed all the tests and provides automatic email notification in case of failure.
 
 We have also extensive support for testing on not supported kernels via **QEMU**. Automatic scripts
 are able to create minimalistic and up-to-date Arch Linux root filesystem, boot up-to-date kernel
-and ran all tests.
+and ran all tests. This method is also used on Travis-CI, where only LTS versions of Ubuntu are
+available.
 
 Of course various networking tools like dhcpd, dhcpcd, dhclient, tcpdump, iproute, ping etc. were
 used for diagnostics as well as directly in tests.
