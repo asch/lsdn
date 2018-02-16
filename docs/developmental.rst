@@ -174,6 +174,25 @@ uses LaTeX as a typesetting system, thus the printed documentation looks great.
 The whole documentation source is written in **reStructuredText** (rst) markup language which greatly
 simplified the whole process of creation such a comprehensive documentation.
 
+Open-source contributions
+.........................
+
+We have identified a few bugs in the Linux kernel during our development. We
+believe this is mainly because of the unusual setups we excersise and new kernel
+features (such as goto chain, lwtunnels) we use. Following bugs were patched or
+at least reported:
+
+ - `net: don't call update_pmtu unconditionally <https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f15ca723c1ebe6c1a06bc95fda6b62cd87b44559>`_
+   (reported)
+ - `net: sched: crash on blocks with goto chain action <https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=a60b3f515d30d0fe8537c64671926879a3548103>`_
+ - `net: sched: fix crash when deleting secondary chains <https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=d7aa04a5e82b4f254d306926c81eae8df69e5200>`_
+ - `v9fs over btrfs <https://sourceforge.net/p/v9fs/mailman/message/36130692/>`_
+   (mailing list dead, not merged)
+
+Naturally, our tooling also has problems, so we also fixed a bug in
+`sphinx <https://github.com/sphinx-doc/sphinx/pull/4627>`_ and
+`breathe <https://github.com/michaeljones/breathe/pull/365>`_.
+
 Project Timeline
 ----------------
 
