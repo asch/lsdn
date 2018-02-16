@@ -33,46 +33,50 @@ The pointer is valid until the attribute is changed or object freed.
 @param object obj to modify. */ \
 	void lsdn_##obj##_clear_##attr(struct lsdn_##obj *object)
 
-/* XXX the following struct documentation snippets are NOT USED.
- * I'm not sure why. Instead, descriptions in private/lsdn.h are used,
- * and these structs are not even listed in the public header documentation.
- * What do.? */
-
-/** Context.
- * This is documented elsewhere. */
+/** LSDN Context.
+ * @struct lsdn_context
+ * @ingroup context
+ * The base object of the LSDN network model. There should be exactly one instance in your program.
+ * @rstref{capi/context} */
 struct lsdn_context;
 
-/** Virtual network representation.
- * Nodes defined by `lsdn_virt` connect to a `lsdn_net` through physical host connections `lsdn_phys`.
- * Can be implemented using common tunneling techniques, like vlan or vxlan or no tunneling.
- *
- * Networks are defined by two main characteristics:
- *  - the tunnel used to overlay the network over physical topology (transparent to end users)
- *  - the switching methods used (visible to end users) */
+/** Virtual network.
+ * @struct lsdn_net
+ * @ingroup network
+ * Network is a collection of virts that can communicate with each other.
+ * @rstref{capi/network}
+ * @rstref{capi/virt}
+ * @rstref{capi/phys} */
 struct lsdn_net;
 
-/** Node in the virtual network.
- * A virtual machine (typically -- it may be any linux interface).
+/** Virt.
+ * @struct lsdn_virt
+ * @ingroup virt
+ * A virtual machine (typically -- it may be any Linux interface).
  *
- * Virtual machines participate in virtual networks (through phys_attachments on the host machine
- * connection). They can be migrated between the physical machines by connecting them through
- * different `lsdn_phys`. */
+ * Virts are tenants in networks. They must be connected through a phys. They can be migrated between
+ * physes at runtime.
+ * @rstref{capi/virt}
+ * @rstref{capi/phys}
+ * @rstref{capi/network} */
 struct lsdn_virt;
 
-/** Physical host connection representation.
- * Represents a kernel interface for a node, e.g., eth0 on lsdn1.
- * Physical interfaces are used to connect to virtual networks. This connection is called
- * `lsdn_phys_attachement`. */
+/** Phys.
+ * @struct lsdn_phys
+ * @ingroup phys
+ * Represents a kernel interface for a host node, e.g., eth0 on lsdn1.
+ * Physes are attached to network, and then virts can connect through them.
+ * @rstref{capi/phys}
+ * @rstref{capi/virt}
+ * @rstref{capi/network} */
 struct lsdn_phys;
 
-/** Physical interface attachment.
- * A point of connection to a virtual network through a physical interface.
- * Only a single attachment may exist for a pair of `lsdn_phys` and `lsdn_net`. */
-struct lsdn_phys_attachment;
-
-/** Configuration structure for `lsdn_net`.
- * Multiple networks can share the same settings (e.g. vxlan with static routing on port 1234)
- * and only differ by their identifier (vlan id, vni ...). */
+/** Configuration structure for a virtual network.
+ * @struct lsdn_settings
+ * @ingroup network
+ * Multiple networks can share the same settings (e.g. VXLAN with static routing on port 1234)
+ * and only differ by their identifier (VLAN id, VNI...).
+ * @rstref{capi/network} */
 struct lsdn_settings;
 
 /** Virt rule direction.
@@ -125,6 +129,7 @@ struct lsdn_user_hooks {
  * the user is responsible for conflicting rules on interfaces.
  * In other words: don't do this, things will probably crash and burn if you do.
  * @{ */
+
 struct lsdn_context *lsdn_context_new(const char* name);
 void lsdn_context_set_nomem_callback(struct lsdn_context *ctx, lsdn_nomem_cb cb, void *user);
 void lsdn_context_abort_on_nomem(struct lsdn_context *ctx);
@@ -171,7 +176,11 @@ enum lsdn_switch {
 	 * interface to be switched by some sort of learning switch. May be added if it appears. */
 };
 
-/** @defgroup network Virtual network */
+/** @defgroup network Virtual network
+ * Bla bla.
+ *
+ * Lorem ipsum dolor sit amet. */
+
 
 /** @name Network object management
  * @{ */

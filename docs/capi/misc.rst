@@ -1,3 +1,5 @@
+.. _capi/misc:
+
 Miscellaneous functions
 -----------------------
 
