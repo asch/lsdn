@@ -238,7 +238,7 @@ Directive reference
 
 .. default-role:: lsctl:cmd
 
-.. lsctl:cmd:: net | name -vid -settings -phys { ... }
+.. lsctl:cmd:: net | name -vid -settings -phys -remove { ... }
 
     Define new virtual network or change an existing one.
 
@@ -267,7 +267,7 @@ Directive reference
         Automatically attaches the parent phys to this network. Shorthand for
         using the `attach` directive.
 
-.. lsctl:cmd:: phys | -name -if -ip -net
+.. lsctl:cmd:: phys | -name -if -ip -net -remove -ifClear -ipClear
 
     Define a new physical machine or change an existing one.
 
@@ -292,7 +292,7 @@ Directive reference
         Automatically attaches this phys to the parent network. Shorthand for
         using the `attach` directive
 
-.. lsctl:cmd:: virt | -net -name -mac -phys -if
+.. lsctl:cmd:: virt | -net -name -mac -phys -if -remove -macClear
 
     Define a new virtual machine or change an existing one.
 
@@ -388,7 +388,8 @@ Directive reference
 
 .. lsctl:cmd:: rate | direction -avg -burst -burstRate
 
-    Limit bandwidth in a given direction.
+    Limit bandwidth in a given direction. If no arguments are given, all limits
+    are lifted.
 
     C API equivalents:
     .. todo:: Link to the attributes once documented.
