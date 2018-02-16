@@ -194,7 +194,7 @@ struct lsdn_net_ops lsdn_net_geneve_ops = {
 /** Create settings for a new GENEVE network.
  * @param ctx LSDN context.
  * @param port UDP port for GENEVE tunnel.
- * @return new `lsdn_settings` instance. */
+ * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_geneve(struct lsdn_context *ctx, uint16_t port)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));

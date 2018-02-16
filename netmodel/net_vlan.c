@@ -7,7 +7,7 @@
 #include "private/errors.h"
 
 /** Add a machine to VLAN network.
- * Implements `lsdn_net_ops.create_pa`.
+ * Implements #lsdn_net_ops.create_pa.
  *
  * Creates a dedicated VLAN interface for this machine, sets up
  * a Linux Bridge and adds the interface to it. */
@@ -51,7 +51,7 @@ static struct lsdn_net_ops lsdn_net_vlan_ops = {
 };
 
 /** Create settings for a new VLAN network.
- * @return new `lsdn_settings` instance. */
+ * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));

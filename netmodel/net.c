@@ -2,7 +2,7 @@
  * Common functions for various types of networks. */
 #include "private/net.h"
 
-/** Initialize common parts of `lsdn_settings` struct. */
+/** Initialize common parts of #lsdn_settings struct. */
 lsdn_err_t lsdn_settings_init_common(struct lsdn_settings *settings, struct lsdn_context *ctx)
 {
 	lsdn_name_init(&settings->name);

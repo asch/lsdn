@@ -20,8 +20,8 @@ LSDN_ENUM_NAMES(log_category);
 
 /** Mutex for logging. */
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
-/** `pthread_once` control for `log_mask_from_env`.
- * Ensures that `log_mask_from_env` is only called once per process. */
+/** `pthread_once` control for #log_mask_from_env.
+ * Ensures that #log_mask_from_env is only called once per process. */
 static pthread_once_t once_log_mask_from_env = PTHREAD_ONCE_INIT;
 /** Default log mask.
  * XXX i don't know what it does. */
@@ -35,8 +35,8 @@ static log_mask_t mask = 0;
  * `"all"`, enables logging of all categories. Otherwise enables
  * logging for specified categories, separated by commas.
  *
- * @see `lsdn_log_category` for possible values. The `LSDN_DEBUG` value
- * is `"netops"` for `LSDNL_NETOPS` and so on. */
+ * @see #lsdn_log_category for possible values. The `LSDN_DEBUG` value
+ * is `"netops"` for #LSDNL_NETOPS and so on. */
 static void log_mask_from_env()
 {
 	/* yes getenv is not thread safe, but there is not really any way around it */
@@ -79,7 +79,7 @@ void lsdn_log_init()
 	pthread_once(&once_log_mask_from_env, log_mask_from_env);
 }
 
-/** Convert `lsdn_log_category` value to its name.
+/** Convert #lsdn_log_category value to its name.
  * @param[in] category Log category. 
  * @return Constant string containing the name of the category. */
 const char* lsdn_log_category_name(enum lsdn_log_category category)
@@ -102,8 +102,8 @@ void lsdn_log(enum lsdn_log_category category, const char* format, ...)
 
 /** Check if logging is enabled for a given category.
  * @param[in] category Category for which to check.
- * @return `true` if logging is enabled for `category`.
- * @return `false` if logging is disabled for `category`. */
+ * @retval true if logging is enabled for `category`.
+ * @retval false if logging is disabled for `category`. */
 bool lsdn_log_enabled(enum lsdn_log_category category)
 {
 	return ((1 << category) & mask);

@@ -34,10 +34,10 @@ typedef enum {
 	LSDNE_VALIDATE,
 	/** Network model commit failed and a mix of old, new and dysfunctional objects are in effect.
 	 *
-	 * If object state is `LSDN_OK`, the new model is in effect for that object, if it is `LSDN_RENEW`
-	 * or `LSDN_NEW`, the old model is in effect.
+	 * If object state is #LSDN_OK, the new model is in effect for that object, if it is #LSDN_RENEW
+	 * or #LSDN_NEW, the old model is in effect.
 	 *
-	 * The object can also get to `LSDN_NEW` state during updating, if the updating failed. This
+	 * The object can also get to #LSDN_NEW state during updating, if the updating failed. This
 	 * makes the object behave as if it did not exist.
 	 *
 	 * In either case, you can retry the commit and it will work if the error was temporary.
@@ -48,12 +48,12 @@ typedef enum {
 	LSDNE_COMMIT,
 	/** Cleanup operation has failed and this left an object in state inconsistent with the model.
 	 *
-	 * This failure is more serious than `LSDNE_COMMIT` failure, since the commit operation can
+	 * This failure is more serious than #LSDNE_COMMIT failure, since the commit operation can
 	 * not be sucesfully retried. The only operation possible is to rebuild the whole model again. */
 	LSDNE_INCONSISTENT,
 } lsdn_err_t;
 
-/** Generator for `lsdn_problem_code`.
+/** Generator for #lsdn_problem_code.
  * @see LSDN_ENUM
  * @see lsdn_problem_code */
 #define lsdn_enumgen_problem_code(x) \
@@ -97,26 +97,26 @@ LSDN_ENUM(problem_code, LSDNP);
 enum lsdn_problem_ref_type {
 	/** Problem with attribute. */
 	LSDNS_ATTR,
-	/** Problem with `lsdn_phys`. */
+	/** Problem with #lsdn_phys. */
 	LSDNS_PHYS,
-	/** Problem with `lsdn_net` and `lsdn_phys` combination. */
+	/** Problem with #lsdn_net and #lsdn_phys combination. */
 	LSDNS_PA,
-	/** Problem with `lsdn_net`. */
+	/** Problem with #lsdn_net. */
 	LSDNS_NET,
-	/** Problem with `lsdn_virt`. */
+	/** Problem with #lsdn_virt. */
 	LSDNS_VIRT,
-	/** Problem with `lsdn_if`. */
+	/** Problem with #lsdn_if. */
 	LSDNS_IF,
 	/** Problem with `vnet_id`. */
 	LSDNS_NETID,
-	/** Problem with `lsdn_vr`. */
+	/** Problem with #lsdn_vr. */
 	LSDNS_VR,
 	/** End of problem list. */
 	LSDNS_END
 };
 
 /** Maximum number of problem items described simultaneously.
- * Configures size of the problem buffer in `lsdn_context`. */
+ * Configures size of the problem buffer in #lsdn_context. */
 #define LSDN_MAX_PROBLEM_REFS 10
 
 /** Reference to a problem item.
@@ -130,7 +130,7 @@ struct lsdn_problem_ref {
 };
 
 /** Description of encountered problem.
- * Passed to a `lsdn_problem_cb` callback when an error occurs.
+ * Passed to a #lsdn_problem_cb callback when an error occurs.
  *
  * `code` refers to the type of problem encountered. Depending on the type of the problem,
  * this might also indicate any number of related problematic items. Pointers to them
@@ -141,7 +141,7 @@ struct lsdn_problem {
 	/** Number of related items. */
 	size_t refs_count;
 	/** Array of references to related items.
-	 * @note `refs` actually point to a buffer in `lsdn_context`. */
+	 * @note `refs` actually point to a buffer in #lsdn_context. */
 	struct lsdn_problem_ref *refs;
 };
 

@@ -16,10 +16,10 @@
 	exit(EXIT_FAILURE); \
 } while (0);
 
-/** Helper for `LSDN_ENUM`.
+/** Helper for #LSDN_ENUM.
  * @see LSDN_ENUM */
 #define _LSDN_DUMP_ENUM(val, str) val,
-/** Helper for `LSDN_ENUM_NAMES`.
+/** Helper for #LSDN_ENUM_NAMES.
  * @see LSDN_ENUM
  * @see LSDN_ENUM_NAMES */
 #define _LSDN_DUMP_NAMES(val, str) str,

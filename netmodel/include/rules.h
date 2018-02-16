@@ -6,7 +6,7 @@
 #include "nettypes.h"
 #include "util.h"
 
-/** Generator for `lsdn_rule_target`.
+/** Generator for #lsdn_rule_target.
  * @see LSDN_ENUM
  * @see lsdn_rule_target */
 #define lsdn_enumgen_rule_target(x) \

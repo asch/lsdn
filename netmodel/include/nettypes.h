@@ -90,17 +90,17 @@ typedef struct lsdn_ip {
 	};
 } lsdn_ip_t;
 
-/** Construct a `lsdn_ip` IPv4 address from a 4-tuple. */
+/** Construct a #lsdn_ip IPv4 address from a 4-tuple. */
 #define LSDN_MK_IPV4(a, b, c, d)\
 	(struct lsdn_ip) LSDN_INITIALIZER_IPV4(a, b, c, d)
-/** struct literal for a `lsdn_ip` IPv4 address constructed from a 4-tuple. */
+/** struct literal for a #lsdn_ip IPv4 address constructed from a 4-tuple. */
 #define LSDN_INITIALIZER_IPV4(a, b, c, d)\
 	{ .v = LSDN_IPv4, .v4 = { .bytes = { (a), (b), (c), (d) } } }
 
-/** Construct a `lsdn_ip` IPv6 address from a 16-tuple. */
+/** Construct a #lsdn_ip IPv6 address from a 16-tuple. */
 #define LSDN_MK_IPV6(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)\
 	(struct lsdn_ip) LSDN_INITIALIZER_IPV6(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
-/** struct literal for a `lsdn_ip` IPv6 address constructed from a 16-tuple. */
+/** struct literal for a #lsdn_ip IPv6 address constructed from a 16-tuple. */
 #define LSDN_INITIALIZER_IPV6(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) \
 	{ .v = LSDN_IPv6, .v6 = { .bytes = { \
 		(a), (b), (c), (d), \
@@ -108,10 +108,10 @@ typedef struct lsdn_ip {
 		(i), (j), (k), (l), \
 		(m), (n), (o), (p) } } }
 
-/** Construct a `lsdn_mac_t` from a 6-tuple. */
+/** Construct a #lsdn_mac_t from a 6-tuple. */
 #define LSDN_MK_MAC(a, b, c, d, e, f) \
 	(union lsdn_mac) LSDN_INITIALIZER_MAC(a, b, c, d, e, f)
-/** struct literal for a `lsdn_mac_t` from a 6-tuple. */
+/** struct literal for a #lsdn_mac_t from a 6-tuple. */
 #define LSDN_INITIALIZER_MAC(a, b, c, d, e, f) \
 	{ .bytes = {(a), (b), (c), (d), (e), (f)}}
 
@@ -150,7 +150,7 @@ bool lsdn_is_prefix_valid(enum lsdn_ipv ipv, int prefix);
 int lsdn_ip_prefix_from_mask(const lsdn_ip_t *mask);
 bool lsdn_ip_mask_is_valid(const lsdn_ip_t *mask);
 
-/** Convert `lsdn_ipv4_t` to `uint32_t`.
+/** Convert #lsdn_ipv4_t to `uint32_t`.
  * @param v4 address to convert.
  * @return IP address represented as a single `uint32_t` value. */
 static inline uint32_t lsdn_ip4_u32(const lsdn_ipv4_t *v4)

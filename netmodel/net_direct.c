@@ -7,7 +7,7 @@
 #include "private/errors.h"
 
 /** Add a machine to direct network.
- * Implements `lsdn_net_ops.create_pa`.
+ * Implements #lsdn_net_ops.create_pa.
  *
  * Sets up a tunnel interface and connects it to a Linux Bridge. */
 static lsdn_err_t direct_create_pa(struct lsdn_phys_attachment *a)
@@ -50,7 +50,7 @@ static struct lsdn_net_ops lsdn_net_direct_ops = {
 };
 
 /** Create settings for a new direct network.
- * @return new `lsdn_settings` instance. */
+ * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));

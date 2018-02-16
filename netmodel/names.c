@@ -21,20 +21,20 @@ void lsdn_names_free(struct lsdn_names *tab)
 }
 
 /** Update an existing name.
- * If the new name is the same as the old name, returns `LSDNE_OK` immediately. 
+ * If the new name is the same as the old name, returns #LSDNE_OK immediately. 
  * Otherwise checks for uniqueness within `table` and if that succeeds,
  * assigns the new name to the `name` variable.
  *
  * Makes a private copy of `str`, so that `str` can be freed or reused after calling.
- * This is useful because `str` is usually returned from `lsdn_mk_name`, which
+ * This is useful because `str` is usually returned from #lsdn_mk_name, which
  * reuses a fixed buffer in the current context.
  *
  * @param name Name struct.
  * @param[in] table List of names.
  * @param[in] str New name.
- * @return `LSDNE_OK` if the update was successful. 
- * @return `LSDNE_DUPLICATE` if the name already exists in `table`. 
- * @return `LSDNE_NOMEM` if memory allocation failed. */
+ * @retval LSDNE_OK if the update was successful. 
+ * @retval LSDNE_DUPLICATE if the name already exists in `table`. 
+ * @retval LSDNE_NOMEM if memory allocation failed. */
 lsdn_err_t lsdn_name_set(struct lsdn_name *name, struct lsdn_names *table, const char* str)
 {
 	if (!str) {

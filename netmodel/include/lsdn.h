@@ -9,7 +9,7 @@
 
 /** Attribute generator.
  * @private
- * Declares a setter and a "clearer" functions for attribute `attr` of type `type.
+ * Declares a setter and a "clearer" functions for attribute `attr` of type `type_in`.
  * This is used to simplify creating accessors for attributes.
  * @note Input and output types are specified manully. This is to prevent problems
  * with value types that are already pointers or consts (like `const char *`).
@@ -94,21 +94,21 @@ typedef void (*lsdn_nomem_cb)(void *user);
 
 /** User callback hooks.
  * @ingroup network
- * Configured as part of `lsdn_settings`, this structure holds the callback hooks for startup
+ * Configured as part of #lsdn_settings, this structure holds the callback hooks for startup
  * and shutdown, and their custom data. */
 struct lsdn_user_hooks {
 	/** Startup hook.
-	 * Called at commit time for every local phys and every network it's attached to.
+	 * Called at commit time for every local phys and every network to which it is attached.
 	 * @param net network.
 	 * @param phys attached phys.
-	 * @param user receives the value of `lsdn_startup_hook_user`. */
+	 * @param user receives the value of #lsdn_startup_hook_user. */
 	void (*lsdn_startup_hook)(struct lsdn_net *net, struct lsdn_phys *phys, void *user);
-	/** Custom value for `lsdn_startup_hook`. */
+	/** Custom value for #lsdn_startup_hook. */
 	void *lsdn_startup_hook_user;
 	/** Shutdown hook.
 	 * Currently unused. TODO. */
 	void (*lsdn_shutdown_hook)(struct lsdn_net *net, struct lsdn_phys *phys, void *user);
-	/** Custom value for `lsdn_shutdown_hook`. */
+	/** Custom value for #lsdn_shutdown_hook. */
 	void *lsdn_shutdown_hook_user;
 };
 

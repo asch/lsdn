@@ -11,7 +11,7 @@
 #include <stdarg.h>
 
 /** Calculate tunneling overhead for VXLAN networks.
- * Basis for VXLAN variants of `lsdn_net_ops.compute_tunneling_overhead`.
+ * Basis for VXLAN variants of #lsdn_net_ops.compute_tunneling_overhead.
  *
  * Returns different results based on whether the network is IPv4 or IPv6,
  * because of different IP header sizes. */
@@ -38,7 +38,7 @@ static lsdn_ip_t vxlan_mcast_get_ip(struct lsdn_settings *s)
 /** @{ */
 
 /** Add a machine to VXLAN-multicast network.
- * Implements `lsdn_net_ops.create_pa`.
+ * Implements #lsdn_net_ops.create_pa.
  *
  * Creates a multicast VXLAN link and connects it to a local Linux Bridge. */
 static lsdn_err_t vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
@@ -72,7 +72,7 @@ static lsdn_err_t vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 }
 
 /** Calculate tunneling overhead for VXLAN-multicast network.
- * Implements `lsdn_net_ops.compute_tunneling_overhead`. */
+ * Implements #lsdn_net_ops.compute_tunneling_overhead. */
 static unsigned int vxlan_mcast_tunneling_overhead(struct lsdn_phys_attachment *pa)
 {
 	struct lsdn_settings *s = pa->net->settings;
@@ -94,7 +94,7 @@ struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
 };
 
 /** Create settings for a new VXLAN-multicast network.
- * @return new `lsdn_settings` instance. */
+ * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 	struct lsdn_context *ctx,
 	lsdn_ip_t mcast_ip, uint16_t port)
@@ -127,7 +127,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 /** @{ */
 
 /** Add a local machine to VXLAN-e2e network.
- * Implements `lsdn_net_ops.create_pa`.
+ * Implements #lsdn_net_ops.create_pa.
  *
  * Sets up a VXLAN tunnel and connects it to a Linux Bridge. */
 static lsdn_err_t vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
@@ -155,7 +155,7 @@ static lsdn_err_t vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 }
 
 /** Adds a remote machine to VXLAN-e2e network.
- * Implements `lsdn_net_ops.add_remote_pa`. 
+ * Implements #lsdn_net_ops.add_remote_pa. 
  *
  * Sets up a static route to the given remote phys. */
 static lsdn_err_t vxlan_e2e_add_remote_pa(struct lsdn_remote_pa *remote)
@@ -169,7 +169,7 @@ static lsdn_err_t vxlan_e2e_add_remote_pa(struct lsdn_remote_pa *remote)
 }
 
 /** Remove a remote machine from VXLAN-e2e network.
- * Implements `lsdn_net_ops.remove_remote_pa`.
+ * Implements #lsdn_net_ops.remove_remote_pa.
  *
  * Tears down a static route to the given remote phys. */
 static lsdn_err_t vxlan_e2e_remove_remote_pa(struct lsdn_remote_pa *remote)
@@ -185,7 +185,7 @@ static lsdn_err_t vxlan_e2e_remove_remote_pa(struct lsdn_remote_pa *remote)
 }
 
 /** Validate a phys attachment for use in VXLAN-e2e network.
- * Implements `lsdn_net_ops.validate_pa`.
+ * Implements #lsdn_net_ops.validate_pa.
  *
  * Checks that the remote IP address is filled out. */
 static void vxlan_e2e_validate_pa(struct lsdn_phys_attachment *a)
@@ -200,7 +200,7 @@ static void vxlan_e2e_validate_pa(struct lsdn_phys_attachment *a)
 }
 
 /** Calculate tunneling overhead for VXLAN-e2e network.
- * Implements `lsdn_net_ops.compute_tunneling_overhead`. */
+ * Implements #lsdn_net_ops.compute_tunneling_overhead. */
 static unsigned int vxlan_e2e_tunneling_overhead(struct lsdn_phys_attachment *pa)
 {
 	enum lsdn_ipv ipv = pa->phys->attr_ip->v;
@@ -225,7 +225,7 @@ struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 };
 
 /** Create settings for a new VXLAN-e2e network.
- * @return new `lsdn_settings` instance. */
+ * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));
@@ -321,7 +321,7 @@ static void vxlan_release_stunnel(struct lsdn_settings *s)
 }
 
 /** Add a local machine to VXLAN-static network.
- * Implements `lsdn_net_ops.create_pa`.
+ * Implements #lsdn_net_ops.create_pa.
  *
  * Ensures local static tunnel exists and bridges the phys into it. */
 static lsdn_err_t vxlan_static_create_pa(struct lsdn_phys_attachment *pa)
@@ -349,7 +349,7 @@ static lsdn_err_t vxlan_static_create_pa(struct lsdn_phys_attachment *pa)
 }
 
 /** Remove a local machine from VXLAN-static network.
- * Implements `lsdn_net_ops.destroy_pa`.
+ * Implements #lsdn_net_ops.destroy_pa.
  *
  * Tears down the local static bridge and releases the tunnel. */
 static lsdn_err_t vxlan_static_destroy_pa(struct lsdn_phys_attachment *pa)
@@ -362,7 +362,7 @@ static lsdn_err_t vxlan_static_destroy_pa(struct lsdn_phys_attachment *pa)
 }
 
 /** Add a local virt to VXLAN-static network.
- * Implements `lsdn_net_ops.add_virt`.
+ * Implements #lsdn_net_ops.add_virt.
  *
  * Connects the virt to the static tunnel bridge. */
 static lsdn_err_t vxlan_static_add_virt(struct lsdn_virt *virt)
@@ -371,7 +371,7 @@ static lsdn_err_t vxlan_static_add_virt(struct lsdn_virt *virt)
 }
 
 /** Remove a local virt from VXLAN-static network.
- * Implements `lsdn_net_ops.remove_virt`.
+ * Implements #lsdn_net_ops.remove_virt.
  *
  * Disconnects the virt from the static tunnel bridge. */
 static lsdn_err_t vxlan_static_remove_virt(struct lsdn_virt *virt)
@@ -391,7 +391,7 @@ static void set_vxlan_metadata(struct lsdn_filter *f, uint16_t order, void *user
 }
 
 /** Add a remote phys to VXLAN-static network.
- * Implements `lsdn_net_ops.add_remote_pa`.
+ * Implements #lsdn_net_ops.add_remote_pa.
  *
  * Inserts an appropriate route into the static bridge. */
 static lsdn_err_t vxlan_static_add_remote_pa (struct lsdn_remote_pa *pa)
@@ -404,7 +404,7 @@ static lsdn_err_t vxlan_static_add_remote_pa (struct lsdn_remote_pa *pa)
 }
 
 /** Remove a remote phys from VXLAN-static network.
- * Implements `lsdn_net_ops.remove_remote_pa`.
+ * Implements #lsdn_net_ops.remove_remote_pa.
  *
  * Removes the appropriate route from the static bridge. */
 static lsdn_err_t vxlan_static_remove_remote_pa (struct lsdn_remote_pa *pa)
@@ -413,7 +413,7 @@ static lsdn_err_t vxlan_static_remove_remote_pa (struct lsdn_remote_pa *pa)
 }
 
 /** Add a remote virt to VXLAN-static network.
- * Implements `lsdn_net_ops.add_remote_virt`.
+ * Implements #lsdn_net_ops.add_remote_virt.
  *
  * Adds a MAC-based rule into the static bridge. */
 static lsdn_err_t vxlan_static_add_remote_virt(struct lsdn_remote_virt *virt)
@@ -422,7 +422,7 @@ static lsdn_err_t vxlan_static_add_remote_virt(struct lsdn_remote_virt *virt)
 }
 
 /** Remove a remote virt from VXLAN-static network.
- * Implemens `lsdn_net_ops.remove_remote_virt`.
+ * Implemens #lsdn_net_ops.remove_remote_virt.
  *
  * Drops the appropriate rule from the static bridge. */
 static lsdn_err_t vxlan_static_remove_remote_virt(struct lsdn_remote_virt *virt)
@@ -431,7 +431,7 @@ static lsdn_err_t vxlan_static_remove_remote_virt(struct lsdn_remote_virt *virt)
 }
 
 /** Validate a phys attachment for use in VXLAN-static network.
- * Implements `lsdn_net_ops.validate_pa`.
+ * Implements #lsdn_net_ops.validate_pa.
  *
  * Checks that the remote IP address is filled out. */
 static void vxlan_static_validate_pa(struct lsdn_phys_attachment *a)
@@ -446,7 +446,7 @@ static void vxlan_static_validate_pa(struct lsdn_phys_attachment *a)
 }
 
 /** Validate a virt for use in VXLAN-static network.
- * Implements `lsdn_net_ops.validate_virt`.
+ * Implements #lsdn_net_ops.validate_virt.
  *
  * Checks that the MAC address of the virt is filled out. */
 static void vxlan_static_validate_virt(struct lsdn_virt *virt)
@@ -461,7 +461,7 @@ static void vxlan_static_validate_virt(struct lsdn_virt *virt)
 }
 
 /** Calculate tunneling overhead for VXLAN-static network.
- * Implements `lsdn_net_ops.compute_tunneling_overhead`. */
+ * Implements #lsdn_net_ops.compute_tunneling_overhead. */
 static unsigned int vxlan_static_tunneling_overhead(struct lsdn_phys_attachment *pa)
 {
 	enum lsdn_ipv ipv = pa->phys->attr_ip->v;
@@ -486,7 +486,7 @@ struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 };
 
 /** Create settings for a new VXLAN-static network.
- * @return new `lsdn_settings` instance. */
+ * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port)
 {
 	struct lsdn_settings *s = malloc(sizeof(*s));

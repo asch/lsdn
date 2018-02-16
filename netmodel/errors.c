@@ -13,7 +13,7 @@
 /** List of errors and their format strings. */
 LSDN_ENUM_NAMES(problem_code);
 
-/** Extract pointer to the appropriate type from `lsdn_problem_ref`.
+/** Extract pointer to the appropriate type from #lsdn_problem_ref.
  * Used as a shorthand for typecasting `ref->ptr`, which is a void pointer in order
  * to simplify assigning to it. */
 #define CAST(x) ((x)subj->ptr)
@@ -81,12 +81,12 @@ void lsdn_problem_format(FILE* out, const struct lsdn_problem *problem)
 
 /** Report problems to caller.
  * Walks the list of variadic arguments and invokes the problem callback for each.
- * Also prepares data for the `lsdn_problem_format` function.
+ * Also prepares data for the #lsdn_problem_format function.
  * @param ctx Current context.
  * @param code Problem code.
- * @param ...  Variadic list of pairs of `lsdn_problem_ref_type`
+ * @param ...  Variadic list of pairs of #lsdn_problem_ref_type
  *   and a pointer to the specified object.
- *   The last element must be a single `LSDNS_END` value. */
+ *   The last element must be a single #LSDNS_END value. */
 void lsdn_problem_report(struct lsdn_context *ctx, enum lsdn_problem_code code, ...)
 {
 	va_list args;
@@ -111,8 +111,8 @@ void lsdn_problem_report(struct lsdn_context *ctx, enum lsdn_problem_code code, 
 }
 
 /** Problem handler that dumps problem descriptions to `stderr`.
- * Can be used as a callback in `lsdn_commit`, `lsdn_validate`, and any other place that takes
- * `lsdn_problem_cb`.
+ * Can be used as a callback in #lsdn_commit, #lsdn_validate, and any other place that takes
+ * #lsdn_problem_cb.
  *
  * When a problem is encountered, this handler will dump a human-readable description to `stderr`.
  * @param problem problem description.

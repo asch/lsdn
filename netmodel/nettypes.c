@@ -36,8 +36,8 @@ const lsdn_ip_t lsdn_single_ipv6_mask = LSDN_INITIALIZER_IPV6(
  * Used as "token eater" in MAC parsing function.
  * @param[inout] ascii pointer to a string.
  * @param[out] dst parsed octet value.
- * @return `LSDNE_OK` after successfully parsing an octet.
- * @return `LSDNE_PARSE` if the first two characters of `ascii` are not a hexadecimal number. */
+ * @retval LSDNE_OK after successfully parsing an octet.
+ * @retval LSDNE_PARSE if the first two characters of `ascii` are not a hexadecimal number. */
 static lsdn_err_t parse_octet(const char ** ascii, uint8_t *dst)
 {
 	if ((*ascii)[0] == 0 || (*ascii)[1] == 0)
@@ -55,11 +55,11 @@ static lsdn_err_t parse_octet(const char ** ascii, uint8_t *dst)
 
 }
 
-/** Parse MAC address string into `lsdn_mac_t`.
+/** Parse MAC address string into #lsdn_mac_t.
  * @param[in] ascii MAC address string.
  * @param[out] mac parsed MAC address struct.
- * @return `LSDNE_OK` if parsed successfully.
- * @return `LSDNE_PARSE` if `ascii` could not be parsed into a MAC address. */
+ * @retval LSDNE_OK if parsed successfully.
+ * @retval LSDNE_PARSE if `ascii` could not be parsed into a MAC address. */
 lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii)
 {
 	for (int i = 0; i < LSDN_MAC_LEN; i++) {
@@ -74,7 +74,7 @@ lsdn_err_t lsdn_parse_mac(lsdn_mac_t *mac, const char *ascii)
 	return LSDNE_OK;
 }
 
-/** Compare two `lsdn_mac_t` for equality.
+/** Compare two #lsdn_mac_t for equality.
  * @param a MAC address.
  * @param b MAC address.
  * @return `true` if `a` and `b` are equal, `false` otherwise. */
@@ -83,11 +83,11 @@ bool lsdn_mac_eq(lsdn_mac_t a, lsdn_mac_t b)
 	return memcmp(a.bytes, b.bytes, LSDN_MAC_LEN) == 0;
 }
 
-/** Parse IP address string into `lsdn_ip_t`.
+/** Parse IP address string into #lsdn_ip_t.
  * @param[in] ascii IP address string.
  * @param[out] ip parsed IP address struct.
- * @return `LSDNE_OK` if parsed successfully.
- * @return `LSDNE_PARSE` if `ascii` could not be parsed into an IP address. */
+ * @retval #LSDNE_OK if parsed successfully.
+ * @retval #LSDNE_PARSE if `ascii` could not be parsed into an IP address. */
 lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii)
 {
 	int res = 0;
@@ -101,7 +101,7 @@ lsdn_err_t lsdn_parse_ip(lsdn_ip_t *ip, const char *ascii)
 	return res == 1 ? LSDNE_OK : LSDNE_PARSE;
 }
 
-/** Compare two `lsdn_ipv4_t` for equality.
+/** Compare two #lsdn_ipv4_t for equality.
  * @param a IPv4 address.
  * @param b IPv4 address.
  * @return `true` if `a` and `b` are equal, `false` otherwise. */
@@ -110,7 +110,7 @@ static bool lsdn_ipv4_eq(lsdn_ipv4_t a, lsdn_ipv4_t b)
 	return memcmp(a.bytes, b.bytes, LSDN_IPv4_LEN) == 0;
 }
 
-/** Compare two `lsdn_ipv6_t` for equality.
+/** Compare two #lsdn_ipv6_t for equality.
  * @param a IPv6 address.
  * @param b IPv6 address.
  * @return `true` if `a` and `b` are equal, `false` otherwise. */
@@ -119,7 +119,7 @@ static bool lsdn_ipv6_eq(lsdn_ipv6_t a, lsdn_ipv6_t b)
 	return memcmp(a.bytes, b.bytes, LSDN_IPv6_LEN) == 0;
 }
 
-/** Compare two `lsdn_ip_t` for equality.
+/** Compare two #lsdn_ip_t for equality.
  * @param a IP address.
  * @param b IP address.
  * @return `true` if `a` and `b` are equal, `false` otherwise. */
@@ -134,7 +134,7 @@ bool lsdn_ip_eq(lsdn_ip_t a, lsdn_ip_t b)
 		return lsdn_ipv6_eq(a.v6, b.v6);
 }
 
-/** Compare two `lsdn_ip_t` for IP version equality.
+/** Compare two #lsdn_ip_t for IP version equality.
  * @param a IP address.
  * @param b IP address.
  * @return `true` if both `a` and `b` are of the same IP version, `false` otherwise. */
@@ -143,8 +143,8 @@ bool lsdn_ipv_eq(lsdn_ip_t a, lsdn_ip_t b)
 	return a.v == b.v;
 }
 
-/** Format `lsdn_mac_t` as ASCII string.
- * `buf` must be able to hold at least `LSDN_MAC_STRING_LEN` bytes.
+/** Format #lsdn_mac_t as ASCII string.
+ * `buf` must be able to hold at least #LSDN_MAC_STRING_LEN bytes.
  * @param[in] mac MAC address.
  * @param[out] buf destination buffer for the ASCII string. */
 void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf)
@@ -153,8 +153,8 @@ void lsdn_mac_to_string(const lsdn_mac_t *mac, char *buf)
 			mac->bytes[3], mac->bytes[4], mac->bytes[5]);
 }
 
-/** Format `lsdn_ipv4_t` as ASCII string.
- * `buf` must be able to hold at least `LSDN_IPv4_STRING_LEN` bytes.
+/** Format #lsdn_ipv4_t as ASCII string.
+ * `buf` must be able to hold at least #LSDN_IPv4_STRING_LEN bytes.
  * @param[in] ipv4 IPv4 address.
  * @param[out] buf destination buffer for the ASCII string. */
 void lsdn_ipv4_to_string(const lsdn_ipv4_t *ipv4, char *buf)
@@ -165,8 +165,8 @@ void lsdn_ipv4_to_string(const lsdn_ipv4_t *ipv4, char *buf)
 		ipv4->bytes[2], ipv4->bytes[3]);
 }
 
-/** Format `lsdn_ipv6_t` as ASCII string.
- * `buf` must be able to hold at least `LSDN_IPv6_STRING_LEN` bytes.
+/** Format #lsdn_ipv6_t as ASCII string.
+ * `buf` must be able to hold at least #LSDN_IPv6_STRING_LEN bytes.
  * @param[in] ipv6 IPv6 address.
  * @param[out] buf destination buffer for the ASCII string. */
 void lsdn_ipv6_to_string(const lsdn_ipv6_t *ipv6, char *buf)
@@ -184,8 +184,8 @@ void lsdn_ipv6_to_string(const lsdn_ipv6_t *ipv6, char *buf)
 		ipv6->bytes[14], ipv6->bytes[15]);
 }
 
-/** Format `lsdn_ip_t` as ASCII string.
- * `buf` must be able to hold at least `LSDN_IP_STRING_LEN` bytes.
+/** Format #lsdn_ip_t as ASCII string.
+ * `buf` must be able to hold at least #LSDN_IP_STRING_LEN bytes.
  * @param[in] ip IP address.
  * @param[out] buf destination buffer for the ASCII string. */
 void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf)
@@ -198,7 +198,7 @@ void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf)
 
 /** Generate an address mask in a byte array.
  * Sets `prefix` leading bits of the array to 1 and leaves the rest at 0.
- * Used by `lsdn_ip_mask_from_prefix` to generate IP address masks.
+ * Used by #lsdn_ip_mask_from_prefix to generate IP address masks.
  * @param[in] prefix Number of leading bits to set to 1
  * @param[out] dst Byte array for the result. */
 static void gen_prefix(uint8_t *dst, int prefix)

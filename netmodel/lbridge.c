@@ -30,7 +30,7 @@ lsdn_err_t lsdn_lbridge_init(struct lsdn_context *ctx, struct lsdn_lbridge *br)
 	return LSDNE_OK;
 }
 
-/** Free the `lsdn_lbridge` structure. */
+/** Free the #lsdn_lbridge structure. */
 lsdn_err_t lsdn_lbridge_free(struct lsdn_lbridge *br)
 {
 	if (!br->ctx->disable_decommit)
@@ -73,13 +73,13 @@ lsdn_err_t lsdn_lbridge_remove(struct lsdn_lbridge_if *iface)
 }
 
 /** \name Network operations.
- * These functions are used as callbacks in `lsdn_net_ops` (or by callbacks, in case of
- * `lsdn_lbridge_create_pa`) for network types that use the Linux bridge functionality. */
+ * These functions are used as callbacks in #lsdn_net_ops (or by callbacks, in case of
+ * #lsdn_lbridge_create_pa) for network types that use the Linux bridge functionality. */
 /** @{ */
 
 /** Create a local bridge and connect the given phys to it.
  * Not used as a callback directly, but called from
- * implementations of `lsdn_net_ops.create_pa` callbacks. */
+ * implementations of #lsdn_net_ops.create_pa callbacks. */
 lsdn_err_t lsdn_lbridge_create_pa(struct lsdn_phys_attachment *a)
 {
 	lsdn_err_t err = lsdn_lbridge_init(a->net->ctx, &a->lbridge);
@@ -96,7 +96,7 @@ lsdn_err_t lsdn_lbridge_create_pa(struct lsdn_phys_attachment *a)
 }
 
 /** Destroy a local bridge.
- * Implements `lsdn_net_ops.destroy_pa`.
+ * Implements #lsdn_net_ops.destroy_pa.
  *
  * Removes the Linux Bridge interface and frees the PA's tunnel interface.
  * Potentially also removes PA's TC rules. */
@@ -113,7 +113,7 @@ lsdn_err_t lsdn_lbridge_destroy_pa(struct lsdn_phys_attachment *a)
 }
 
 /** Connect a local virt to the Linux Bridge.
- * Implements `lsdn_net_ops.add_virt`. */
+ * Implements #lsdn_net_ops.add_virt. */
 lsdn_err_t lsdn_lbridge_add_virt(struct lsdn_virt *v)
 {
 	struct lsdn_phys_attachment *a = v->connected_through;
@@ -132,7 +132,7 @@ lsdn_err_t lsdn_lbridge_add_virt(struct lsdn_virt *v)
 }
 
 /** Disconnect a local virt from the Linux Bridge.
- * Implements `lsdn_net_ops.remove_virt`. */
+ * Implements #lsdn_net_ops.remove_virt. */
 lsdn_err_t lsdn_lbridge_remove_virt(struct lsdn_virt *v)
 {
 	lsdn_err_t err = LSDNE_OK;

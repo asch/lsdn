@@ -25,7 +25,7 @@ static void renew(enum lsdn_state *state) {
 }
 
 /** Propagate RENEW state.
- * \private
+ * @private
  * If `from` is slated for renewal and `to` is OK, switch to RENEW too. */
 static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
 	if (*from == LSDN_STATE_RENEW && *to == LSDN_STATE_OK)
@@ -37,9 +37,9 @@ static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
  * The name is based on the context name, type of the object (net, phys, virt, etc.) and
  * a unique object counter on the context. It is in the form `"ctxname-type-12"`.
  *
- * Results are saved in `lsdn_context.namebuf`, so every subsequent call overwrites the previous
+ * Results are saved in #lsdn_context.namebuf, so every subsequent call overwrites the previous
  * results. Users need to make a copy of the returned string. This is not a problem because
- * the usual usage is inside `lsdn_name_set` which does make a private copy.
+ * the usual usage is inside #lsdn_name_set which does make a private copy.
  *
  * @see lsdn_mk_net_name, lsdn_mk_phys_name, lsdn_mk_virt_name, lsdn_mk_iface_name, lsdn_mk_settings_name
  * @param ctx LSDN context
@@ -96,7 +96,7 @@ static lsdn_err_t lsdn_context_ensure_socket(struct lsdn_context *ctx)
 }
 
 /** Problem handler that aborts when a problem is found.
- * Used in `lsdn_context_free`. When freeing a context, we can't handle errors
+ * Used in #lsdn_context_free. When freeing a context, we can't handle errors
  * meaningfully and we don't expect any errors to happen anyway. Any reported problem
  * will then simply dump description to `stderr` and abort. */
 static void abort_handler(const struct lsdn_problem *problem, void *user)
@@ -243,10 +243,10 @@ void lsdn_settings_free(struct lsdn_settings *settings)
 /** Create a new network.
  * Creates a virtual network object with id `vnet_id`, configured by `s`.
  *
- * Multiple networks can share the same `lsdn_settings`, as long as they differ
+ * Multiple networks can share the same #lsdn_settings, as long as they differ
  * by `vnet_id`.
  *
- * @return newly allocated `lsdn_net` structure. */
+ * @return newly allocated #lsdn_net structure. */
 struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 {
 	struct lsdn_net *net = malloc(sizeof(*net));
@@ -275,7 +275,7 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 }
 
 /** Perform freeing of a network object.
- * Used when `lsdn_net_free` is manually invoked, as the last step,
+ * Used when #lsdn_net_free is manually invoked, as the last step,
  * and also implicitly as part of the decommit phase. */
 static void net_do_free(struct lsdn_net *net)
 {
@@ -314,7 +314,7 @@ const char* lsdn_net_get_name(struct lsdn_net *net)
 }
 
 /** Find a network by name.
- * @return `lsdn_net` structure if a network with this name exists.
+ * @return #lsdn_net structure if a network with this name exists.
  * @return `NULL` otherwise. */
 struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name)
 {
@@ -325,10 +325,10 @@ struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name)
 }
 
 /** Create a new phys.
- * Allocates and initializes a `lsdn_phys` structure.
+ * Allocates and initializes a #lsdn_phys structure.
  *
  * @param ctx LSDN context.
- * @return newly allocated `lsdn_phys` structure. */
+ * @return newly allocated #lsdn_phys structure. */
 struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 {
 	struct lsdn_phys *phys = malloc(sizeof(*phys));
@@ -355,7 +355,7 @@ struct lsdn_phys *lsdn_phys_new(struct lsdn_context *ctx)
 }
 
 /** Perform freeing of a phys object.
- * Used when `lsdn_phys_free` is manually invoked, as the last step,
+ * Used when #lsdn_phys_free is manually invoked, as the last step,
  * and also implicitly as part of the decommit phase. */
 static void phys_do_free(struct lsdn_phys *phys)
 {
@@ -402,7 +402,7 @@ const char* lsdn_phys_get_name(struct lsdn_phys *phys)
 /** Find a phys by name.
  * @param ctx LSDN context.
  * @param name Requested name.
- * @return `lsdn_phys` structure if a phys with this name exists. `NULL` otherwise. */
+ * @return #lsdn_phys structure if a phys with this name exists. `NULL` otherwise. */
 struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name)
 {
 	struct lsdn_name *r = lsdn_names_search(&ctx->phys_names, name);
@@ -590,7 +590,7 @@ lsdn_err_t lsdn_phys_unclaim_local(struct lsdn_phys *phys)
 /** Create a new virt.
  * Creates a virt as part of `net`.
  *
- * @return newly allocated `lsdn_virt` structure. */
+ * @return newly allocated #lsdn_virt structure. */
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	struct lsdn_virt *virt = malloc(sizeof(*virt));
 	if(!virt)
@@ -627,7 +627,7 @@ struct lsdn_net *lsdn_virt_get_net(struct lsdn_virt *virt)
 }
 
 /** Perform freeing of a virt object.
- * Used when `lsdn_virt_free` is manually invoked, as the last step,
+ * Used when #lsdn_virt_free is manually invoked, as the last step,
  * and also implicitly as part of the decommit phase. */
 static void virt_do_free(struct lsdn_virt *virt)
 {
@@ -667,7 +667,7 @@ const char* lsdn_virt_get_name(struct lsdn_virt *virt)
 }
 
 /** Find a virt by name.
- * @return `lsdn_virt` structure if a network with this name exists.
+ * @return #lsdn_virt structure if a network with this name exists.
  * @return `NULL` otherwise. */
 struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name)
 {
