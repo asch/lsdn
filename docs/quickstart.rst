@@ -140,17 +140,124 @@ setup.
 Then make sure the file is available on both physical machines *A* and *B* and
 run following commands:
 
- - on *A*: ``lsctl config.lsctl A``
- - on *B*: ``lsctl config.lsctl B``
+ - on *A*: ``$ lsctl config.lsctl A``
+ - on *B*: ``$ lsctl config.lsctl B``
 
 Congratulations, your network is set-up. Try it:
 
- - in VM *1*: ``ping 192.168.0.3``
- - in VM *2*: ``ping 192.168.0.4``
+ - in VM *1*: ``$ ping 192.168.0.3``
+ - in VM *2*: ``$ ping 192.168.0.4``
 
-And they are correctly isolated too ``ping 192.168.0.2`` won't work in VM *1*.
+And they are correctly isolated too ``$ ping 192.168.0.2`` won't work in VM *1*.
 
 .. _quickstart_c:
 
 Using the C API
 ---------------
+
+The equivalent network setup created using the LSDN C API:
+
+.. code-block:: C
+
+    #include <assert.h>
+    #include <stdlib.h>
+    #include <string.h>
+
+    #include <lsdn.h>
+
+    /* Use the default GENEVE port */
+    static uint16_t geneve_port = 6081;
+
+    static struct lsdn_context *ctx;
+    static struct lsdn_settings *settings;
+    static struct lsdn_net *net1, *net2;
+    static struct lsdn_phys *machine1, *machine2;
+    static struct lsdn_virt *VM1, *VM2, *VM3, *VM4;
+
+    int main(int argc, const char* argv[])
+    {
+        /* On the command line pass in the machine name on which the program is
+         * being run. In our case the names will be either A or B. */
+        assert(argc == 2);
+
+        /* Create a new LSDN context */
+        ctx = lsdn_context_new("quickstart");
+        lsdn_context_abort_on_nomem(ctx);
+
+        /* Create new GENEVE network settings */
+        settings = lsdn_settings_new_geneve(ctx, geneve_port);
+
+        /* Create Machine 1 */
+        machine1 = lsdn_phys_new(ctx);
+        lsdn_phys_set_ip(machine1, LSDN_MK_IPV4(192, 168, 10, 1));
+        lsdn_phys_set_iface(machine1, "eth0");
+        lsdn_phys_set_name(machine1, "A");
+
+        /* Create Machine 2 */
+        machine2 = lsdn_phys_new(ctx);
+        lsdn_phys_set_ip(machine2, LSDN_MK_IPV4(192, 168, 10, 2));
+        lsdn_phys_set_iface(machine2, "eth0");
+        lsdn_phys_set_name(machine2, "B");
+
+        /* Create net1 */
+        net1 = lsdn_net_new(settings, 1);
+
+        /* Attach net1 */
+        lsdn_phys_attach(machine1, net1);
+        lsdn_phys_attach(machine2, net1);
+
+        /* Create net2 */
+        net2 = lsdn_net_new(settings, 2);
+
+        /* Attach net2 */
+        lsdn_phys_attach(machine1, net2);
+        lsdn_phys_attach(machine2, net2);
+
+        /* Create VM1 */
+        VM1 = lsdn_virt_new(net1);
+        lsdn_virt_connect(VM1, machine1, "tap0");
+        lsdn_virt_set_mac(VM1, LSDN_MK_MAC(0x14,0x9b,0xdd,0x6b,0x81,0x71));
+        lsdn_virt_set_name(VM1, "1");
+
+        /* Create VM2 */
+        VM2 = lsdn_virt_new(net2);
+        lsdn_virt_connect(VM2, machine1, "tap1");
+        lsdn_virt_set_mac(VM2, LSDN_MK_MAC(0x92,0x89,0x90,0x93,0x61,0x75));
+        lsdn_virt_set_name(VM2, "2");
+
+        /* Create VM3 */
+        VM3 = lsdn_virt_new(net1);
+        lsdn_virt_connect(VM3, machine2, "tap0");
+        lsdn_virt_set_mac(VM3, LSDN_MK_MAC(0x42,0x94,0xa5,0xf9,0x69,0xc6));
+        lsdn_virt_set_name(VM3, "1");
+
+        /* Create VM4 */
+        VM4 = lsdn_virt_new(net2);
+        lsdn_virt_connect(VM4, machine2, "tap1");
+        lsdn_virt_set_mac(VM4, LSDN_MK_MAC(0xf2,0x9b,0x4f,0x48,0x2d,0xd1));
+        lsdn_virt_set_name(VM4, "2");
+
+        /* Claim local A or B */
+        struct lsdn_phys *local = lsdn_phys_by_name(ctx, argv[1]);
+        assert(local != NULL);
+        lsdn_phys_claim_local(local);
+
+        lsdn_commit(ctx, lsdn_problem_stderr_handler, NULL);
+
+        lsdn_context_free(ctx);
+        return 0;
+    }
+
+Afterwards compile the program for machines *A* and *B* and link them together
+with the LSDN library. Call the resulting executables ``quickstart`` and run the
+respective executables on the two machines:
+
+ - on *A*: ``$ ./quickstart A``
+ - on *B*: ``$ ./quickstart B``
+
+Your network is now set-up using the C API. Try:
+
+ - in VM *1*: ``$ ping 192.168.0.3``
+ - in VM *2*: ``$ ping 192.168.0.4``
+
+And they are correctly isolated too ``$ ping 192.168.0.2`` won't work in VM *1*.
