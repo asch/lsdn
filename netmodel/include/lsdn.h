@@ -16,26 +16,28 @@
  * @param desc human name for the attribute. Used in generated docs.
  * @param obj type on which the attribute is declared
  * @param attr name of the attribute field
- * @param type type of the attribute field (when set)
- * @param type type of the attribute field (when read)
+ * @param type_in type of the attribute field (when set)
+ * @param type_out type of the attribute field (when read)
  */
 #define LSDN_DECLARE_ATTR(desc, obj, attr, type_in, type_out) \
 	/** Set desc of a obj.
-@param obj obj to modify.
+@param object obj to modify.
 @param value desc. */ \
-	lsdn_err_t lsdn_##obj##_set_##attr(struct lsdn_##obj *obj, type_in value); \
-	/** Get a desc of obj, or NULL if clear
-@note The pointer is valid until the attribute is changed or object freed. */ \
-	type_out lsdn_##obj##_get_##attr(struct lsdn_##obj *obj); \
-	/** Clear desc of a obj. \
-@param obj obj to modify. */ \
-	void lsdn_##obj##_clear_##attr(struct lsdn_##obj *obj)
+	lsdn_err_t lsdn_##obj##_set_##attr(struct lsdn_##obj *object, type_in value); \
+	/** Get desc of a obj.
+The pointer is valid until the attribute is changed or object freed.
+@param object obj to query.
+@return value of desc attribute, or `NULL` if unset. */ \
+	type_out lsdn_##obj##_get_##attr(struct lsdn_##obj *object); \
+	/** Clear desc of a obj.
+@param object obj to modify. */ \
+	void lsdn_##obj##_clear_##attr(struct lsdn_##obj *object)
 
 /* XXX the following struct documentation snippets are NOT USED.
  * I'm not sure why. Instead, descriptions in private/lsdn.h are used,
  * and these structs are not even listed in the public header documentation.
  * What do.? */
-
+e
 /** Context.
  * This is documented elsewhere. */
 struct lsdn_context;
