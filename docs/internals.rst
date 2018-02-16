@@ -3,6 +3,15 @@
 Internals
 ---------
 
+If you plan on hacking LSCTL, this chapter is for you. It will describe the
+available internal APIs and how they interact.
+
+Project organization (components)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The core of LSDN is the **lsdn** library (``liblsdn.so``), which implements all of
+the C API -- the netmodel handling and the individual network types.
+
 .. digraph:: layering
     :caption: Organization
 
@@ -58,7 +67,14 @@ Internals
 
     # Needed not to render tools parallel with subgraph in parallel
     tclext -> lsctl_dump [style=invis]
-    vlan -> {geneve vxlan_static} [style=invis]
 
     rules -> list [style=invis ltail=cluster_util]
 
+Netmodel implementation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+How to support a new network type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Test environment
+~~~~~~~~~~~~~~~~
