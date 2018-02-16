@@ -91,6 +91,16 @@ static lsdn_err_t geneve_destroy_pa(struct lsdn_phys_attachment *pa)
 	return err;
 }
 
+static void geneve_validate_net(struct lsdn_net *net)
+{
+	if (net->vnet_id < NET_GENEVE_MIN_VNET_ID || net->vnet_id > NET_GENEVE_MAX_VNET_ID)
+		lsdn_problem_report(
+			net->ctx, LSDNP_NET_BADID,
+			LSDNS_NET, net,
+			LSDNS_NETID, net->vnet_id,
+			LSDNS_END);
+}
+
 static void geneve_validate_pa(struct lsdn_phys_attachment *a)
 {
 	if (!a->phys->attr_ip)
@@ -186,6 +196,7 @@ struct lsdn_net_ops lsdn_net_geneve_ops = {
 	.remove_remote_pa = geneve_remove_remote_pa,
 	.add_remote_virt = geneve_add_remote_virt,
 	.remove_remote_virt = geneve_remove_remote_virt,
+	.validate_net = geneve_validate_net,
 	.validate_pa = geneve_validate_pa,
 	.validate_virt = geneve_validate_virt,
 	.compute_tunneling_overhead = geneve_tunneling_overhead

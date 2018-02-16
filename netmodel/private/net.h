@@ -106,6 +106,12 @@ struct lsdn_net_ops {
 	/** Clean up after a remote virt. */
 	lsdn_err_t (*remove_remote_virt) (struct lsdn_remote_virt *virt);
 
+	/** Validate a network.
+	 * Called when creating a network.
+	 * You can validate attributes relevant to the network implementation
+	 * and use `lsdn_problem_report` to indicate problems. */
+	void (*validate_net) (struct lsdn_net *net);
+
 	/** Validate a machine.
 	 * Called when adding local or remote machine.
 	 * You can validate attributes relevant to the network implementation

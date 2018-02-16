@@ -37,6 +37,19 @@
 /** GENEVE header length in bytes. */
 #define GENEVE_HEADER_LEN 8
 
+/** Minimum allowed vnet id for GENEVE networks. */
+#define NET_GENEVE_MIN_VNET_ID 1
+/** Maximum allowed vnet id for GENEVE networks. */
+#define NET_GENEVE_MAX_VNET_ID 16777215
+/** Minimum allowed vnet id for VXLAN networks. */
+#define NET_VXLAN_MIN_VNET_ID 1
+/** Maximum allowed vnet id for VXLAN networks. */
+#define NET_VXLAN_MAX_VNET_ID 16777215
+/** Minimum allowed vnet id for VLAN networks. */
+#define NET_VLAN_MIN_VNET_ID 1
+/** Maximum allowed vnet id for VLAN networks. */
+#define NET_VLAN_MAX_VNET_ID 4095
+
 /** MAC address size in bytes. */
 #define LSDN_MAC_LEN 6
 /** IPv4 address size in bytes. */

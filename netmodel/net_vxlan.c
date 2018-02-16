@@ -10,6 +10,16 @@
 #include "include/errors.h"
 #include <stdarg.h>
 
+static void vxlan_validate_net(struct lsdn_net *net)
+{
+	if (net->vnet_id < NET_VXLAN_MIN_VNET_ID || net->vnet_id > NET_VXLAN_MAX_VNET_ID)
+		lsdn_problem_report(
+			net->ctx, LSDNP_NET_BADID,
+			LSDNS_NET, net,
+			LSDNS_NETID, net->vnet_id,
+			LSDNS_END);
+}
+
 /** Calculate tunneling overhead for VXLAN networks.
  * Basis for VXLAN variants of #lsdn_net_ops.compute_tunneling_overhead.
  *
@@ -90,6 +100,7 @@ struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
 	.remove_virt = lsdn_lbridge_remove_virt,
+	.validate_net = vxlan_validate_net,
 	.compute_tunneling_overhead = vxlan_mcast_tunneling_overhead
 };
 
@@ -220,6 +231,7 @@ struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 	.remove_virt = lsdn_lbridge_remove_virt,
 	.add_remote_pa = vxlan_e2e_add_remote_pa,
 	.remove_remote_pa = vxlan_e2e_remove_remote_pa,
+	.validate_net = vxlan_validate_net,
 	.validate_pa = vxlan_e2e_validate_pa,
 	.compute_tunneling_overhead = vxlan_e2e_tunneling_overhead
 };
@@ -480,6 +492,7 @@ struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 	.remove_remote_pa = vxlan_static_remove_remote_pa,
 	.add_remote_virt = vxlan_static_add_remote_virt,
 	.remove_remote_virt = vxlan_static_remove_remote_virt,
+	.validate_net = vxlan_validate_net,
 	.validate_pa = vxlan_static_validate_pa,
 	.validate_virt = vxlan_static_validate_virt,
 	.compute_tunneling_overhead = vxlan_static_tunneling_overhead

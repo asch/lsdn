@@ -32,6 +32,16 @@ static lsdn_err_t vlan_create_pa(struct lsdn_phys_attachment *p)
 	return LSDNE_OK;
 }
 
+static void vlan_validate_net(struct lsdn_net *net)
+{
+	if (net->vnet_id < NET_VLAN_MIN_VNET_ID || net->vnet_id > NET_VLAN_MAX_VNET_ID)
+		lsdn_problem_report(
+			net->ctx, LSDNP_NET_BADID,
+			LSDNS_NET, net,
+			LSDNS_NETID, net->vnet_id,
+			LSDNS_END);
+}
+
 /** Compute tunneling overhead of VLAN tunnels. */
 static unsigned int vlan_tunneling_overhead(struct lsdn_phys_attachment *pa)
 {
@@ -47,6 +57,7 @@ static struct lsdn_net_ops lsdn_net_vlan_ops = {
 	.destroy_pa = lsdn_lbridge_destroy_pa,
 	.add_virt = lsdn_lbridge_add_virt,
 	.remove_virt = lsdn_lbridge_remove_virt,
+	.validate_net = vlan_validate_net,
 	.compute_tunneling_overhead = vlan_tunneling_overhead
 };
 

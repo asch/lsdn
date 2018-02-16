@@ -73,6 +73,8 @@ typedef enum {
 	x(LSDNP_VIRT_DUPATTR, "Duplicate attribute %o specified for virt %o and virt %o connected to net %o.") \
 	/** Incompatible networks on the same machine. */ \
 	x(LSDNP_NET_BAD_NETTYPE, "Trying to create net %o and net %o of incompatible network types on the same machine.") \
+	/** Bad network ID. */ \
+	x(LSDNP_NET_BADID, "Trying to create net %o with net id %o that is out of the allowed range for this type of network.") \
 	/** Duplicate network ID. */ \
 	x(LSDNP_NET_DUPID, "Trying to create net %o and net %o with the same net id %o.") \
 	/** Two incompatible virt rules with the same priority. */ \
