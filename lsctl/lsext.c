@@ -313,7 +313,6 @@ CMD(net)
 	if (check_scope(interp, ctx, S_PHYS | S_ROOT) != TCL_OK)
 		return TCL_ERROR;
 
-	// TODO net id range 0 .. 2**32 - 1
 	int vnet_id = 0;
 	const char *settings_name = NULL;
 	const char *phys = NULL;
