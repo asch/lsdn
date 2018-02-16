@@ -191,8 +191,8 @@ void lsdn_settings_register_user_hooks(
 }
 
 /** Assign a name to settings.
- * @return #LSDNE_OK if the name is successfully set.
- * @return #LSDNE_DUPLICATE if this name is already in use. */
+ * @retval #LSDNE_OK if the name is successfully set.
+ * @retval #LSDNE_DUPLICATE if this name is already in use. */
 lsdn_err_t lsdn_settings_set_name(struct lsdn_settings *s, const char *name)
 {
 	ret_err(s->ctx, lsdn_name_set(&s->name, &s->ctx->setting_names, name));

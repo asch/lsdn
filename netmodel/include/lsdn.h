@@ -143,9 +143,28 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
 
 
 /** @defgroup network Virtual network
- * Bla bla.
+ * Functions, and related data types, for manipulating network objects and their settings.
  *
- * Lorem ipsum dolor sit amet. */
+ * Virtual network is a collection of virts that can communicate with each other
+ * as if they were on the same LAN. At the same time, they are isolated from
+ * other virtual networks, as well as from the host network. Distinct virtual
+ * networks can have hosts with same MAC addresses, and it is impossible to read
+ * packets belonging to other networks (or the host network), or send packets
+ * that travel outside the virtual network.
+ *
+ * The #lsdn_net object represents a network in the sense of "collection of
+ * virts". Apart from basic lifecycle and lookup functions, it is only possible
+ * to add or remove virts to/from it.
+ *
+ * Configuration of network properties is done through separate #lsdn_settings
+ * objects. There is a `lsdn_<kind>_settings_new` function for each kind of
+ * network encapsulation, with different required parameters. It is also
+ * possible to register _user hooks_ for startup and shutdown events.
+ *
+ * An exception to this is the `vnet_id` property, which is set on a network
+ * directly, as opposed to being a part of settings. It configures the VNET
+ * (or encapsulation ID) of the network. That means that several networks can
+ * share a common settings object while still being differentiated by `vnet_id`. */
 
 
 /** @name Network object management

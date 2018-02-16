@@ -4,3 +4,4 @@ Virtual network
 ---------------
 
 .. doxygengroup:: network
+    :members:
