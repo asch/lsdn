@@ -4,3 +4,4 @@ Miscellaneous functions
 -----------------------
 
 .. doxygengroup:: misc
+    :members:

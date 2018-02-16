@@ -1,6 +1,10 @@
 /** \file
  * Network-related structs and definitions.
  */
+
+/** @addtogroup misc
+ * @{ */
+
 #pragma once
 
 #include <stdint.h>
@@ -76,7 +80,8 @@ typedef union lsdn_ipv6 {
 typedef struct lsdn_ip {
 	/** IP version. */
 	enum lsdn_ipv v;
-	/** Actual address. */
+	/** Actual address.
+     * @private */
 	union {
 		/** IPv4 address. */
 		lsdn_ipv4_t v4;
@@ -153,3 +158,5 @@ static inline uint32_t lsdn_ip4_u32(const lsdn_ipv4_t *v4)
 	const uint8_t *b = v4->bytes;
 	return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 }
+
+/** @} *//* /ingroup misc */
