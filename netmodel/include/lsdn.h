@@ -265,13 +265,26 @@ lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *m
 
 /** Bandwidth limit for virt's interface (for one direction).
  * @ingroup virt
- * @see lsdn_set_qos_rate */
+ * @see lsdn_virt_set_rate_out
+ * @see lsdn_virt_set_rate_in*/
 typedef struct {
-	/* in bytes per second */
+	/**
+	 * Bandwidth restriction in bytes per second.
+	 */
 	float avg_rate;
-	/* in bytes */
+	/**
+	 * A size of data burst that is allowed to exceed the #avg_rate.
+	 *
+	 * It is not possible to leave this field zero, because no packets would go through. Since
+	 * each packet is considered as a short burst, the burst rate must be at least as big as
+	 * your MTU.
+	 */
 	uint32_t burst_size;
-	/* in bytes per second */
+	/**
+	 * An absolute restriction on the bandwidth in bytes per second, even during bursting.
+	 *
+	 * If zero is given, the peak rate is unrestricted.
+	 */
 	float burst_rate;
 } lsdn_qos_rate_t;
 

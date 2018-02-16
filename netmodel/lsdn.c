@@ -845,6 +845,16 @@ static void report_virts(struct lsdn_phys_attachment *pa)
 	}
 }
 
+static void validate_rate(struct lsdn_virt *v, const char *attr_name, const lsdn_qos_rate_t *rate)
+{
+	if (!rate)
+		return;
+	if (rate->avg_rate == 0 || rate->burst_size == 0)
+		lsdn_problem_report(v->network->ctx, LSDNP_RATES_INVALID,
+			LSDNS_ATTR, attr_name,
+			LSDNS_VIRT, v, LSDNS_END);
+}
+
 static void validate_virts_pa(struct lsdn_phys_attachment *pa)
 {
 	lsdn_foreach(pa->connected_virt_list, connected_virt_entry, struct lsdn_virt, v){
@@ -858,7 +868,7 @@ static void validate_virts_pa(struct lsdn_phys_attachment *pa)
 					v->network->ctx, LSDNP_VIRT_NOIF,
 					LSDNS_IF, &v->connected_if,
 					LSDNS_VIRT, v, LSDNS_END);
-		}
+		}	
 		if(pa->net->settings->ops->validate_virt)
 			pa->net->settings->ops->validate_virt(v);
 	}
@@ -1074,10 +1084,13 @@ static void decommit_rates(struct lsdn_virt *virt)
 static void validate_virts_net(struct lsdn_net *net)
 {
 	lsdn_foreach(net->virt_list, virt_entry, struct lsdn_virt, v1) {
-		if (!should_be_validated(v1->state) || !v1->attr_mac)
-			continue;
 		validate_rules(v1, v1->ht_in_rules);
 		validate_rules(v1, v1->ht_out_rules);
+		validate_rate(v1, "rate_in", v1->attr_rate_in);
+		validate_rate(v1, "rate_out", v1->attr_rate_out);
+
+		if (!should_be_validated(v1->state) || !v1->attr_mac)
+			continue;
 		lsdn_foreach(net->virt_list, virt_entry, struct lsdn_virt, v2) {
 			if (v1 == v2 || !should_be_validated(v2->state) || !v2->attr_mac)
 				continue;

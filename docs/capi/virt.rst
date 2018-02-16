@@ -4,3 +4,4 @@ Virt (virtual machine)
 ----------------------
 
 .. doxygengroup:: virt
+    :members:
