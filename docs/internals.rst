@@ -23,6 +23,7 @@ lsctl language engine and is layered on the C API. For more info, see
 The *lsdn* library itself is composed from several layers/components (see
 :numref:`layering` for illustration). At the bottom layer, we have several
 mostly independent utility components:
+
  - ``nettypes.c`` manipulates, parses and prints IP addresses and MAC addresses
  - ``nl.c`` provides functions do to more complex netlink tasks than *libmnl*
    provides - create interfaces, manipulate QDiscs, filters etc.
@@ -69,7 +70,8 @@ applications (in ``dump.c``).
 .. _layering:
 
 .. digraph:: layering
-    :caption: Organization
+    :caption: Components and dependencies
+    :align: center
 
     node [shape=record]
     compound = true
@@ -80,7 +82,7 @@ applications (in ``dump.c``).
     tclext [label = <<i>lsctl-tclext</i> library>]
 
     subgraph cluster_liblsdn {
-        label = <<b>lsdn</b> library>
+        label = <<i>lsdn</i> library>
         color = black
 
         json_dump [label = "JSON dump"]
@@ -136,6 +138,43 @@ Netmodel implementation
 How to support a new network type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+To support a new type of network :
+
+ - add your network to the ``lsdn_nettype`` enum (in ``private/lsdn.h``)
+ - add the settings for your network to the ``lsdn_settings`` struct (in
+   ``private/lsdn.h``). Place the in the anonymous union, where settings for
+   other types are placed.
+ - declare a function ``lsdn_settings_new_xxx`` (in ``include/lsdn.h``)
+ - create a new file ``net_xxx.c`` for all your code and it to the
+   ``CMakeLists.txt``
+
+The **settings_new** function will inform LSDN how to use your network type.
+Do not forget to do the following things in your *settings_new* function:
+
+ - allocate new ``lsdn_settings`` structure via malloc
+ - initalize the settings using ``lsdn_settings_init_common`` function
+ - fill in the:
+    - ``nettype`` (as you have added above)
+    - ``switch_type`` (static, partialy static, or learning, purely
+      informational, has no effect)
+    - ``ops`` (*lsdn_net_ops* will be described shortly)
+ - return the new settings
+
+Also note that your function will be part of the C API and should use
+``ret_err`` to return error codes (instead of plain ``return``), to provide
+automatic ``abort`` on :c:data:`LSDNE_NOMEM`.
+
+The most important part is the **lsdn_net_ops** structure -- the callbacks invoked by LSDN to
+let you construct the network. First let us get a quick look at the structure
+definition (full commented definition is in the source code or Doxygen):
+
+.. doxygenstruct:: lsdn_net_ops
+    :project: lsdn-full
+    :members:
+    :outline:
+
+
+
 .. _internals_sbridge:
 
 Static bridge (sbridge)
@@ -185,6 +224,8 @@ just ``Tcl_Main`` call).
 The other way to use *lsdn-tclext* is as a regular TCL extension, from ``tclsh``.
 ``pkgIndex.tcl`` is provided by LSDN and so LSDN can be loaded using the
 ``require`` command.
+
+.. _test_harness:
 
 Test environment
 ~~~~~~~~~~~~~~~~
