@@ -79,7 +79,8 @@ pygments_style = 'sphinx'
 todo_include_todos = True
 
 breathe_projects = {
-    'lsdn': '../doxygen/xml'
+    'lsdn': '../doxygen/xml',
+    'lsdn-full': '../doxygen-full/xml'
 }
 breathe_domain_by_extension = {
     'h': 'c',
@@ -154,7 +155,7 @@ def generate_doxygen_xml(app):
 
     if os.environ.get('READTHEDOCS', None) == 'True':
         try:
-            retcode = subprocess.call("cd ..; doxygen doxygen/Doxyfile", shell=True)
+            retcode = subprocess.call("cd ..; ./build-doc.sh doxygen-only", shell=True)
             if retcode < 0:
                 sys.stderr.write("doxygen terminated by signal %s" % (-retcode))
         except OSError as e:
