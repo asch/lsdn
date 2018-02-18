@@ -248,7 +248,28 @@ metadata. This means you do not need to create new network interface for each
 endpoint you wan to communicate with, but one shared interface can be used, with
 only the metadata changing. In our case, we use TC actions to set these
 metadata depending on the destination MAC address (since we now where a virtual
-machine with that MAC lives).
+machine with that MAC lives). The setup is illustrated in :numref:`sbridge_fig`.
+
+.. _sbridge_fig:
+
+.. graph:: sbridge
+    :caption: Two virtual networks using a static routing (using TC) and shared
+              metadata tunnel. Lines illustrate connection of each VM.
+    :align: center
+
+    {VM1 VM2} -- sbridge1
+    {VM3 VM4} -- sbridge2
+    {sbridge1 sbridge2} -- sbridge_phys_if
+    {sbridge1 sbridge2} -- sbridge_phys_if
+    sbridge_phys_if -- phys_if
+    sbridge_phys_if -- phys_if
+    sbridge_phys_if -- phys_if
+    sbridge_phys_if -- phys_if
+
+    sbridge1 [label=<TC bridge for virtual network 1>]
+    sbridge2 [label=<TC bridge for virtual network 2>]
+    sbridge_phys_if [label=<Metadata tunnel>]
+    phys_if [label=<Physical network interface>]
 
 The static bridge is not a simple implementation of Linux bridge in TC. A bridge
 is a virtual interfaces with multiple enslaved interfaces connected to it.
@@ -264,7 +285,9 @@ Unlike classic bridge, a single interface may be connected to multiple bridges.
 
 Struct **lsdn_sbridge_if** represents the connection of *sbridge_phys_if* to the
 bridge. For virtual machines *sbridge_if* and *sbridge_phys_if* will correspond
-1:1, since virtual machine can not be connected to multiple bridges.
+1:1, since virtual machine can not be connected to multiple bridges. If a
+sbridge is shared, you have to provide a criteria spliting up the traffic,
+usually by the :ref:`vid`.
 
 Struct **lsdn_sbridge_route** represents a route through given *sbridge_if*. For
 a virtual machine, there will be just a single route, but metadata tunnel
