@@ -216,7 +216,10 @@ struct lsdn_settings* lsdn_settings_by_name(struct lsdn_context *ctx, const char
 	struct lsdn_name *r = lsdn_names_search(&ctx->setting_names, name);
 	if(!r)
 		return NULL;
-	return lsdn_container_of(r, struct lsdn_settings, name);
+	struct lsdn_settings* s = lsdn_container_of(r, struct lsdn_settings, name);
+	if (s->state == LSDN_STATE_DELETE)
+		return NULL;
+	return s;
 }
 
 /** Delete settings object from memory.
@@ -321,7 +324,10 @@ struct lsdn_net* lsdn_net_by_name(struct lsdn_context *ctx, const char *name)
 	struct lsdn_name *r = lsdn_names_search(&ctx->net_names, name);
 	if(!r)
 		return NULL;
-	return lsdn_container_of(r, struct lsdn_net, name);
+	struct lsdn_net *net = lsdn_container_of(r, struct lsdn_net, name);
+	if (net->state == LSDN_STATE_DELETE)
+		return NULL;
+	return net;
 }
 
 /** Create a new phys.
@@ -408,7 +414,10 @@ struct lsdn_phys* lsdn_phys_by_name(struct lsdn_context *ctx, const char *name)
 	struct lsdn_name *r = lsdn_names_search(&ctx->phys_names, name);
 	if(!r)
 		return NULL;
-	return lsdn_container_of(r, struct lsdn_phys, name);
+	struct lsdn_phys *p = lsdn_container_of(r, struct lsdn_phys, name);
+	if (p->state == LSDN_STATE_DELETE)
+		return NULL;
+	return p;
 }
 
 static struct lsdn_phys_attachment* find_or_create_attachement(
@@ -674,7 +683,10 @@ struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name)
 	struct lsdn_name *r = lsdn_names_search(&net->virt_names, name);
 	if (!r)
 		return NULL;
-	return lsdn_container_of(r, struct lsdn_virt, name);
+	struct lsdn_virt *virt = lsdn_container_of(r, struct lsdn_virt, name);
+	if (virt->state == LSDN_STATE_DELETE)
+		return NULL;
+	return virt;
 }
 
 /** Connect a virt to its network.
