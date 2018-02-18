@@ -137,7 +137,7 @@ latex_elements = {
 	'preamble': r'''
 	    \usepackage{tgpagella}
 	    \usepackage[T1]{fontenc}
-	    \usepackage{DejaVuSansMono}
+	    \usepackage[scaled=0.8]{DejaVuSansMono}
 	''',
         'sphinxsetup': 'verbatimwithframe=false,VerbatimColor={RGB}{233,239,255}'
 }
