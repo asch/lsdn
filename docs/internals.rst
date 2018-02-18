@@ -134,6 +134,84 @@ applications (in ``dump.c``).
 Netmodel implementation
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+The network model (in ``lsdn.c``) provides functions that are not specific to
+any network type. This includes QoS, firewall rules and basic validation.
+
+Importantly, it also provides the state management needed for implementing the
+commit functionality, which is important for the overall ease-of-use of the C
+api. The network model layer must keep track of both the current state of the
+network model and what is commited. Also it tracks which objects have changed
+attributes and need to be update. Finally, it keeps objects that were deleted y
+the user, but are still commited alive.
+
+For this, it is important to understand a life-cycle of an object, illustrated
+in :numref:`netmodel_states`.
+
+.. _netmodel_states:
+
+.. digraph:: states
+    :caption: Object states. Blue lines denote update (attribute change, free),
+              green lines commit, orange lines errors during commit, red lines 
+              errors where recovery has failed.
+
+    T [shape = point ];
+    NEW; RENEW; DELETE; OK; free
+    T -> NEW [color = "blue"];
+    NEW -> NEW [label = "update", color = "blue"];
+    NEW -> free [label = "free", color = "blue"];
+    NEW -> OK [label = "commit", color = "green"];
+    NEW -> NEW [label = "c. error", color = "orange" ];
+    NEW -> FAIL [label = "c. fail", color = "red"];
+    OK -> RENEW [label = "update", color = "blue"];
+    OK -> DELETE [label = "free", color = "blue"];
+    OK -> OK [label = "commit", color = "green"];
+    DELETE -> free [label = "commit", color = "green"];
+    DELETE -> free [label = "c. fail", color = "red"];
+    DELETE -> free [label = "c. error", color = "orange"];
+    RENEW -> RENEW [label = "update", color = "blue"];
+    RENEW -> DELETE [label = "free", color = "blue"];
+    RENEW -> NEW [label = "c. error", color = "orange"];
+    RENEW -> FAIL [label = "c. fail", color = "red"];
+    RENEW -> OK [label = "commit", color = "green"];
+    FAIL -> free [label = "free", color = "blue" ];
+    FAIL -> FAIL [label = "update", color = "blue" ];
+    FAIL -> FAIL [label = "c. fail", color = "red" ];
+
+The objects alway start in the **NEW** state, indicating that they will be
+acutally created with the nearest commit.  If they are freed, the `free` call is
+actually done immediately. Any update leaves them in the *NEW* state, since
+there is nothing to update yet.
+
+Once a *NEW* object is sucesfully commited, it moves to the **OK** state. A
+commit has no effect on such object, since it is up-to-date.
+
+If a *NEW* object is freed, it is moved to the **DELETE** state, but its memory
+is retained, until commit is called and the object is deleted from kernel. The
+objects in *DELETE* state can not be updated, since they are no longer visible
+and should not be used by the user of the API. They also can not be found by
+their name.
+
+If a *NEW* object is updated, it is moved to the **RENEW** state. This means
+that on the next update, it is removed from the kernel, moved to *NEW* state,
+and in the same commit added back to the kernel and moved back to the *OK*
+state. Updating the *RENEW* object again does nothing and freeing it moves it to
+the *DELETE* state, since that takes precedence.
+
+If a commit for some reason fails, LSDN tries to unroll all operations for that
+object and returns the object temporarily to the *ERR* state. After the commit
+has ended, it moves all objects from *ERR* state to the *NEW* state.  This means
+that on the next commit, the operations will be retried again, unless the user
+decides to delete the object.
+
+If even the unrolling fails, the object is moved to the **FAIL** state. The only
+possibility for the user is to release its memory. If the object was originally
+already deleted, it bypasses the *FAIL* state.
+
+.. note::
+
+    If validation fails, commit is not performed at all and object states
+    do not change at all.
+
 .. _internals_netops:
 
 How to support a new network type
