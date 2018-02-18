@@ -36,10 +36,10 @@ significant. All available directives are listed in section `dirref`.
 All LSDN directives follow the same basic patterns. They start with the
 directive name (for example ``net`` or ``settings``) and are folowed with
 arguments for that directive. Directives and their arguments are separated by
-whitespace. Most directives make use of named arguments (or as they are called in some
-languages "keyword arguments"): ::
+whitespace. Some directives go without an argument. Other directives make use of
+named arguments (or as they are called in some languages "keyword arguments"): ::
 
-    directiveWithNamedArgs -opt1 value1 -opt1 value2
+    directiveWithNamedArgs -opt1 value1 -opt1 value2 -opt3WithoutAnyValue
 
 The directives may combine named and regular arguments. In that case, consult
 the documentation for the particular directive, if the regular (non-keyword)
@@ -68,7 +68,7 @@ is a procedural language. For example, this snippet will not work: ::
     virt -net test
     net -vid 1 test {}
 
-Any directive referencing and undefined object will return an error like this: ::
+Any directive referencing an undefined object will return an error like this: ::
 
     can not find network
 
@@ -248,7 +248,8 @@ Directive reference
         Virtual network identifier. Network technologies like VXLANs or VLANs
         use these number to separate different networks. The ID must be unique
         among all networks of the same network type. The parameter is forbidden
-        if network already exists.
+        if network already exists. The permissible range of network identifiers
+        differs for individual network types (see :ref:`netmodel`).
     :param string name:
         Name of the network. Does not change network behavior, only used by the
         configuration to refer to the network. However, if the ``-vid`` argument
@@ -261,6 +262,9 @@ Directive reference
         Optional name of a previously defined `settings`, specifing the network
         overlay type (VLAN, VXLAN etc.). If not given, the ``default`` settings
         will be used. Settings of existing net can not be changed.
+    :param remove:
+        Removes the network. This will effectively also remove any child object
+        (e.g. any `virt` inside this network).
     :scope none:
         This directive can appear at root level.
     :scope phys:
@@ -283,9 +287,16 @@ Directive reference
         Optional, set the IP address assigned to the phys on the physical
         network.
     :param string net:
-        Optional, name of a `net` you want thys phys to attach to. Shorthand for
-        using the `attach` directive. can not be used when nested inside `net`
+        Optional, name of a `net` you want this phys to attach to. Shorthand for
+        using the `attach` directive. Can not be used when nested inside `net`
         directive.
+    :param remove:
+        Optional, removes the physical machine. This will effectively also
+        disconnect any `virt` residing on this machine.
+    :param ifClear:
+        Optional, clears the machine's interface name, if any.
+    :param ipClear:
+        Optional, clears the IP address of the `phys`, if any.
     :scope none:
         This directive can appear at root level.
     :scope net:
@@ -312,6 +323,10 @@ Directive reference
     :param string if:
         Set the network interface used by the virtual machine to connect at the
         phys. Mandatory, if ``-phys`` argument was used.
+    :param remove:
+        Optional, removes the virtual machine.
+    :param macClear:
+        Optional, clears the virtual machine's MAC address, if any.
     :scope none:
         This directive can appear at root level.
     :scope net:
