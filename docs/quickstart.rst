@@ -162,6 +162,7 @@ The equivalent network setup created using the LSDN C API:
     #include <assert.h>
     #include <stdlib.h>
     #include <string.h>
+    #include <stdint.h>
 
     #include <lsdn.h>
 
@@ -176,8 +177,8 @@ The equivalent network setup created using the LSDN C API:
 
     int main(int argc, const char* argv[])
     {
-        /* On the command line pass in the machine name on which the program is
-         * being run. In our case the names will be either A or B. */
+        /* On the command line pass in the machine name on which the program
+         * is being run. In our case the names will be either A or B. */
         assert(argc == 2);
 
         /* Create a new LSDN context */
@@ -229,19 +230,20 @@ The equivalent network setup created using the LSDN C API:
         VM3 = lsdn_virt_new(net1);
         lsdn_virt_connect(VM3, machine2, "tap0");
         lsdn_virt_set_mac(VM3, LSDN_MK_MAC(0x42,0x94,0xa5,0xf9,0x69,0xc6));
-        lsdn_virt_set_name(VM3, "1");
+        lsdn_virt_set_name(VM3, "3");
 
         /* Create VM4 */
         VM4 = lsdn_virt_new(net2);
         lsdn_virt_connect(VM4, machine2, "tap1");
         lsdn_virt_set_mac(VM4, LSDN_MK_MAC(0xf2,0x9b,0x4f,0x48,0x2d,0xd1));
-        lsdn_virt_set_name(VM4, "2");
+        lsdn_virt_set_name(VM4, "4");
 
         /* Claim local A or B */
         struct lsdn_phys *local = lsdn_phys_by_name(ctx, argv[1]);
         assert(local != NULL);
         lsdn_phys_claim_local(local);
 
+        /* Commit the created netmodel */
         lsdn_commit(ctx, lsdn_problem_stderr_handler, NULL);
 
         lsdn_context_free(ctx);
