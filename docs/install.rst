@@ -76,7 +76,7 @@ This project contains instruction files for building packages for various distri
 Arch
 ~~~~
 
-On Arch Linux the PKGBUILD file is located in dist/arch/ and the package can be build and installed
+On Arch Linux the PKGBUILD file is located in dist/arch/ and the package can be built and installed
 as follows: ::
 
 	cd dist/arch/

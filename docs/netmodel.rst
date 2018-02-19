@@ -42,16 +42,15 @@ Supported tunneling technologies
 
 Currently LSDN supports three network tunneling technologies: `ovl_vlan`,
 `ovl_vxlan` (in three variants) and `ovl_geneve`. They all use the same basic
-networking model in LSDN, but is important to realize what technology are you
+networking model in LSDN, but it is important to realize what technology you are
 using and what restrictions it has.
 
 Theoretically, you should be able to define your network model once and then
-switch the networking technologies as you like. But in practice some
+switch the networking technologies as you wish. But in practice some
 technologies may need more detailed network model than others. For example,
-``ovl_vxlan_mcast`` does not need to known MAC address of the virtual machines
-and ``ovl_vlan`` does not need to know IP adresses of the physical machines
-neither the MAC addresses of the virtual ones.
-
+``ovl_vxlan_mcast`` does not need to known the MAC addresses of the virtual
+machines and ``ovl_vlan`` does not need to know the IP addresses of the physical
+machines nor the MAC addresses of the virtual machines.
 
 .. index::
     single: VLAN
@@ -68,10 +67,10 @@ Ethernet frame with a 12-bit VLAN tag. LSDN needs no additional information to
 setup this type of network, as it relies on the networking equipment along the
 way to route packets (typically using MAC learning).
 
-If you either the physical network already uses VLAN tagging (the physical
-computers are connected to a VLAN segment) or the virtual network will be using
-tagging, the networking equipment along the way must support this. The support
-is called *802.1ad* or sometimes *QinQ*.
+If either the physical network already uses VLAN tagging (the physical computers
+are connected to a VLAN segment) or the virtual network will be using tagging,
+then the networking equipment along the way must support this. The support is
+called *802.1ad* or sometimes *QinQ*.
 
 **Restrictions:**
  - 12 bit `vid`
@@ -89,14 +88,14 @@ VXLAN
 
 VXLAN is a Layer-3 UDP-based tunneling protocol. It is available in three
 variants in LSDN, depending on the routing method used. All of the variants
-needs the connected participating physical machines to have the `attr_ip` set
+need the connected participating physical machines to have the `attr_ip` set
 and they must all see each other on the IP network directly (no NAT).
 
 VXLAN tags have 24 bits (16 million networks). VXLANs by default use UDP port
 *4789*, but this is configurable and could in theory be used to expand the
-`vid` space (but LSDN currently does not do this.
+`vid` space. LSDN currently does not do this.
 
-**IPv6 note**: VXLANs support IPv6 addreses, but they can not be mixed. All
+**IPv6 note**: VXLANs support IPv6 addresses, but they can not be mixed. All
 physical nodes must use the same IP version and the version of multicast address
 for ``ovl_vlan_mcast`` VXLAN must be the same. This does not prevent you from
 using both IPv6 and IPv4 on the same physical node, you just have to choose one
@@ -158,7 +157,7 @@ duplicated and sent to all machines.
  - UDP and IP header overhead
  - Unknown and broadcast packets are duplicated for each physical machine
  - The virtual network is not fully opaque (MAC addresses of virtual machines
-   must be knownn).
+   must be known).
 
 
 .. index::
@@ -169,10 +168,10 @@ duplicated and sent to all machines.
 Geneve
 ------
 **Available as**: :lsctl:cmd:`settings geneve` (lsctl),
-:c:func:`lsdn_settings_new_genve` (C API).
+:c:func:`lsdn_settings_new_geneve` (C API).
 
-VXLAN is a Layer-3 UDP-based tunneling protocol. All participating physical
-machine must see each other on the IP network directly (no NAT).
+Geneve is a Layer-3 UDP-based tunneling protocol. All participating physical
+machines must see each other on the IP network directly (no NAT).
 
 Geneve uses fully static routing. LSDN must be informed about the IP address of
 each physical machine (using `attr_ip`) and MAC address of each virtual machine
@@ -184,7 +183,7 @@ each physical machine (using `attr_ip`) and MAC address of each virtual machine
   - UDP and IP header overhead
   - Unknown and broadcast packets are duplicated for each physical machine
   - The virtual network is not fully opaque (MAC addresses of virtual machines
-    must be knownn).
+    must be known).
 
 .. _ovl_direct:
 
@@ -193,7 +192,7 @@ No tunneling
 **Available as**: :lsctl:cmd:`settings direct` (lsctl), :c:func:`lsdn_settings_new_direct` (C API).
 
 No separation between the networks. You can use this type of network for
-corner cases, like connecting a VM serving as internet gateway to a dedicated
+corner cases, like connecting a VM serving as an internet gateway to a dedicated
 interface. In this case no separation is needed nor desired.
 
 .. _restricts:

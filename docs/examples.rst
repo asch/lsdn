@@ -414,5 +414,3 @@ upon reception of a packet will dump this packet in a log file and drop this
 packet. What patterns do you expect to see in this log file after some time?
 
 .. todo:: make references throughtout the examples to other parts of the doc
-.. todo:: add e.g. a dhcp, gateway example?
-.. todo:: choose better parameters for the third example

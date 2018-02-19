@@ -23,7 +23,7 @@ know TCL, you will recognize some of the conventions and feel at home.
 .. _TCL: https://www.tcl.tk/
 
 The only downside is that you have to include a short boilerplate at the top of each
-configuration file, to tell TCL that you don't want to prefix everything with
+configuration file to tell TCL that you don't want to prefix everything with
 ``lsdn::``.  Start your configuration file with this line: ::
 
     namespace import lsdn::*
@@ -39,7 +39,7 @@ arguments for that directive. Directives and their arguments are separated by
 whitespace. Some directives go without an argument. Other directives make use of
 named arguments (or as they are called in some languages "keyword arguments"): ::
 
-    directiveWithNamedArgs -opt1 value1 -opt1 value2 -opt3WithoutAnyValue
+    directiveWithNamedArgs -opt1 value1 -opt2 value2 -opt3WithoutAnyValue
 
 The directives may combine named and regular arguments. In that case, consult
 the documentation for the particular directive, if the regular (non-keyword)
@@ -60,9 +60,9 @@ Names
 Objects (physical machines, virtual machines etc.) in LSCTL are given names, to
 allow you to refer to them later. The name must be given when a configuration
 directive is used to create an object. You are free to choose any name you like,
-as the names do not have any direct effect on the network.
+as the names do not have any direct impact on the network.
 
-Please note that forward references are not allowed, because LSCTL in its core
+Please note that forward references are not allowed, because in its core LSCTL
 is a procedural language. For example, this snippet will not work: ::
 
     virt -net test
@@ -85,8 +85,8 @@ Nesting
 --------
 
 Some directives may also contain other directives. In that case, the nested
-directives are enclosed in curly-braces ``{}`` block following the parent
-directive, like this [#f1]_: ::
+directives are enclosed in curly-braces ``{}`` following the parent directive
+like this [#f1]_: ::
 
     phys -name p
     net 42 {
@@ -152,17 +152,17 @@ Argument types
 
 .. lsctl:type:: int
 
-    An integer number, given as string of digits prefixed with optional sign.
-    LSCTL recognizes the ``0x`` prefix for hexadecimal and ``0`` for octal
+    An integer number, given as string of digits optionally prefixed with a
+    sign. LSCTL recognizes the ``0x`` prefix for hexadecimal and ``0`` for octal
     integers.
 
 .. lsctl:type:: string
 
     String arguments in LSCTL are given the same way as in shell - they don't
     need to be quoted. Mostly they are used for names, so there is no need to
-    give string argument containing spaces.
+    give string arguments containing spaces.
 
-    If you want to give a directive an argument containing space, newline or
+    If you want to give a directive an argument containing spaces, newlines or
     curly brackets, simply enclose the argument in double-quotes.  If you want
     the argument to contain double-quotes, backslash or dollar sign, precede the
     character with backslash: ::
@@ -176,7 +176,7 @@ Argument types
 .. lsctl:type:: direction
 
     Either ``in`` or ``out``. ``in`` is for packets entering the
-    virtual machine ``out`` is for packets leaving the virtual machine.
+    virtual machine, ``out`` is for packets leaving the virtual machine.
 
 .. lsctl:type:: ip
 
@@ -207,7 +207,7 @@ Argument types
 
 .. lsctl:type:: mac
 
-    MAC address in octal format. Both addresses with colons and wihtout colons
+    MAC address in octal format. Both addresses with colons and without colons
     are supported, as long as the colons are consistent. Case-insensitive
 
     .. code-block:: none
@@ -301,7 +301,7 @@ Directive reference
         This directive can appear at root level.
     :scope net:
         Automatically attaches this phys to the parent network. Shorthand for
-        using the `attach` directive
+        using the `attach` directive.
 
 .. lsctl:cmd:: virt | -net -name -mac -phys -if -remove -macClear
 
@@ -315,7 +315,7 @@ Directive reference
         inside `net`.
     :param string name:
         Optional, name of the virtual machine. Does not change network behavior,
-        only used byt eh confiruation to refer to this virt.
+        only used by the configuration to refer to this virt.
     :param mac mac:
         Optional, MAC address used by the virtual machine.
     :param string phys:
@@ -410,14 +410,14 @@ Directive reference
     .. todo:: Link to the attributes once documented.
 
     :param direction direction: Direction to limit.
-    :param speed avg: Average allowed speed.
+    :param speed avg: Average speed allowed.
     :param speed burstRate: Higher speed allowed during short bursts.
     :param size burst: Size of the burst during which higher speeds are allowed.
     :scope virt: Only allowed in a virt scope.
 
 .. lsctl:cmd:: claimLocal | -phys
 
-    Inform LSDN that lsdn is running on this physical machine.
+    Inform LSDN that it is running on this physical machine.
 
     You might want to distribute the same configuration to all physical
     machines, just with different physical machines claimed as local. You can
@@ -461,9 +461,9 @@ Directive reference
     Use VLAN tagging to separate networks.
 
     See :ref:`ovl_vlan` for more details.
-    :scope none: This directive can only appear at root level.
 
     :param string name: |sname_docs|
+    :scope none: This directive can only appear at root level.
 
 .. lsctl:cmd:: settings vxlan/mcast | -name -mcastIp -port
 
@@ -516,8 +516,8 @@ Directive reference
 
 .. lsctl:cmd:: commit |
 
-    Apply all changes done so far. This will usually be at the end of each LSCTL
-    script.
+    Apply all changes done so far. This will usually be located at the end of
+    each LSCTL script.
 
     If the validation or commit fails, the errors will be printed to stderr and
     the directive will end with an error. The script will be terminated.
@@ -574,7 +574,7 @@ virtual machine migration and other types of network evolution.
 Using lsctl
 -----------
 
-Run ``lsctl`` with the name of you configuration script like this:
+Run ``lsctl`` with the name of your configuration script like this:
 
 .. code-block:: bash
 
@@ -584,7 +584,7 @@ You can also pass additional arguments to lsctl, which will be all available in
 the ``$argv`` variable. See :lsctl:cmd:`claimLocal` for usage example.
 
 If you run ``lsctl`` without arguments, you will receive an interactive shell,
-where you can enter direcives one after another.
+where you can enter directives one after another.
 
 .. _prog_lsctld:
 
@@ -604,7 +604,7 @@ file-system, so let's use ``/var/run/lsdn``:
 
     lsctld -s /var/run/lsdn
 
-After that, commands can be send to ``lsctld`` using ``lsctlc``. Either pass
+After that, commands can be sent to ``lsctld`` using ``lsctlc``. Either pass
 them on standard input:
 
 .. code-block:: bash
@@ -618,7 +618,7 @@ Or directly on the command-line:
     lsctlc /var/run/lsdn virt -name vm1 -phys b -net customer
     lsctlc /var/run/lsdn commit
 
-``lsctld`` can be controled with the following options:
+``lsctld`` can be controlled with the following options:
 
 .. program:: lsctld
 .. option:: --socket, -s

@@ -15,7 +15,7 @@ is illustrated in :numref:`qnm`.
 .. figure:: quickstart.svg
 
     Network setup. Solid lines are physical machine connections, dashed lines
-    denotes communication between virtual machines.
+    denote communication between virtual machines.
 
 VMs *1* and *3* can communicate with each other and so can VMs *2* and *4*. This
 means we will create two virtual networks, one for VM *1* and *3*, second for VM
@@ -30,9 +30,9 @@ Setting up virtual machines
 
 You are free to use any Virtual Machine Manager you like: bare Qemu/KVM, libvirt
 or VirtualBox or run containers (via LXC for example). The only thing LSDN needs
-is to know which network interfaces on the host are assigned to the virtual
-machine. Typically, this will be a *tap* interface for a VM an *veth* interface
-for a container.
+to know is which network interfaces on the host are assigned to the virtual
+machine. Typically, this will be a *tap* interface for a VM and a *veth*
+interface for a container.
 
 .. _qemu:
 
@@ -43,8 +43,8 @@ Qemu
 .. index:: KVM
 
 If you are just trying out LSDN, we suggest you download some live distro (like
-`Alpine Linux <https://alpinelinux.org/downloads/>`_) and run Qemu/KVM. Make sure
-QEMU is installed and on physical machine *A* run:
+`Alpine Linux <https://alpinelinux.org/downloads/>`_) and run Qemu/KVM. First
+make sure QEMU is installed and then on physical machine *A* run:
 
 .. code-block:: bash
 
@@ -62,7 +62,7 @@ configuration:
     ip link set eth0 up
 
 Do the same for the remaining virtual machines, but with a different MAC and TAP
-interface name. There is not need to change the ``net0`` strings:
+interface name. There is no need to change the ``net0`` strings:
 
  - on *A* create VM using ``ifname=tap0``, ``mac=14:9b:dd:6b:81:71``
    and set up IP address as ``192.168.0.1`` (we just did that in example above).
@@ -77,7 +77,7 @@ Libvirt
 ~~~~~~~
 
 If you are using Libvirt, set up the virtual machines as usual. Unfortunatelly,
-``virt-manager`` can not be told to leave the VM's networking alone, it will try
+``virt-manager`` can not be told to leave the VM's networking alone. It will try
 to connect it to a network, but that's what LSDN will be used for! It can also
 not change an interface MAC address.  Instead, use ``virsh edit`` to manually
 change the VM's XML. Change the ``interface`` tag of VM *1* on *A* to look like
@@ -155,7 +155,7 @@ And they are correctly isolated too ``$ ping 192.168.0.2`` won't work in VM *1*.
 Using the C API
 ---------------
 
-The equivalent network setup created using the LSDN C API:
+The equivalent network setup created using the LSDN `C API <capi>`:
 
 .. code-block:: C
 
