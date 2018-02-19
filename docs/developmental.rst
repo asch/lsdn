@@ -196,7 +196,59 @@ Naturally, our tooling also has problems, so we also fixed a bug in
 Project Timeline
 ----------------
 
-Github logs, graphs, topics per name.
+The project came from an idea of Jiri Benc (Linux Kernel Networking Developer) from Red Hat Czech
+who wanted to create a proof-of-concept tool which will try to replace Open vSwitch with purely
+Linux Kernel functionality and find all the missing functionality or bugs in Linux Kernel which
+would block or slow down the effort to eliminate Open vSwitch.
+
+These days Vojtech Aschenbrenner was an intern in Jiri's team and also a student who was looking for
+challenging Software Project topic from Systems field, which was a mandatory part of studies at
+Charles University. Hence the topic arose.
+
+Formation of the team was not that straightforward. In the beginning the team was composed from 7
+people. They were people with Systems interests and also great computer scientists. The property of
+excellency was actually the biggest problem of the team. In the beginning part of the implementation
+phase 3 people left the studies and also team because of much better offer. It was two times because
+of Google and one time because of Showmax. Thus 4 people left in the team which was still
+manageable.
+
+However another personal problems came with studies in the US and jobs of the remaining members.
+Vojtech Aschenbrenner left to the University of Rochester and have almost no time to work on a
+project for a lot of weeks. Similar situation came to Adam Vyškovský who left to Paris because of a
+dream job in an aviation. Jan Matějek still had full-time job in SUSE and it looked like the project
+has a huge problems and will most probably fail. However Roman Kápl showed his true determination
+and saved the project although he has also part-time job in a systems company. It is for sure, that
+the project would fail without his knowledge, skills in system programming and diligence. When all
+the remaining members who were still part of the team saw how he is continuously working on the
+project they came back from abroad and decided to finish the project as well as their master studies
+instead of continuing they career elsewhere. All of the team members believe that Roman influenced
+our future life in a positive way.
+
+After this we managed to do hackatons quite often and do the majority of the work in a several
+months. Because the problematic part of the project where a lot of people left was before the
+official start the official timeline of the project was according to the plan and we were able to
+fulfill our deadlines which were following:
+
+ - Month 1:
+
+   * Analysis of the requirements of cloud environments for software defined networking.
+   * Analysis and introduction to Linux Kernel networking features, especially traffic control framework and networking layer of the Linux Kernel.
+   * Description of detailed use-cases which will be implemented.
+
+ - Month 2:
+
+   * API design.
+
+ - Months 3 - 7:
+
+   * Implementation of the complete functionality of the project. This was the main developing part.
+
+ - Months 8 - 9:
+
+   * Finalization.
+   * Debugging.
+   * Documentation.
+   * (The most intense part)
 
 Team Members
 ------------
@@ -207,7 +259,7 @@ were done with them.
 
 	* *Martin Pelikán* left to Google Sydney few weeks after the project was started. Although he is a non-sleeper which can work on several projects together he was not able to find a spare time for this one. This was a big loss because his thesis was about TC. 
 	* *David Krška* left to Google London few weeks after his bachelor studies graduation.
-	* *David Čepelík* left the project because of his lost of motivation and interest in the topic.
+	* *David Čepelík* left to Showmax one semester after his bachelor studies graduation.
 
 The rest of the people who started the project were able to stay as a part of the team and finish
 it.
