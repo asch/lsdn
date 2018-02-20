@@ -248,6 +248,7 @@ fulfill our deadlines which were following:
    * Finalization.
    * Debugging.
    * Documentation.
+   * Presentation preparation.
    * (The most intense part)
 
 Team Members
@@ -291,8 +292,34 @@ discussion with him was always full of knowledge and his overview of the Linux K
 open-source world is enormous. He always found a spare time to arrange a meeting with us and was
 also willing to help us move forward and motivate us.
 
-Conclusion and Future Work
---------------------------
+Conclusion, Contribution and Future Work
+----------------------------------------
 
-It was done, it can be extended. It works in both virtual environment as well as on physical
-machines.
+The project was able to fulfill all the requirements set in the beginning and also follow the plan
+created in the beginning. This means that all the requested functionality was implemented and
+properly tested. Furthermore it was documented all through from both programmers view and also from
+user (API) view. Also detailed use cases with the quickstart guide were described. Especially the
+quickstart guide showed how easy it is to create complex virtual networking scenario in a few steps
+with very minimal configuration files.
+
+At the end the whole project was all through tested in both, virtual setups, physical setups as well
+as hybrid setups. Finally the demo presentation showing the power of LSDN was created. This part of
+work showed how capable LSDN (and TC framework) is in terms of replacing Open vSwitch -- it is
+capable and the direction of TC framework development goes in the right way of replacing Open
+vSwitch in the future.
+
+Another big success of the project was patching the upstream of Linux Kernel as well as patching the
+tooling as Sphinx and Breathe. Also several bugs were reported. This was the secondary and optional
+target of the project which was also fulfilled.
+
+LSDN has the ambition to become the only tool using the extremely powerful TC framework in Linux
+Kernel and use it in very user convenient way with very minimal additional dependencies for creation
+complex virtual network scenarios. Also the core of the tool is written efficiently in C, thus there
+is no performance impact of using LSDN. Furthermore we were able to push LSDN installation packages
+to user repositories of Linux distributions or at least create the packages. This means that the
+comfort of installation is maximal which helps to fulfill the main goal of creating easy to use
+management tool for complex networks.
+
+Because of the very promising future of the tool, the LSDN team is willing to continue in supporting
+the project as well as integrate future enhancements in the TC framework, fix bugs found in the
+production as well as customize the project according to the future needs of virtual networks.
