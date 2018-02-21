@@ -439,7 +439,115 @@ The other way to use *lsdn-tclext* is as a regular TCL extension, from ``tclsh``
 
 .. _test_harness:
 
-Test environment
+Test Environment
 ~~~~~~~~~~~~~~~~
 
-.. todo:: describe the test environment
+Our test environment is highly modular, extremely powerful, easy to use and
+without any complex dependencies. Thus it is easily extensible even for
+outsiders and people beginning with the project. 
+
+CTest
+.....
+
+The core of the environment is ``CTest`` testing tool from ``CMake``. It
+provides very nice way how to define all the tests in the modular way. We create
+test parts which can be combined together for one complex test. This means that
+you can for example say that you want to use ``geneve`` as a backend for the
+network, you want to test ``migrate`` which means that the migration of virtual
+machines will be tested and as a verifier use ``ping``. ``CTest`` configuration
+file is called ``CMakeLists.txt`` and tests composed from parts can be added
+with ``test_parts(...)`` command. Examples follow, starting with example
+described above: ::
+
+	test_parts(geneve migrate ping)
+
+For ``vlan`` and ``dhcp`` test: ::
+
+	test_parts(vlan dhcp)
+
+For backend without tunnelling, migration with daemon's help keeping the state
+in memory and ping: ::
+
+	test_parts(direct migrate-daemon ping)
+
+For complete list of all tests see ``CMakeLists.txt`` in the ``test`` directory
+and all parts usable to create complex test are in ``test/parts``. To run all
+the tests inside the ``CTest`` testing tool just go to ``test`` folder and run ::
+
+	ctest
+
+Parts
+.....
+
+In the previous section we described the big picture of tests execution. Now we
+will describe what *part* is and how to define it. *Part* is a simple bash
+script defining functions according to prescribed API for our test environment.
+
+Function ``prepare()`` is used for establishing the physical network environment
+unrelated to the virtual network we would like to manage. These are "wires" we
+will use for our virtual networking.
+
+``connect()`` is the main phase for setting the virtual network environment.
+LSDN is usually used in this function for configuring all the virtual interfaces
+and virtual network appliances.
+
+For testing if the applied configuration is working, e.g. has the expected
+behaviour, function ``test()`` is used. Most often ``ping`` is used here, but
+you can use anything for testing the functionality.
+
+If you want to do some special cleanup you can use ``cleanup()`` function.
+
+Back to *part* primitive - you can combine various parts together but every
+rational test should define all the described functions no matter how many parts
+are used.
+
+``CTest`` is pretty good at automated execution of complete tests but if you
+want to debug the test or execute just part of it there is a ``run`` script.
+This script allows you to execute just selected stages and combine parts in a
+comfortable way. It's usage is self-explanatory: ::
+
+	Usage:
+		./run -xpctz [parts]
+	  -x  trace all commands
+	  -p  run the prepare stage
+	  -c  run the connect stage
+	  -t  run the test stage
+	  -z  run the cleanup stage
+
+Thus for running test for the example from the beginning but use just
+``connect`` and ``prepare`` stage you can call: ::
+
+	./run -pc geneve migrate ping
+
+QEMU
+....
+
+Because we are dependent on fairly new version of Linux Kernel we provide
+scripts for executing tests in virtualized environment. This is useful when you
+use some traditional Linux distribution like Ubuntu with older kernel and you do
+not want to compile or install custom recent kernel.
+
+As a hypervizor we use QEMU with Arch Linux userspace. Here are several steps
+you need to follow for execution in QEMU:
+
+    1. Download actual Linux Kernel to ``$linux-path``.
+    2. Run ``./create_kernel.sh $linux-path``. This will generate valid kernel
+       with our custom ``.config`` file.
+    3. Run ``./create_rootfs.sh`` which will create the userspace for virtual
+	   machine with all dependencies. Here you need ``pacman`` for downloading
+	   all the packages.
+    4. Run ``./run-qemu $kernel-path $userspace-path all`` which will execute
+       all tests and shut down.
+
+``run-qemu`` script is much more powerful and you can run all the examples
+described above together with debugging in the shell inside that virtual
+machine. The usage is following: ::
+
+	usage: run-qemu [--help] [--kvm] [--gdb] kernel rootfs guest-command
+
+	Available guest commands: shell, raw-shell, all.
+
+``shell`` will execute just a shell and leave the test execution up to you and
+``raw-shell`` is just for debugging the virtual machine userspace because it
+will not mount needed directories for tests. ``all`` executes all the tests as
+we have already shown above.
