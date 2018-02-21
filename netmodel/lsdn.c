@@ -74,6 +74,7 @@ struct lsdn_context *lsdn_context_new(const char* name)
 	}
 
 	ctx->nlsock = NULL;
+	ctx->overwrite = true;
 	ctx->obj_count = 0;
 	lsdn_names_init(&ctx->phys_names);
 	lsdn_names_init(&ctx->net_names);
@@ -82,6 +83,18 @@ struct lsdn_context *lsdn_context_new(const char* name)
 	lsdn_list_init(&ctx->settings_list);
 	lsdn_list_init(&ctx->phys_list);
 	return ctx;
+}
+
+void lsdn_context_set_overwrite(struct lsdn_context *ctx, bool overwrite)
+{
+	ctx->overwrite = overwrite;
+}
+/** Query if LSDN should overwrite any of the interfaces or rules.
+ * @see lsdn_context_set_overwrite
+ */
+bool lsdn_context_get_overwrite(struct lsdn_context *ctx)
+{
+	return ctx->overwrite;
 }
 
 static lsdn_err_t lsdn_context_ensure_socket(struct lsdn_context *ctx)

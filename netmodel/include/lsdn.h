@@ -136,6 +136,16 @@ void lsdn_context_abort_on_nomem(struct lsdn_context *ctx);
 void lsdn_context_free(struct lsdn_context *ctx);
 /* Will automatically delete all child objects */
 void lsdn_context_cleanup(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
+/** Ignore if any of the interfaces or rules LSDN would create already exists.
+ *
+ * This flags is active by default. It ensures that LSDN will ignore rules created by previous
+ * crashed instances.
+ */
+void lsdn_context_set_overwrite(struct lsdn_context *ctx, bool overwrite);
+/** Query if LSDN should overwrite any of the interfaces or rules.
+ * @see lsdn_context_set_overwrite
+ */
+bool lsdn_context_get_overwrite(struct lsdn_context *ctx);
 
 lsdn_err_t lsdn_validate(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);
 lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user);

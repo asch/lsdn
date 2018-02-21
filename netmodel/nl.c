@@ -130,7 +130,7 @@ static void report_nl_error(int code, const char* msg)
 		lsdn_log(LSDN_NLERR, "Kernel message: %s\n", msg);
 }
 
-static lsdn_err_t process_response(struct nlmsghdr *nlh)
+static lsdn_err_t process_response(struct nlmsghdr *nlh, bool ignore_err)
 {
 	struct nlmsgerr *resp;
 	lsdn_err_t ret;
@@ -151,9 +151,10 @@ static lsdn_err_t process_response(struct nlmsghdr *nlh)
 							break;
 						msg = mnl_attr_get_str(attr);
 					}
-					}
 				}
-			report_nl_error(resp->error, msg);
+			}
+			if (!ignore_err)
+				report_nl_error(resp->error, msg);
 			ret = LSDNE_NETLINK;
 		} else {
 			ret = LSDNE_OK;
@@ -166,7 +167,8 @@ static lsdn_err_t process_response(struct nlmsghdr *nlh)
 	return ret;
 }
 
-static lsdn_err_t send_await_response(struct mnl_socket *sock, struct nlmsghdr *nlh)
+static lsdn_err_t send_await_response(
+	struct mnl_socket *sock, struct nlmsghdr *nlh, bool ignore_err)
 {
 	int ret;
 
@@ -178,7 +180,32 @@ static lsdn_err_t send_await_response(struct mnl_socket *sock, struct nlmsghdr *
 	if (ret == -1)
 		return LSDNE_NETLINK;
 
-	return process_response(nlh);
+	return process_response(nlh, ignore_err);
+}
+
+/**
+ * Delete the old interface if overwrite is true.
+ *
+ * Normally, we would use `NLM_F_REPLACE`, but kernel does not support that during link creation.
+ * Just delete the old link manualyl if it exists.
+ */
+static lsdn_err_t cleanup_link(struct mnl_socket *sock, const char *linkname, bool overwrite)
+{
+	if (overwrite) {
+		struct lsdn_if oldif;
+		/* hand-craft the oldif so that we don't have to deallocate it */
+		oldif.ifname = (char*) linkname;
+		oldif.ifindex = 0;
+		int err = lsdn_if_resolve(&oldif);
+		if (err == LSDNE_NOIF)
+			return LSDNE_OK;
+		else if (err != LSDNE_OK)
+			return err;
+		return lsdn_link_delete(sock, &oldif);
+	} else {
+		return LSDNE_OK;
+	}
+
 }
 
 static void link_create_header(
@@ -212,7 +239,7 @@ static lsdn_err_t link_create_send(
 
 	mnl_attr_nest_end(nlh, linkinfo);
 
-	err = send_await_response(sock, nlh);
+	err = send_await_response(sock, nlh, false);
 	if (err != LSDNE_OK)
 		return err;
 
@@ -228,11 +255,15 @@ static lsdn_err_t link_create_send(
 }
 
 // ip link add name <if_name> type dummy
-lsdn_err_t lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
+lsdn_err_t lsdn_link_dummy_create(
+	struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name, bool overwrite)
 {
 	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
+	lsdn_err_t err = cleanup_link(sock, if_name, overwrite);
+	if (err != LSDNE_OK)
+		return err;
 
 	link_create_header(nlh, &linkinfo, if_name, "dummy");
 	return link_create_send(sock, buf, nlh, linkinfo, if_name, dst_if);
@@ -240,7 +271,7 @@ lsdn_err_t lsdn_link_dummy_create(struct mnl_socket *sock, struct lsdn_if* dst_i
 
 //ip link add link <if_name> name <vlan_name> type vlan id <vlanid>
 lsdn_err_t lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name,
-		const char *vlan_name, uint16_t vlanid)
+		const char *vlan_name, uint16_t vlanid, bool overwrite)
 {
 	unsigned int seq = 0;
 	nl_buf(buf);
@@ -249,8 +280,12 @@ lsdn_err_t lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if
 
 	unsigned int ifindex = if_nametoindex(if_name);
 
+	lsdn_err_t err = cleanup_link(sock, vlan_name, overwrite);
+	if (err != LSDNE_OK)
+		return err;
+
 	nlh->nlmsg_type = RTM_NEWLINK;
-	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK | NLM_F_EXCL;
 	nlh->nlmsg_seq = seq;
 
 	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
@@ -278,7 +313,8 @@ lsdn_err_t lsdn_link_vxlan_create(
 	struct mnl_socket *sock, struct lsdn_if* dst_if,
 	const char *if_name, const char *vxlan_name,
 	lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port,
-	bool learning, bool collect_metadata, enum lsdn_ipv ipv)
+	bool learning, bool collect_metadata, enum lsdn_ipv ipv,
+	bool overwrite)
 {
 	unsigned int seq = 0;
 	nl_buf(buf);
@@ -290,8 +326,12 @@ lsdn_err_t lsdn_link_vxlan_create(
 	if (if_name)
 		ifindex = if_nametoindex(if_name);
 
+	lsdn_err_t err = cleanup_link(sock, vxlan_name, overwrite);
+	if (err != LSDNE_OK)
+		return err;
+
 	nlh->nlmsg_type = RTM_NEWLINK;
-	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK | NLM_F_EXCL;
 	nlh->nlmsg_seq = seq;
 
 	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
@@ -333,15 +373,19 @@ lsdn_err_t lsdn_link_vxlan_create(
 
 lsdn_err_t lsdn_link_geneve_create(
 	struct mnl_socket *sock, struct lsdn_if* dst_if,
-	const char *new_if, uint16_t port, bool collect_metadata)
+	const char *new_if, uint16_t port, bool collect_metadata, bool overwrite)
 {
 	unsigned int seq = 0;
 	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo, *geneve_linkinfo;
 
+	lsdn_err_t err = cleanup_link(sock, new_if, overwrite);
+	if (err != LSDNE_OK)
+		return err;
+
 	nlh->nlmsg_type = RTM_NEWLINK;
-	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK | NLM_F_EXCL;
 	nlh->nlmsg_seq = seq;
 
 	struct ifinfomsg *ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
@@ -364,11 +408,17 @@ lsdn_err_t lsdn_link_geneve_create(
 	return link_create_send(sock, buf, nlh, linkinfo, new_if, dst_if);
 }
 
-lsdn_err_t lsdn_link_bridge_create(struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name)
+lsdn_err_t lsdn_link_bridge_create(
+	struct mnl_socket *sock, struct lsdn_if* dst_if, const char *if_name,
+	bool overwrite)
 {
 	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
+
+	lsdn_err_t err = cleanup_link(sock, if_name, overwrite);
+	if (err != LSDNE_OK)
+		return err;
 
 	link_create_header(nlh, &linkinfo, if_name, "bridge");
 	return link_create_send(sock, buf, nlh, linkinfo, if_name, dst_if);
@@ -393,7 +443,7 @@ lsdn_err_t lsdn_link_set_master(struct mnl_socket *sock,
 
 	mnl_attr_put_u32(nlh, IFLA_MASTER, master);
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, false);
 }
 
 static void fdb_set_keys(struct nlmsghdr *nlh, lsdn_mac_t mac, lsdn_ip_t ip)
@@ -425,7 +475,7 @@ lsdn_err_t lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 
 	fdb_set_keys(nlh, mac, ip);
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, false);
 }
 
 lsdn_err_t lsdn_fdb_remove_entry(struct mnl_socket *sock, unsigned int ifindex,
@@ -447,7 +497,7 @@ lsdn_err_t lsdn_fdb_remove_entry(struct mnl_socket *sock, unsigned int ifindex,
 
 	fdb_set_keys(nlh, mac, ip);
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, false);
 }
 
 lsdn_err_t lsdn_link_set_ip(struct mnl_socket *sock,
@@ -478,7 +528,7 @@ lsdn_err_t lsdn_link_set_ip(struct mnl_socket *sock,
 		mnl_attr_put(nlh, IFA_LOCAL, sizeof(ip.v6.bytes), ip.v6.bytes);
 	}
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, false);
 }
 
 lsdn_err_t lsdn_link_veth_create(
@@ -541,7 +591,7 @@ lsdn_err_t lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface)
 	ifm->ifi_flags = 0;
 	ifm->ifi_index = iface->ifindex;
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, true);
 }
 
 lsdn_err_t lsdn_link_get_mtu(struct mnl_socket *sock, unsigned int ifindex,
@@ -603,13 +653,19 @@ lsdn_err_t lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up)
 	ifm->ifi_flags = flags;
 	ifm->ifi_index = ifindex;
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, false);
 }
 
-lsdn_err_t lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex)
+lsdn_err_t lsdn_qdisc_ingress_create(
+	struct mnl_socket *sock, unsigned int ifindex, bool overwrite)
 {
 	unsigned int seq = 0;
 	nl_buf(buf);
+	if (overwrite) {
+		lsdn_err_t err = lsdn_qdisc_ingress_delete(sock, ifindex);
+		if (err != LSDNE_OK)
+			return err;
+	}
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	nlh->nlmsg_type = RTM_NEWQDISC;
@@ -624,17 +680,23 @@ lsdn_err_t lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifind
 
 	mnl_attr_put_strz(nlh, TCA_KIND, "ingress");
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, false);
 }
 
-lsdn_err_t lsdn_qdisc_egress_create(struct mnl_socket *sock, unsigned int ifindex)
+lsdn_err_t lsdn_qdisc_egress_create(
+	struct mnl_socket *sock, unsigned int ifindex, bool overwrite)
 {
 	unsigned int seq = 0;
 	nl_buf(buf);
+	if (overwrite) {
+		lsdn_err_t err = lsdn_qdisc_egress_delete(sock, ifindex);
+		if (err != LSDNE_OK)
+			return err;
+	}
 
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	nlh->nlmsg_type = RTM_NEWQDISC;
-	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_EXCL | NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST | NLM_F_ACK;
 	nlh->nlmsg_seq = seq;
 
 	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(nlh, sizeof(*tcm));
@@ -650,7 +712,45 @@ lsdn_err_t lsdn_qdisc_egress_create(struct mnl_socket *sock, unsigned int ifinde
 	bzero(qopt.priomap, sizeof(qopt.priomap));
 	mnl_attr_put(nlh, TCA_OPTIONS, sizeof(qopt), &qopt);
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, false);
+}
+
+lsdn_err_t lsdn_qdisc_egress_delete(struct mnl_socket *sock, unsigned int ifindex)
+{
+	unsigned int seq = 0;
+	nl_buf(buf);
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type = RTM_DELQDISC;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(nlh, sizeof(*tcm));
+	tcm->tcm_family = AF_UNSPEC;
+	tcm->tcm_ifindex = ifindex;
+	tcm->tcm_handle = LSDN_ROOT_HANDLE;
+	tcm->tcm_parent = TC_H_ROOT;
+	send_await_response(sock, nlh, true);
+	return LSDNE_OK;
+}
+
+lsdn_err_t lsdn_qdisc_ingress_delete(struct mnl_socket *sock, unsigned int ifindex)
+{
+	unsigned int seq = 0;
+	nl_buf(buf);
+
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type = RTM_DELQDISC;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+	nlh->nlmsg_seq = seq;
+
+	struct tcmsg *tcm = mnl_nlmsg_put_extra_header(nlh, sizeof(*tcm));
+	tcm->tcm_family = AF_UNSPEC;
+	tcm->tcm_ifindex = ifindex;
+	tcm->tcm_handle = LSDN_INGRESS_HANDLE;
+	tcm->tcm_parent = TC_H_INGRESS;
+	send_await_response(sock, nlh, true);
+	return LSDNE_OK;
 }
 
 /**
@@ -1001,7 +1101,7 @@ lsdn_err_t lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f)
 
 	mnl_attr_nest_end(f->nlh, f->nested_opts);
 
-	return send_await_response(sock, f->nlh);
+	return send_await_response(sock, f->nlh, false);
 }
 
 /* Allow an existing TC filter to be updated. Unless this called, the filter must not exist */
@@ -1031,5 +1131,5 @@ lsdn_err_t lsdn_filter_delete(
 
 	mnl_attr_put_u32(nlh, TCA_CHAIN, chain);
 
-	return send_await_response(sock, nlh);
+	return send_await_response(sock, nlh, false);
 }

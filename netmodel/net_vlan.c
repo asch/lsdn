@@ -15,10 +15,12 @@ static lsdn_err_t vlan_create_pa(struct lsdn_phys_attachment *p)
 {
 	lsdn_err_t err;
 	lsdn_if_init(&p->tunnel_if);
+	struct lsdn_context *ctx = p->net->ctx;
 	// create the vlan interface
 	err = lsdn_link_vlan_create(
-		p->net->ctx->nlsock, &p->tunnel_if,
-		p->phys->attr_iface, lsdn_mk_iface_name(p->net->ctx), p->net->vnet_id);
+		ctx->nlsock, &p->tunnel_if,
+		p->phys->attr_iface, lsdn_mk_iface_name(ctx), p->net->vnet_id,
+		ctx->overwrite);
 	if(err != LSDNE_OK)
 		return err;
 

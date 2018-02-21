@@ -65,7 +65,8 @@ static lsdn_err_t vxlan_mcast_create_pa(struct lsdn_phys_attachment *a)
 		s->vxlan.port,
 		true,
 		false,
-		s->vxlan.mcast.mcast_ip.v);
+		s->vxlan.mcast.mcast_ip.v,
+		a->net->ctx->overwrite);
 	if (err != LSDNE_OK) {
 		lsdn_if_free(&a->tunnel_if);
 		return err;
@@ -153,7 +154,8 @@ static lsdn_err_t vxlan_e2e_create_pa(struct lsdn_phys_attachment *a)
 		a->net->settings->vxlan.port,
 		true,
 		false,
-		a->phys->attr_ip->v);
+		a->phys->attr_ip->v,
+		a->net->ctx->overwrite);
 	if (err != LSDNE_OK)
 		return err;
 
@@ -285,7 +287,8 @@ static lsdn_err_t vxlan_use_stunnel(struct lsdn_phys_attachment *a)
 			s->vxlan.port,
 			false,
 			true,
-			a->phys->attr_ip->v);
+			a->phys->attr_ip->v,
+			ctx->overwrite);
 		if (err != LSDNE_OK)
 			goto cleanup_link;
 

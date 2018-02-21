@@ -108,11 +108,12 @@ lsdn_err_t lsdn_sbridge_init(struct lsdn_context *ctx, struct lsdn_sbridge *br)
 	struct lsdn_if sbridge_if;
 	struct lsdn_ruleset_prio *prio;
 	lsdn_if_init(&sbridge_if);
-	lsdn_err_t err = lsdn_link_dummy_create(ctx->nlsock, &sbridge_if, lsdn_mk_iface_name(ctx));
+	lsdn_err_t err = lsdn_link_dummy_create(
+		ctx->nlsock, &sbridge_if, lsdn_mk_iface_name(ctx), ctx->overwrite);
 	if (err != LSDNE_OK)
 		return err;
 
-	err = lsdn_qdisc_ingress_create(ctx->nlsock, sbridge_if.ifindex);
+	err = lsdn_qdisc_ingress_create(ctx->nlsock, sbridge_if.ifindex, ctx->overwrite);
 	if (err != LSDNE_OK)
 		goto cleanup_if;
 

@@ -16,7 +16,8 @@ static lsdn_err_t geneve_use_stunnel(struct lsdn_phys_attachment *a)
 	struct lsdn_ruleset *rules_in = &s->geneve.ruleset_in;
 	if (s->geneve.refcount == 0) {
 		err = lsdn_link_geneve_create(
-			ctx->nlsock, tunnel, lsdn_mk_iface_name(ctx), s->geneve.port, true);
+			ctx->nlsock, tunnel, lsdn_mk_iface_name(ctx), s->geneve.port,
+			true, ctx->overwrite);
 		if (err != LSDNE_OK) {
 			return err;
 		}

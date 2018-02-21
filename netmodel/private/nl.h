@@ -76,33 +76,29 @@ struct mnl_socket *lsdn_socket_init();
 
 void lsdn_socket_free(struct mnl_socket *s);
 
-lsdn_err_t lsdn_link_dummy_create(
-		struct mnl_socket *sock,
+lsdn_err_t lsdn_link_dummy_create(struct mnl_socket *sock,
 		struct lsdn_if *dst_if,
-		const char *if_name);
+		const char *if_name, bool overwrite);
 
-lsdn_err_t lsdn_link_vlan_create(
-		struct mnl_socket *sock,
+lsdn_err_t lsdn_link_vlan_create(struct mnl_socket *sock,
 		struct lsdn_if *dst_if, const char *if_name,
-		const char *vlan_name, uint16_t vlanid);
+		const char *vlan_name, uint16_t vlanid, bool overwrite);
 
 lsdn_err_t lsdn_link_vxlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if,
 		const char *if_name, const char *vxlan_name,
 		lsdn_ip_t *mcast_group, uint32_t vxlanid, uint16_t port,
-		bool learning, bool collect_metadata, enum lsdn_ipv ipv);
+		bool learning, bool collect_metadata, enum lsdn_ipv ipv, bool overwrite);
 
-lsdn_err_t lsdn_link_geneve_create(
-	struct mnl_socket *sock, struct lsdn_if* dst_if,
-	const char *new_if, uint16_t port, bool collect_metadata);
+lsdn_err_t lsdn_link_geneve_create(struct mnl_socket *sock, struct lsdn_if* dst_if,
+	const char *new_if, uint16_t port, bool collect_metadata, bool overwrite);
 
 lsdn_err_t lsdn_link_veth_create(struct mnl_socket *sock,
 		struct lsdn_if *if1, const char *if_name1,
 		struct lsdn_if *if2, const char *if_name2);
 
-lsdn_err_t lsdn_link_bridge_create(
-		struct mnl_socket *sock,
+lsdn_err_t lsdn_link_bridge_create(struct mnl_socket *sock,
 		struct lsdn_if *dst_id,
-		const char *if_name);
+		const char *if_name, bool overwrite);
 
 lsdn_err_t lsdn_link_delete(struct mnl_socket *sock, struct lsdn_if *iface);
 
@@ -117,8 +113,10 @@ lsdn_err_t lsdn_link_set_ip(struct mnl_socket *sock,
 
 lsdn_err_t lsdn_link_set(struct mnl_socket *sock, unsigned int ifindex, bool up);
 
-lsdn_err_t lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex);
-lsdn_err_t lsdn_qdisc_egress_create(struct mnl_socket *sock, unsigned int ifindex);
+lsdn_err_t lsdn_qdisc_ingress_create(struct mnl_socket *sock, unsigned int ifindex, bool overwrite);
+lsdn_err_t lsdn_qdisc_egress_create(struct mnl_socket *sock, unsigned int ifindex, bool overwrite);
+lsdn_err_t lsdn_qdisc_egress_delete(struct mnl_socket *sock, unsigned int ifindex);
+lsdn_err_t lsdn_qdisc_ingress_delete(struct mnl_socket *sock, unsigned int ifindex);
 
 lsdn_err_t lsdn_fdb_add_entry(struct mnl_socket *sock, unsigned int ifindex,
 		lsdn_mac_t mac, lsdn_ip_t ip);

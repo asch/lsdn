@@ -52,6 +52,8 @@ struct lsdn_context {
 
 	/** Netlink socket for installing tc rules. */
 	struct mnl_socket *nlsock;
+	/** Should we try to blindly overwrite existing interfaces and QDiscs */
+	bool overwrite;
 
 	/** User-specified problem callback. */
 	lsdn_problem_cb problem_cb;
