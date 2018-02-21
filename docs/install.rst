@@ -37,10 +37,11 @@ you will need to install ``tcl-devel`` package from a differen source (for
 example
 `Psychotic Ninja <https://centos.pkgs.org/7/psychotic-ninja-plus-x86_64/tcl-devel-8.6.5-2.el7.psychotic.x86_64.rpm.html>`_).
 
-You will also need fairly recent Linux Kernel headers (at least 4.14) to build LSDN. For actually
-running LSDN, we recommend 4.15, as 4.14 still has some bugs in the used networking technologies and
-you might encounter crashes. This means you will either need to run a recent version of your
-distribution or install the kernel manually.
+You will also need fairly recent Linux Kernel headers (at least 4.14) to build
+LSDN. For actually running LSDN, we recommend 4.15, as 4.14 still has some bugs
+in the used networking technologies and you might encounter crashes. This means
+you will either need to run a recent version of your distribution or install the
+kernel manually.
 
 If you do not plan on running LSDN on this machine, it is also possible to
 install just the kernel headers by running: ::
@@ -62,8 +63,8 @@ directory where you put the downloaded sources: ::
 
 Now try running ``lsctl`` to see if the package was installed correctly.
 
-If you have additional kernel headers installed manually (see previous section), instead of running
-``cmake``, run: ::
+If you have additional kernel headers installed manually (see previous section),
+instead of running ``cmake``, run: ::
 
     cmake -DKERNEL_HEADERS=$header_dir/include ..
 
@@ -71,20 +72,21 @@ If you have additional kernel headers installed manually (see previous section),
 Building packages
 ------------------
 
-This project contains instruction files for building packages for various distributions of Linux.
+This project contains instruction files for building packages for various
+distributions of Linux.
 
 Arch
 ~~~~
 
-On Arch Linux the PKGBUILD file is located in dist/arch/ and the package can be built and installed
-as follows: ::
+On Arch Linux the PKGBUILD file is located in dist/arch/ and the package can be
+built and installed as follows: ::
 
 	cd dist/arch/
 	makepkg
 	pacman -U lsdn*.tar.xz
 
-If you do not want to build the package on your own, you can install lsdn with all it's dependencies
-directly from Arch User Repository (lsdn-git package): ::
+If you do not want to build the package on your own, you can install lsdn with
+all it's dependencies directly from Arch User Repository (lsdn-git package): ::
 
 	pacaur -S lsdn-git # pacaur is AUR helper of our choice
 

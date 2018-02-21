@@ -591,10 +591,10 @@ where you can enter directives one after another.
 Using lsctld and lsctlc
 -----------------------
 
-If you want to use migrations, you have to keep a ``lsctld`` daemon running in the
-background, so that it can remember the current state of the network and make
-changes appropriately. You can send new configuration directives to the daemon
-using the ``lsctlc`` command.
+If you want to use migrations, you have to keep a ``lsctld`` daemon running in
+the background, so that it can remember the current state of the network and
+make changes appropriately. You can send new configuration directives to the
+daemon using the ``lsctlc`` command.
 
 First, let's decide on the location of the control socket for ``lsctld``.
 ``lsctld`` uses a regular Unix socket that can be located anywhere on the
@@ -640,10 +640,10 @@ Or directly on the command-line:
 TCL extension (tclsh)
 ----------------------
 
-Instead of using the `lsctl <prog_lsctl>` command-line tool, you can use TCL directly
-and load LSDN as an extension. This will allow you to combine LSDN with larger
-TCL programs and run it using ``tclsh``. This can be done using the regular TCL
-means: ::
+Instead of using the `lsctl <prog_lsctl>` command-line tool, you can use TCL
+directly and load LSDN as an extension. This will allow you to combine LSDN with
+larger TCL programs and run it using ``tclsh``. This can be done using the
+regular TCL means: ::
 
     package require lsdn
     namespace import lsdn::*
