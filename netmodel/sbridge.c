@@ -216,13 +216,13 @@ lsdn_err_t lsdn_sbridge_add_if(struct lsdn_sbridge *br, struct lsdn_sbridge_if *
 
 	return err;
 
-	cleanup_idalloc:
-	lsdn_idalloc_return(&iface->phys_if->br_chain_ids, br_handle);
-	cleanup_match:
-	acc_inconsistent(&err, lsdn_ruleset_remove(match_mac));
 	cleanup_clist:
 	acc_inconsistent(&err, lsdn_ruleset_remove(fallback));
 	acc_inconsistent(&err, lsdn_clist_flush(&iface->cl_owner));
+	cleanup_match:
+	acc_inconsistent(&err, lsdn_ruleset_remove(match_mac));
+	cleanup_idalloc:
+	lsdn_idalloc_return(&iface->phys_if->br_chain_ids, br_handle);
 	return err;
 }
 
