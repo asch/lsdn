@@ -370,14 +370,15 @@ continue in supporting the project as well as integrate future enhancements in
 the TC framework, fix bugs found in the production as well as customize the
 project according to the future needs of virtual networks.
 
+Furthermore there are some features that we consider useful and could be
+improved upon straight away. Some of them rely on things that the kernel learned
+to do in the last months of the project, or that we have discovered recently -
+the ``egress`` qdisc or better default disciplines (CoDEL was suggested). We
+would also like to improve the firewall (rewrite the rule engine and add support
+for ACCEPT actions).
+
 The next challenging step is to integrate LSDN into most popular virtualization
 orchestrators and eliminate Open vSwitch. This would attract more developers and
 make the project part of the state of the art cloud ecosystem - this is the real
 goal!
 
-Well, on a more realistic note, there are some features that we consider useful
-and could be improved upon straigh away. Some of them rely on tings that the
-kernel learned to do in the last months of the project, or that we have
-discovered recently - the ``egress`` qdisc or better default disciplines (CoDEL
-was suggested). We would also like to improve the firewall (rewrite the rule
-engine and add support for ACCEPT actions).
