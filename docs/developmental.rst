@@ -369,3 +369,8 @@ Because of the very promising future of the tool, the LSDN team is willing to
 continue in supporting the project as well as integrate future enhancements in
 the TC framework, fix bugs found in the production as well as customize the
 project according to the future needs of virtual networks.
+
+The next challenging step is to integrate LSDN into most popular virtualization
+orchestrators and eliminate Open vSwitch. This would attract more developers and
+make the project part of the state of the art cloud ecosystem - this is the real
+goal!
