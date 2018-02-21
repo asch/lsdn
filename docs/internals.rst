@@ -46,13 +46,13 @@ For this, it relies on the **rules** (in ``rules.c``) system, which helps you
 manage a chain of TC flower filters and their rules. The system also allows the
 firewall rules (given by the user) and the routing rules (defined by the virtual network
 topology) to share the same flower table. However, the sharing is currently not done,
-beacause we instead opted to share the routing table among all virts connect
+because we instead opted to share the routing table among all virts connect
 through the given phys instead. Since firewall rules are per-virt, the can not
 live in the shared table. Another function of this module is that it helps us
 overcome the 32 actions limit in the kernel for our broadcast rules.
 
 The *netmodel* core only manages the aspects common to all network types --
-lifecycle, firewall rules and QoS, but calls back to a concrete network type
+life cycle, firewall rules and QoS, but calls back to a concrete network type
 plugin for constructing the virtual network. This is done through the
 :c:type:`lsdn_netops` structure and described more thoroughly in
 :ref:`internals_netops`.
@@ -139,10 +139,10 @@ any network type. This includes QoS, firewall rules and basic validation.
 
 Importantly, it also provides the state management needed for implementing the
 commit functionality, which is important for the overall ease-of-use of the C
-api. The network model layer must keep track of both the current state of the
-network model and what is commited. Also it tracks which objects have changed
+API. The network model layer must keep track of both the current state of the
+network model and what is committed. Also it tracks which objects have changed
 attributes and need to be update. Finally, it keeps objects that were deleted y
-the user, but are still commited alive.
+the user, but are still committed alive.
 
 For this, it is important to understand a life-cycle of an object, illustrated
 in :numref:`netmodel_states`.
@@ -178,11 +178,11 @@ in :numref:`netmodel_states`.
     FAIL -> FAIL [label = "c. fail", color = "red" ];
 
 The objects alway start in the **NEW** state, indicating that they will be
-acutally created with the nearest commit.  If they are freed, the `free` call is
+actually created with the nearest commit.  If they are freed, the `free` call is
 actually done immediately. Any update leaves them in the *NEW* state, since
 there is nothing to update yet.
 
-Once a *NEW* object is sucesfully commited, it moves to the **OK** state. A
+Once a *NEW* object is successfully committed, it moves to the **OK** state. A
 commit has no effect on such object, since it is up-to-date.
 
 If a *NEW* object is freed, it is moved to the **DELETE** state, but its memory
@@ -235,10 +235,10 @@ The **settings_new** function will inform LSDN how to use your network type.
 Do not forget to do the following things in your *settings_new* function:
 
  - allocate new ``lsdn_settings`` structure via malloc
- - initalize the settings using ``lsdn_settings_init_common`` function
+ - initialize the settings using ``lsdn_settings_init_common`` function
  - fill in the:
     - ``nettype`` (as you have added above)
-    - ``switch_type`` (static, partialy static, or learning, purely
+    - ``switch_type`` (static, partially static, or learning, purely
       informational, has no effect)
     - ``ops`` (*lsdn_net_ops* will be described shortly)
  - return the new settings
@@ -302,7 +302,7 @@ The other callbacks are mandatory. Naturally, you will want to implement the
 ``remove``/``destroy`` callbacks for all your ``add``/``create`` callbacks. There
 are also validation callbacks, that allow you to reject invalid network
 configuration early (see c:ref:`validation`). Finally, LSDN can check the
-uniqueness of the listening IP address/port combiations your tunnels use, if you
+uniqueness of the listening IP address/port combinations your tunnels use, if you
 provide them using :c:member:`lsdn_net_ops::get_ip` and
 :c:member:`lsdn_net_ops::get_port`.
 
@@ -364,7 +364,7 @@ Unlike classic bridge, a single interface may be connected to multiple bridges.
 Struct **lsdn_sbridge_if** represents the connection of *sbridge_phys_if* to the
 bridge. For virtual machines *sbridge_if* and *sbridge_phys_if* will correspond
 1:1, since virtual machine can not be connected to multiple bridges. If a
-sbridge is shared, you have to provide a criteria spliting up the traffic,
+sbridge is shared, you have to provide a criteria splitting up the traffic,
 usually by the :ref:`vid`.
 
 Struct **lsdn_sbridge_route** represents a route through given *sbridge_if*. For
@@ -378,7 +378,7 @@ given MAC address. There will be a *sbridge_mac* for each VM on a physical
 machine where the route leads.
 
 The structures above need to be created from LSDN callbacks. For a network with
-static routing, and metadata tunnels, the correspondence will loook similar to
+static routing, and metadata tunnels, the correspondence will look similar to
 this:
 
  ================================================================= ==================================================
@@ -399,7 +399,7 @@ Command-line
 
 The :ref:`lsctl` are interpreted by the *lsdn-tclext* library.
 We have chosen to use the TCL language as a basic for our configuration
-language. Althought it might seem as a strange choice, it provides a bigger
+language. Although it might seem as a strange choice, it provides a bigger
 flexibility for creating DSLs than let's say JSON or YAML. Basically, TCL
 enforces just a single syntactic rule:``{}`` and ``[]`` parentheses.
 
@@ -409,8 +409,8 @@ done as a quick experiment and since have aged quiete well. The YAML parser was
 later dropped instead of updating it.
 
 Naturally, there are advantages to JSON/YAML too. Since our language is
-turing complete, it is not as easily analyzed by machines. However, it is always
-possible to just run the configuraiton scripts and then examine the network
+Turing complete, it is not as easily analyzed by machines. However, it is always
+possible to just run the configuration scripts and then examine the network
 model afterwards. The TCL approach also brings a lot of features for free:
 conditional compilation, variables, loops etc.
 
