@@ -202,7 +202,7 @@ Open-source contributions
 We have identified a few bugs in the Linux kernel during our development. We
 believe this is mainly because of the unusual setups we excersise and new kernel
 features (such as goto chain, lwtunnels) we use. Following bugs were patched or
-at least reported:
+at least reported and patched by someone else:
 
  - `net: don't call update_pmtu unconditionally <https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f15ca723c1ebe6c1a06bc95fda6b62cd87b44559>`_
    (reported)
@@ -210,10 +210,11 @@ at least reported:
  - `net: sched: fix crash when deleting secondary chains <https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=d7aa04a5e82b4f254d306926c81eae8df69e5200>`_
  - `v9fs over btrfs <https://sourceforge.net/p/v9fs/mailman/message/36130692/>`_
    (mailing list dead, not merged)
+ - `net: sched: report if filter is too large to dump <https://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git/commit/?id=5ae437ad5a2ed573b1ebb04e0afa70b8869f88dd>`_
 
 We have also identified a bug in iproute2:
  - `tc: fix an off-by-one error while printing tc actions <https://marc.info/?l=linux-netdev&m=151898324311814>`_
-   (reported)
+   (not yet merged)
 
 Naturally, our tooling also has problems, so we also fixed a bug in
 `sphinx <https://github.com/sphinx-doc/sphinx/pull/4627>`_ and
