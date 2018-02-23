@@ -196,7 +196,6 @@ err:
 
 static struct json_object *jsonify_lsdn_qos_rate(lsdn_qos_rate_t *qos)
 {
-	// TODO unify double / float / uint32 types in lsctl, netmodel and dump
 	struct json_object *jint, *jdouble;
 	struct json_object *jqos = json_object_new_object();
 	if (!jqos)
@@ -384,105 +383,135 @@ err:
 	ret_ptr(ctx, res);
 }
 
-#define NEWLINE "\n"
-#define SPACE " "
-
-struct strbuf {
-	char *s;
-	char *end;
+struct dump_ctx {
+	char *buf;
 	size_t len;
+	FILE *memstream;
+	size_t indent;
+	int state;
 };
 
-static struct strbuf *strbuf_create(size_t hint)
+static struct dump_ctx *dump_ctx_create(void)
 {
-	size_t size = hint ? hint : 128;
-	struct strbuf *sbuf = (struct strbuf *) malloc(sizeof(*sbuf));
-	if (!sbuf)
-		return NULL;
-	sbuf->s = (char *) malloc(size);
-	if (!sbuf->s) {
-		free(sbuf);
-		return NULL;
-	}
-	sbuf->s[0] = '\0';
-	sbuf->end = sbuf->s;
-	sbuf->len = size;
-	return sbuf;
+	struct dump_ctx *dctx = (struct dump_ctx *) malloc(sizeof(*dctx));
+	if (!dctx)
+		goto err;
+	bzero(dctx, sizeof(*dctx));
+	dctx->memstream = open_memstream(&dctx->buf, &dctx->len);
+	if (!dctx->memstream)
+		goto err;
+	return dctx;
+err:
+	free(dctx);
+	return NULL;
 }
 
-static struct strbuf *strbuf_append_str(
-		struct strbuf *sbuf, const char *str)
+static inline void dump_ctx_free(struct dump_ctx *dctx)
 {
-	size_t size = sbuf->end - sbuf->s;
-	size_t free_space = sbuf->len - size - 1;
-	size_t str_len = strlen(str);
-	if (free_space < str_len) {
-		size_t new_size = sbuf->len > str_len ?
-			(sbuf->len * 2) : (str_len * 2);
-		char *s = (char *) malloc(new_size);
-		if (!s)
-			return NULL;
-		strcpy(s, sbuf->s);
-		free(sbuf->s);
-		sbuf->s = s;
-		sbuf->len = new_size;
-		sbuf->end = sbuf->s + size;
-	}
-	strcpy(sbuf->end, str);
-	sbuf->end += str_len;
-	return sbuf;
+	free(dctx);
 }
 
-static struct strbuf *strbuf_append(struct strbuf *sbuf, ...)
+static inline char *dump_ctx_get_buf(struct dump_ctx *dctx)
 {
-	va_list args;
-	const char *str;
-	struct strbuf *ret = sbuf;
+	fclose(dctx->memstream);
+	return dctx->buf;
+}
 
-	va_start(args, sbuf);
-	while ((str = va_arg(args, char *)))
-		if ((ret = strbuf_append_str(sbuf, str)) == NULL)
-			break;
-	va_end(args);
+static inline int dump_ctx_check_state(struct dump_ctx *dctx)
+{
+	return dctx->state;
+}
 
+static inline void dump_ctx_set_state(struct dump_ctx *dctx, int state)
+{
+	dctx->state = state;
+}
+
+static inline void dump_ctx_inc_indent(struct dump_ctx *dctx)
+{
+	dctx->indent++;
+}
+
+static inline void dump_ctx_dec_indent(struct dump_ctx *dctx)
+{
+	assert(dctx->indent > 0);
+	dctx->indent--;
+}
+
+static int dump_ctx_append_str(struct dump_ctx *dctx, const char *str)
+{
+	int ret = 0;
+	if (dump_ctx_check_state(dctx))
+		return ret;
+	if ((ret = fprintf(dctx->memstream, str)) < 0)
+		dump_ctx_set_state(dctx, 1);
 	return ret;
 }
 
-#define strbuf_append_safe(...) do { if (!strbuf_append(__VA_ARGS__)) return 1; } while (0)
-
-static inline char *strbuf_to_str(struct strbuf *sbuf)
+static int dump_ctx_append(struct dump_ctx *dctx, ...)
 {
-	return strdup(sbuf->s);
+	int total = 0;
+	int ret;
+	va_list args;
+	const char *str;
+
+	va_start(args, dctx);
+	while ((str = va_arg(args, char *))) {
+		if ((ret = dump_ctx_append_str(dctx, str)) < 0)
+			return ret;
+		else
+			total += ret;
+		if ((ret = dump_ctx_append_str(dctx, " ")) < 0)
+			return ret;
+		else
+			total += ret;
+	}
+	va_end(args);
+
+	return total;
 }
 
-static inline void strbuf_free(struct strbuf *sbuf)
+static int dump_ctx_start_line(struct dump_ctx *dctx)
 {
-	free(sbuf->s);
-	free(sbuf);
+	int total = 0;
+	int ret;
+	for (size_t i = 0; i < dctx->indent; i++) {
+		if ((ret = dump_ctx_append_str(dctx, "\t")) < 0)
+			return ret;
+		else
+			total += ret;
+	}
+	return total;
 }
 
-static int parse_json_lsdn_settings(struct json_object *jobj, struct strbuf *sbuf)
+static int dump_ctx_end_line(struct dump_ctx *dctx)
+{
+	return dump_ctx_append_str(dctx, "\n");
+}
+
+static int parse_json_lsdn_settings(struct json_object *jobj, struct dump_ctx *dctx)
 {
 	assert(json_object_is_type(jobj, json_type_array));
 	int len = json_object_array_length(jobj);
 	for (int idx = 0; idx < len; idx++) {
 		struct json_object *jsettings = json_object_array_get_idx(jobj, idx);
 		assert(json_object_is_type(jsettings, json_type_object));
-		strbuf_append_safe(sbuf, "settings", SPACE, NULL);
+		dump_ctx_start_line(dctx);
+		dump_ctx_append(dctx, "settings", NULL);
 		struct json_object *val;
 		assert(json_object_object_get_ex(jsettings, "settingsType", &val));
-		strbuf_append_safe(sbuf, json_object_get_string(val), SPACE, NULL);
+		dump_ctx_append(dctx, json_object_get_string(val), NULL);
 
 		if (json_object_object_get_ex(jsettings, "settingsName", &val)) {
-			strbuf_append_safe(sbuf, "-name", SPACE, json_object_get_string(val), SPACE, NULL);
+			dump_ctx_append(dctx, "-name", json_object_get_string(val), NULL);
 		}
 		if (json_object_object_get_ex(jsettings, "port", &val)) {
-			strbuf_append_safe(sbuf, "-port", SPACE, json_object_get_string(val), SPACE, NULL);
+			dump_ctx_append(dctx, "-port", json_object_get_string(val), NULL);
 		}
 		if (json_object_object_get_ex(jsettings, "ip", &val)) {
-			strbuf_append_safe(sbuf, "-mcastIp", SPACE, json_object_get_string(val), NULL);
+			dump_ctx_append(dctx, "-mcastIp", json_object_get_string(val), NULL);
 		}
-		strbuf_append_safe(sbuf, NEWLINE, NULL);
+		dump_ctx_end_line(dctx);
 	}
 	return 0;
 }
@@ -525,7 +554,7 @@ static bool target_has_mask(const char *target)
 	return false;
 }
 
-static int convert_rules(struct json_object *rules, struct strbuf *sbuf)
+static int convert_rules(struct json_object *rules, struct dump_ctx *dctx)
 {
 	char ip_pref[8 + 1];
 
@@ -534,17 +563,18 @@ static int convert_rules(struct json_object *rules, struct strbuf *sbuf)
 	for (int idx = 0; idx < len; idx++) {
 		struct json_object *rule = json_object_array_get_idx(rules, idx);
 		assert(json_object_is_type(rule, json_type_object));
-		strbuf_append_safe(sbuf, "rule", SPACE, NULL);
+		dump_ctx_start_line(dctx);
+		dump_ctx_append(dctx, "rule", NULL);
 		struct json_object *val;
 		if (!json_object_object_get_ex(rule, "dir", &val))
 			return 1;
-		strbuf_append_safe(sbuf, json_object_get_string(val), SPACE, NULL);
+		dump_ctx_append(dctx, json_object_get_string(val), NULL);
 		if (!json_object_object_get_ex(rule, "prio", &val))
 			return 1;
-		strbuf_append_safe(sbuf, json_object_get_string(val), SPACE, NULL);
+		dump_ctx_append(dctx, json_object_get_string(val), NULL);
 		if (!json_object_object_get_ex(rule, "action", &val))
 			return 1;
-		strbuf_append_safe(sbuf, json_object_get_string(val), SPACE, NULL);
+		dump_ctx_append(dctx, json_object_get_string(val), NULL);
 
 		if (json_object_object_get_ex(rule, "targets", &val)) {
 			assert(json_object_is_type(val, json_type_array));
@@ -556,10 +586,10 @@ static int convert_rules(struct json_object *rules, struct strbuf *sbuf)
 				if (!json_object_object_get_ex(wal, "target", &zal))
 					return 1;
 				const char *target = json_object_get_string(zal);
-				strbuf_append_safe(sbuf, target_match_conversion(target), SPACE, NULL);
+				dump_ctx_append(dctx, target_match_conversion(target), NULL);
 				if (!json_object_object_get_ex(wal, "match", &zal))
 					return 1;
-				strbuf_append_safe(sbuf, json_object_get_string(zal), NULL);
+				dump_ctx_append_str(dctx, json_object_get_string(zal));
 				if (target_has_mask(target)) {
 					if (json_object_object_get_ex(wal, "matchMask", &zal)) {
 						lsdn_ip_t ip;
@@ -567,54 +597,56 @@ static int convert_rules(struct json_object *rules, struct strbuf *sbuf)
 						if (res != LSDNE_OK)
 							return 1;
 						int prefix = lsdn_ip_prefix_from_mask(&ip);
-						sprintf(ip_pref, "%d", prefix);
-						strbuf_append_safe(sbuf, "/", ip_pref, NULL);
+						sprintf(ip_pref, "/%d", prefix);
+						dump_ctx_append(dctx, ip_pref, NULL);
 					}
 				}
 			}
 		}
-		strbuf_append_safe(sbuf, NEWLINE, NULL);
+		dump_ctx_end_line(dctx);
 	}
 	return 0;
 }
 
-static int convert_qos(struct json_object *qos, bool in, struct strbuf *sbuf)
+static int convert_qos(struct json_object *qos, bool in, struct dump_ctx *dctx)
 {
 	assert(json_object_is_type(qos, json_type_object));
-	strbuf_append_safe(sbuf, "rate", SPACE, NULL);
+	dump_ctx_start_line(dctx);
+	dump_ctx_append(dctx, "rate", NULL);
 	if (in)
-		strbuf_append_safe(sbuf, "in", SPACE, NULL);
+		dump_ctx_append(dctx, "in", NULL);
 	else
-		strbuf_append_safe(sbuf, "out", SPACE, NULL);
-
+		dump_ctx_append(dctx, "out", NULL);
 	struct json_object *attr;
 	if (json_object_object_get_ex(qos, "avgRate", &attr))
-		strbuf_append_safe(sbuf, "-avg", SPACE, json_object_get_string(attr), SPACE, NULL);
+		dump_ctx_append(dctx, "-avg", json_object_get_string(attr), NULL);
 	if (json_object_object_get_ex(qos, "burstSize", &attr))
-		strbuf_append_safe(sbuf, "-burst", SPACE, json_object_get_string(attr), SPACE, NULL);
+		dump_ctx_append(dctx, "-burst", json_object_get_string(attr), NULL);
 	if (json_object_object_get_ex(qos, "burstRate", &attr))
-		strbuf_append_safe(sbuf, "-burstRate", SPACE, json_object_get_string(attr), SPACE, NULL);
-
-	strbuf_append_safe(sbuf, NEWLINE, NULL);
+		dump_ctx_append(dctx, "-burstRate", json_object_get_string(attr), NULL);
+	dump_ctx_end_line(dctx);
 	return 0;
 }
 
-static int parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
+static int parse_json_lsdn_nets(struct json_object *jobj, struct dump_ctx *dctx)
 {
 	assert(json_object_is_type(jobj, json_type_array));
 	int len = json_object_array_length(jobj);
 	for (int idx = 0; idx < len; idx++) {
 		struct json_object *jnet = json_object_array_get_idx(jobj, idx);
 		assert(json_object_is_type(jnet, json_type_object));
-		strbuf_append_safe(sbuf, "net", SPACE, NULL);
+		dump_ctx_start_line(dctx);
+		dump_ctx_append(dctx, "net", NULL);
 		struct json_object *val;
 		if (json_object_object_get_ex(jnet, "vnetId", &val))
-			strbuf_append_safe(sbuf, "-vid", SPACE, json_object_get_string(val), SPACE, NULL);
+			dump_ctx_append(dctx, "-vid", json_object_get_string(val), NULL);
 		if (json_object_object_get_ex(jnet, "settings", &val))
-			strbuf_append_safe(sbuf, "-settings", SPACE, json_object_get_string(val), SPACE, NULL);
+			dump_ctx_append(dctx, "-settings", json_object_get_string(val), NULL);
 		if (json_object_object_get_ex(jnet, "netName", &val))
-			strbuf_append_safe(sbuf, json_object_get_string(val), SPACE, NULL);
-		strbuf_append_safe(sbuf, "{", NEWLINE, NULL);
+			dump_ctx_append(dctx, json_object_get_string(val), NULL);
+		dump_ctx_append(dctx, "{", NULL);
+		dump_ctx_end_line(dctx);
+		dump_ctx_inc_indent(dctx);
 
 		struct json_object *phys_list;
 		if (json_object_object_get_ex(jnet, "physList", &phys_list)) {
@@ -622,7 +654,9 @@ static int parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 			int len_phys_list = json_object_array_length(phys_list);
 			for (int idx = 0; idx < len_phys_list; idx++) {
 				struct json_object *p = json_object_array_get_idx(phys_list, idx);
-				strbuf_append_safe(sbuf, "attach", SPACE, json_object_get_string(p), NEWLINE, NULL);
+				dump_ctx_start_line(dctx);
+				dump_ctx_append(dctx, "attach", json_object_get_string(p), NULL);
+				dump_ctx_end_line(dctx);
 			}
 		}
 
@@ -632,19 +666,20 @@ static int parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 			int len_virt_list = json_object_array_length(virt_list);
 			for (int idx = 0; idx < len_virt_list; idx++) {
 				struct json_object *p = json_object_array_get_idx(virt_list, idx);
-				strbuf_append_safe(sbuf, "virt", SPACE, NULL);
+				dump_ctx_start_line(dctx);
+				dump_ctx_append(dctx, "virt", NULL);
 				struct json_object *rules = NULL;
 				struct json_object *qos_in = NULL;
 				struct json_object *qos_out = NULL;
 				json_object_object_foreach(p, pkey, pval) {
 					if (!strcmp(pkey, "virtName")) {
-						strbuf_append_safe(sbuf, "-name", SPACE, json_object_get_string(pval), SPACE, NULL);
+						dump_ctx_append(dctx, "-name", json_object_get_string(pval), NULL);
 					} else if (!strcmp(pkey, "phys")) {
-						strbuf_append_safe(sbuf, "-phys", SPACE, json_object_get_string(pval), SPACE, NULL);
+						dump_ctx_append(dctx, "-phys", json_object_get_string(pval), NULL);
 					} else if (!strcmp(pkey, "iface")) {
-						strbuf_append_safe(sbuf, "-if", SPACE, json_object_get_string(pval), SPACE, NULL);
+						dump_ctx_append(dctx, "-if", json_object_get_string(pval), NULL);
 					} else if (!strcmp(pkey, "attrMac")) {
-						strbuf_append_safe(sbuf, "-mac", SPACE, json_object_get_string(pval), SPACE, NULL);
+						dump_ctx_append(dctx, "-mac", json_object_get_string(pval), NULL);
 					} else if (!strcmp(pkey, "qosIn")) {
 						qos_in = pval;
 					} else if (!strcmp(pkey, "qosOut")) {
@@ -653,47 +688,59 @@ static int parse_json_lsdn_nets(struct json_object *jobj, struct strbuf *sbuf)
 						rules = pval;
 					}
 				}
-				strbuf_append_safe(sbuf, "{", NEWLINE, NULL);
+				dump_ctx_append(dctx, "{", NULL);
+				dump_ctx_end_line(dctx);
+				dump_ctx_inc_indent(dctx);
 				if (rules)
-					if (convert_rules(rules, sbuf))
+					if (convert_rules(rules, dctx))
 						return 1;
 				if (qos_in)
-					if (convert_qos(qos_in, true, sbuf))
+					if (convert_qos(qos_in, true, dctx))
 						return 1;
 				if (qos_out)
-					if (convert_qos(qos_out, false, sbuf))
+					if (convert_qos(qos_out, false, dctx))
 						return 1;
-				strbuf_append_safe(sbuf, "}", NEWLINE, NULL);
+				dump_ctx_dec_indent(dctx);
+				dump_ctx_start_line(dctx);
+				dump_ctx_append(dctx, "}", NULL);
+				dump_ctx_end_line(dctx);
 			}
 		}
-		strbuf_append_safe(sbuf, "}", NEWLINE, NULL);
+		dump_ctx_append(dctx, "}", NULL);
+		dump_ctx_end_line(dctx);
+		dump_ctx_dec_indent(dctx);
 	}
 	return 0;
 }
 
-static int parse_json_lsdn_physes(struct json_object *jobj, struct strbuf *sbuf)
+static int parse_json_lsdn_physes(struct json_object *jobj, struct dump_ctx *dctx)
 {
 	assert(json_object_is_type(jobj, json_type_array));
 	int len = json_object_array_length(jobj);
 	for (int idx = 0; idx < len; idx++) {
 		struct json_object *jphys = json_object_array_get_idx(jobj, idx);
 		assert(json_object_is_type(jphys, json_type_object));
-		strbuf_append_safe(sbuf, "phys", SPACE, NULL);
+		dump_ctx_start_line(dctx);
+		dump_ctx_append(dctx, "phys", NULL);
 		const char *name = NULL;
 		struct json_object *val;
 		if (json_object_object_get_ex(jphys, "physName", &val)) {
-			strbuf_append_safe(sbuf, "-name", SPACE, NULL);
+			dump_ctx_append(dctx, "-name", NULL);
 			name = json_object_get_string(val);
-			strbuf_append_safe(sbuf, name, SPACE, NULL);
+			dump_ctx_append(dctx, name, NULL);
 		}
 		if (json_object_object_get_ex(jphys, "attrIp", &val))
-			strbuf_append_safe(sbuf, "-ip", SPACE, json_object_get_string(val), SPACE, NULL);
+			dump_ctx_append(dctx, "-ip", json_object_get_string(val), NULL);
 		if (json_object_object_get_ex(jphys, "iface", &val))
-			strbuf_append_safe(sbuf, "-if", SPACE, json_object_get_string(val), SPACE, NULL);
-		strbuf_append_safe(sbuf, NEWLINE, NULL);
-		if (json_object_object_get_ex(jphys, "isLocal", &val) && name)
-			strbuf_append_safe(sbuf, "claimLocal", SPACE, name, NULL);
-		strbuf_append_safe(sbuf, NEWLINE, NULL);
+			dump_ctx_append(dctx, "-if", json_object_get_string(val), NULL);
+		dump_ctx_end_line(dctx);
+		if (json_object_object_get_ex(jphys, "isLocal", &val) && name) {
+			if (json_object_get_boolean(val)) {
+				dump_ctx_start_line(dctx);
+				dump_ctx_append(dctx, "claimLocal", name, NULL);
+				dump_ctx_end_line(dctx);
+			}
+		}
 	}
 	return 0;
 }
@@ -701,43 +748,43 @@ static int parse_json_lsdn_physes(struct json_object *jobj, struct strbuf *sbuf)
 char *lsdn_dump_context_tcl(struct lsdn_context *ctx)
 {
 	char *res = NULL;
-	char *str_json = lsdn_dump_context_json(ctx);
-	if (!str_json)
-		ret_ptr(ctx, res);
-	struct strbuf *sbuf = strbuf_create(0);
-	if (!sbuf) {
-		free(str_json);
-		ret_ptr(ctx, res);
-	}
+	char *str_json = NULL;
+	struct json_object *jobj = NULL;
+	struct dump_ctx *dctx = NULL;
 
-	struct json_object *jobj = json_tokener_parse(str_json);
-	if (!jobj) {
-		free(str_json);
-		strbuf_free(sbuf);
-		ret_ptr(ctx, res);
-	}
+	str_json = lsdn_dump_context_json(ctx);
+	if (!str_json)
+		goto err;
+	dctx = dump_ctx_create();
+	if (!dctx)
+		goto err;
+	jobj = json_tokener_parse(str_json);
+	if (!jobj)
+		goto err;
 	assert(json_object_is_type(jobj, json_type_object));
+
+	dump_ctx_start_line(dctx);
+	dump_ctx_append(dctx, "namespace import lsdn::*", NULL);
+	dump_ctx_end_line(dctx);
 	json_object_object_foreach(jobj, key, val) {
 		if (!strcmp(key, "lsdnSettings")) {
-			if (parse_json_lsdn_settings(val, sbuf))
+			if (parse_json_lsdn_settings(val, dctx))
 				goto err;
 		} else if (!strcmp(key, "lsdnPhyses")) {
-			if (parse_json_lsdn_physes(val, sbuf))
+			if (parse_json_lsdn_physes(val, dctx))
 				goto err;
 		} else if (!strcmp(key, "lsdnNets")) {
-			if (parse_json_lsdn_nets(val, sbuf))
+			if (parse_json_lsdn_nets(val, dctx))
 				goto err;
 		}
 	}
-	res = strbuf_to_str(sbuf);
+	if (!dump_ctx_check_state(dctx))
+		res = dump_ctx_get_buf(dctx);
 
 err:
-	json_object_put(jobj);
-	strbuf_free(sbuf);
 	free(str_json);
+	dump_ctx_free(dctx);
+	json_object_put(jobj);
 
 	ret_ptr(ctx, res);
 }
-
-#undef NEWLINE
-#undef SPACE
