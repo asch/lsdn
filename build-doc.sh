@@ -5,12 +5,17 @@ set -eu
 mkdir -p doxygen doxygen-full
 
 cp Doxyfile.template doxygen-full/Doxyfile
-echo 'INPUT = netmodel lsdn lsctl' >> doxygen-full/Doxyfile
-echo 'OUTPUT_DIRECTORY = doxygen-full' >> doxygen-full/Doxyfile
+cat >> doxygen-full/Doxyfile <<EOF
+INPUT = netmodel lsdn lsctl
+OUTPUT_DIRECTORY = doxygen-full
+EOF
 
 cp Doxyfile.template doxygen/Doxyfile
-echo 'INPUT = netmodel/include' >> doxygen/Doxyfile
-echo 'OUTPUT_DIRECTORY = doxygen' >> doxygen/Doxyfile
+cat >> doxygen/Doxyfile <<EOF
+INPUT = netmodel
+OUTPUT_DIRECTORY = doxygen
+EXCLUDE_PATTERNS = */netmodel/private/*
+EOF
 
 doxygen doxygen-full/Doxyfile
 doxygen doxygen/Doxyfile
