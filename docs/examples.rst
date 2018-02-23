@@ -64,7 +64,7 @@ It might also be handy to actually see in picture how our networking
 infrastructure will look like once we're done:
 
 .. figure:: Example1.svg
-    :scale: 50 %
+    :scale: 70 %
 
     Virtual networks in Example 1
 
