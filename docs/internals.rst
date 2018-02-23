@@ -16,7 +16,7 @@ library itself relies on *libmnl* library for netlink communication helpers,
 tables.
 
 The command-line tools (:ref:`lsctl <prog_lsctl>` and :ref:`lsctld
-<prog_lsctld>`) are built upon our **lsdn-tclext** library, which provides the
+<prog_lsctld>`) are built upon /our **lsdn-tclext** library, which provides the
 lsctl language engine and is layered on the C API. For more info, see
 :ref:`internals_cmdline`.
 
@@ -39,7 +39,7 @@ mostly independent utility components:
    :) )
 
 The **netmodel** core (in ``net.c`` and ``lsdn.c``) is responsible for
-maintaining the network model and managing its lifecycle (more info in
+maintaining the network model and managing its life-cycle (more info in
 :ref:`internals_netmodel`).
 
 For this, it relies on the **rules** (in ``rules.c``) system, which helps you
@@ -178,7 +178,7 @@ in :numref:`netmodel_states`.
     FAIL -> FAIL [label = "update", color = "blue" ];
     FAIL -> FAIL [label = "c. fail", color = "red" ];
 
-The objects alway start in the **NEW** state, indicating that they will be
+The objects always start in the **NEW** state, indicating that they will be
 actually created with the nearest commit.  If they are freed, the ``free`` call is
 actually done immediately. Any update leaves them in the *NEW* state, since
 there is nothing to update yet.
@@ -406,7 +406,7 @@ enforces just a single syntactic rule:``{}`` and ``[]`` parentheses.
 
 Originally, we had a YAML configuration parser, but the project has changed its
 heading very significantly and the parser was left behind. A TCL bindings were
-done as a quick experiment and since have aged quiete well. The YAML parser was
+done as a quick experiment and since have aged quite well. The YAML parser was
 later dropped instead of updating it.
 
 Naturally, there are advantages to JSON/YAML too. Since our language is
@@ -493,7 +493,7 @@ LSDN is usually used in this function for configuring all the virtual interfaces
 and virtual network appliances.
 
 For testing if the applied configuration is working, e.g. has the expected
-behaviour, function ``test()`` is used. Most often ``ping`` is used here, but
+behavior, function ``test()`` is used. Most often ``ping`` is used here, but
 you can use anything for testing the functionality.
 
 If you want to do some special cleanup you can use ``cleanup()`` function.
@@ -528,13 +528,13 @@ scripts for executing tests in virtualized environment. This is useful when you
 use some traditional Linux distribution like Ubuntu with older kernel and you do
 not want to compile or install custom recent kernel.
 
-As a hypervizor we use QEMU with Arch Linux userspace. Here are several steps
+As a hypervisor we use QEMU with Arch Linux user-space. Here are several steps
 you need to follow for execution in QEMU:
 
     1. Download actual Linux Kernel to ``$linux-path``.
     2. Run ``./create_kernel.sh $linux-path``. This will generate valid kernel
        with our custom ``.config`` file.
-    3. Run ``./create_rootfs.sh`` which will create the userspace for virtual
+    3. Run ``./create_rootfs.sh`` which will create the user-space for virtual
        machine with all dependencies. Here you need ``pacman`` for downloading
        all the packages.
     4. Run ``./run-qemu $kernel-path $userspace-path all`` which will execute
@@ -549,6 +549,6 @@ machine. The usage is following: ::
 	Available guest commands: shell, raw-shell, all.
 
 ``shell`` will execute just a shell and leave the test execution up to you and
-``raw-shell`` is just for debugging the virtual machine userspace because it
+``raw-shell`` is just for debugging the virtual machine user-space because it
 will not mount needed directories for tests. ``all`` executes all the tests as
 we have already shown above.

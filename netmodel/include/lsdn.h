@@ -163,7 +163,7 @@ lsdn_err_t lsdn_commit(struct lsdn_context *ctx, lsdn_problem_cb cb, void *user)
  * that travel outside the virtual network.
  *
  * The #lsdn_net object represents a network in the sense of "collection of
- * virts". Apart from basic lifecycle and lookup functions, it is only possible
+ * virts". Apart from basic life-cycle and lookup functions, it is only possible
  * to add or remove virts to/from it.
  *
  * Configuration of network properties is done through separate #lsdn_settings
@@ -253,7 +253,7 @@ struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name);
 lsdn_err_t lsdn_virt_connect(
 	struct lsdn_virt *virt, struct lsdn_phys *phys, const char *iface);
 void lsdn_virt_disconnect(struct lsdn_virt *virt);
-/** Get a recommanded MTU for a given virt.
+/** Get a recommended MTU for a given virt.
  * The MTU is based on the current state and connection port of the virt (it is not based on the
  * committed stated). The phys interface must already exist. */
 lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu);

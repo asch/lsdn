@@ -30,13 +30,13 @@ configuration file to tell TCL that you don't want to prefix everything with
 
 The configuration file itself is a list of directives that tell LSDN what
 objects the network consists of, how they are configured and how they connect.
-The directives are terminated by a newline. Other whitespace is not
+The directives are terminated by a newline. Other white-space is not
 significant. All available directives are listed in section `dirref`.
 
 All LSDN directives follow the same basic patterns. They start with the
-directive name (for example ``net`` or ``settings``) and are folowed with
-arguments for that directive. Directives and their arguments are separated by
-whitespace. Some directives go without an argument. Other directives make use of
+directive name (for example ``net`` or ``settings``) and are followed with
+argument for that directive. Directives and their arguments are separated by
+white-space. Some directives go without an argument. Other directives make use of
 named arguments (or as they are called in some languages "keyword arguments"): ::
 
     directiveWithNamedArgs -opt1 value1 -opt2 value2 -opt3WithoutAnyValue
@@ -77,7 +77,7 @@ The order must be swapped like this: ::
     net -vid 1 test {}
     virt -net test
 
-If a directive references an undefined object, it will print a stacktrace and
+If a directive references an undefined object, it will print a stack-trace and
 the script execution will end.
 
 --------
@@ -259,7 +259,7 @@ Directive reference
         for using the `attach` directive. Can not be used when nested inside
         `phys` directive.
     :param string settings:
-        Optional name of a previously defined `settings`, specifing the network
+        Optional name of a previously defined `settings`, specifying the network
         overlay type (VLAN, VXLAN etc.). If not given, the ``default`` settings
         will be used. Settings of existing net can not be changed.
     :param remove:
@@ -420,7 +420,7 @@ Directive reference
     You might want to distribute the same configuration to all physical
     machines, just with different physical machines claimed as local. You can
     use the following command to allow the control of the local phys using the 
-    first commandline argument to the script: ::
+    first command-line argument to the script: ::
 
         claimLocal [lindex $argv 0]
 

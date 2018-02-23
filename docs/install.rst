@@ -33,7 +33,7 @@ If you are running **CentOS 7**, run: ::
     gcc cmake uthash-devel libmnl-devel libdaemon-devel json-c-devel
 
 However, you will need the ``EPEL`` repository for the ``uthash`` package and
-you will need to install ``tcl-devel`` package from a differen source (for
+you will need to install ``tcl-devel`` package from a different source (for
 example
 `Psychotic Ninja <https://centos.pkgs.org/7/psychotic-ninja-plus-x86_64/tcl-devel-8.6.5-2.el7.psychotic.x86_64.rpm.html>`_).
 
@@ -106,7 +106,7 @@ The packages ``lsdn`` and ``lsdn-dev`` will be available in the parent folder.
 Running tests
 -------------
 
-LSCTL includes a testsuite that constructs various virtual networks and tries
+LSCTL includes a test-suite that constructs various virtual networks and tries
 pinging VMs inside those networks. ``sudo make check`` starts these tests.
 
 If you plan on developing LSDN, you might want to run the tests inside another

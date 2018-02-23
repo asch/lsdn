@@ -49,7 +49,7 @@ typedef enum {
 	/** Cleanup operation has failed and this left an object in state inconsistent with the model.
 	 *
 	 * This failure is more serious than #LSDNE_COMMIT failure, since the commit operation can
-	 * not be sucesfully retried. The only operation possible is to rebuild the whole model again. */
+	 * not be successfully retried. The only operation possible is to rebuild the whole model again. */
 	LSDNE_INCONSISTENT,
 } lsdn_err_t;
 

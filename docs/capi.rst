@@ -31,9 +31,9 @@ changes and install the network model, you need to commit it to kernel tables.
 After a commit, you can continue modifying the model; subsequent commits will
 apply the changes.
 
-----------------
-Object lifecycle
-----------------
+-----------------
+Object life-cycle
+-----------------
 
 Objects are created by calling ``lsdn_<type>_new``. This requires an argument
 through which the new object is linked to the model: context (for settings
@@ -74,9 +74,9 @@ be unique for a given type of object.
 There is no ``clear`` method for names. However, if you need to do that for
 whatever reason, you can set the name to ``NULL``.
 
------------------------
-Network model lifecycle
------------------------
+------------------------
+Network model life-cycle
+------------------------
 
 The network model representation in memory consists of a context and various
 child objects associated with it. As a whole, it represents virtual network topology
@@ -105,7 +105,7 @@ by :c:member:`LSDNE_COMMIT` error code. You can retry the commit and LSDN will a
 apply the remaining changes.
 
 In the current version, there is no way to examine the network model and
-directly find out which changes were applied and which weren't. However, the
+directly find out which changes were applied and which were not. However, the
 problem callback supplied to ``lsdn_commit`` will be notified of failed objects.
 
 In the worse case, a rule removal will fail and the kernel rules will remain in

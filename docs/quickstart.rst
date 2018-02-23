@@ -76,7 +76,7 @@ interface name. There is no need to change the ``net0`` strings:
 Libvirt
 ~~~~~~~
 
-If you are using Libvirt, set up the virtual machines as usual. Unfortunatelly,
+If you are using Libvirt, set up the virtual machines as usual. Unfortunately,
 ``virt-manager`` can not be told to leave the VM's networking alone. It will try
 to connect it to a network, but that's what LSDN will be used for! It can also
 not change an interface MAC address.  Instead, use ``virsh edit`` to manually

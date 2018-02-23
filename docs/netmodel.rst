@@ -7,7 +7,7 @@ Network representation
 The public API (either :ref:`capi` or :ref:`lsctl`) gives you tools to build a a
 model of your virtual networks, which LSDN will then realize on top of the
 physical network, using various tunneling technologies. You will need to tell LSDN
-both abouth the virtual networks and the physical network they will be using.
+both about the virtual networks and the physical network they will be using.
 
 There are three core concepts (objects) LSDN operates with: **virtual
 machines**, **physical machines** and **virtual networks**. In the rest of the
@@ -77,7 +77,7 @@ by the used tunneling technology and the must be unique among all networks
 [#funique]_.
 
 The used networking overlay technology (and any options related to that, like
-VXLAN port) is encapsuled in the **settings** object, which serves as a template
+VXLAN port) is encapsulated in the **settings** object, which serves as a template
 for the new networks (with only the *VID* changing each time). If you remove the
 template, the networks will be removed to. A list of supported networking
 technologies is in the chapter :ref:`ovl`, including the additional options they
@@ -86,7 +86,7 @@ support.
 Like other objects, networks can have a name. However, they do not have any
 other attributes, since everything important to their functioning is part of the
 *settings*. *Settings* can have names to and *lsctl* reserves a name ``default``
-for un-named settings.
+for unnamed settings.
 
 .. rubric:: Footnotes
 
@@ -144,14 +144,14 @@ Firewall rules
 
 You can filter out specific packets based on their source/destination IP address
 range and source/destination MAC address range. The filtering can be done
-independently on ingress and egress trafic.
+independently on ingress and egress traffic.
 
 The filtering rules are organized by their priority. All rules inside a given
 priority must match against the same target (a target is a masked part of an IP
 or MAC address -- for example first octet of the IP address) and must be unique.
 This restriction exists to ensure that only deterministic rules can be defined.
 
-Unfortunatelly, currently there is no way to ``ACCEPT`` packets early, as is
+Unfortunately, currently there is no way to ``ACCEPT`` packets early, as is
 common in e.g. ``iptables``.
 
 .. _qos:
@@ -173,7 +173,7 @@ direction. There are three settings:
    allowed to overshoot *avg_rate*
 
 If you do not want to allow any bursting, specify *burst_rate* equal to the
-maxium size of a single packet (the MTU). Setting *burst_rate* to zero will not
+maximum size of a single packet (the MTU). Setting *burst_rate* to zero will not
 work.
 
 .. _attr_ip:
@@ -206,7 +206,7 @@ will flow. LSDN does not support two physes claimed as local connecting to the
 same virtual network, for technical reasons, so it will not work.
 
 Like other objects, *physes* can have names. They can also have and *ip*
-attribute, specifing IP address for the network overlay technologies that
+attribute, specifying IP address for the network overlay technologies that
 require it.
 
 .. _validation:
@@ -319,7 +319,7 @@ Endpoint-to-Endpoint
 **Available as**: :lsctl:cmd:`settings vxlan/e2e` (lsctl),
 :c:func:`lsdn_settings_new_vxlan_e2e` (C API).
 
-Partially self-cofiguring variant of VXLANs. LSDN must be informed
+Partially self-configuring variant of VXLANs. LSDN must be informed
 about the IP address of each physical machine participating in the network using
 the `attr_ip`. All unknown and broadcast packets are sent to all the physical
 machines and the VXLAN iteratively learns the IP address - MAC address mapping.

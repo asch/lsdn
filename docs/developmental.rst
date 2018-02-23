@@ -200,7 +200,7 @@ Open-source contributions
 .........................
 
 We have identified a few bugs in the Linux kernel during our development. We
-believe this is mainly because of the unusual setups we excersise and new kernel
+believe this is mainly because of the unusual setups we exercise and new kernel
 features (such as goto chain, lwtunnels) we use. Following bugs were patched or
 at least reported and patched by someone else:
 
@@ -344,8 +344,8 @@ The project was able to fulfill all the requirements set in the beginning and
 also follow the plan created in the beginning. This means that all the requested
 functionality was implemented and properly tested. Furthermore it was documented
 all through from both programmers view and also from user (API) view. Also
-detailed use cases with the quickstart guide were described. Especially the
-quickstart guide showed how easy it is to create complex virtual networking
+detailed use cases with the quick-start guide were described. Especially the
+quick-start guide showed how easy it is to create complex virtual networking
 scenario in a few steps with very minimal configuration files.
 
 At the end the whole project was all through tested in both, virtual setups,

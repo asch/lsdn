@@ -7,7 +7,7 @@ Examples
 Now is the right time to describe through a couple of examples how LSDN can
 actually be used. The following are very simple (but complete nonetheless)
 examples of virtual networks that can be set up through LSDN. They should be
-descriptive enough to get you started with your own usecases.
+descriptive enough to get you started with your own use-cases.
 
 .. _ex1:
 
@@ -112,7 +112,7 @@ Afterwards we describe a virtual network we are going to set up for the
 bookstore. We will call this virtual network conveniently just **Bookstore**.
 The **Bookstore** network will be tunneled through the VXLAN tunnels. We have
 assigned the network a virtual network identifier *1*. The network will span all
-the machines **A**, **B** and **C** - that's what we've written with the :lsctl:cmd:`attach`
+the machines **A**, **B** and **C** - that's what we have written with the :lsctl:cmd:`attach`
 statement. The next line describes a virtual machine that will reside on machine
 **A**. It will connect via an interface which is simply called *1*. We have also
 assigned a MAC address to this virtual machine. Again, LSDN expects that an
@@ -121,7 +121,7 @@ is assigned the same MAC address we have given it in the configuration file.
 Similarly, the next three lines describe three other virtual machines inside the
 **Bookstore** network.
 
-In a very similar fashion we've created a *Bakery* virtual network:
+In a very similar fashion we have created a *Bakery* virtual network:
 
 .. code-block:: tcl
 
@@ -284,8 +284,8 @@ What effectively happened is the *migrator* VM was disconnected from the virtual
 network on node **A** and reconnected back again on node **B**.
 
 It is important to note we have to perform this update on all nodes **A**, **B** and
-**C**. Had we decided to create for example a vlan virtual network then we
-wouldn't have to update the LSDN netmodel on machine **C**. Regardless of the
+**C**. Had we decided to create for example a VLAN virtual network then we
+would not have to update the LSDN netmodel on machine **C**. Regardless of the
 network settings type (e.g. VXLAN, GENEVE) created for out virtual networks, it
 is always safe to run the same updates on all physical machines hosting the
 virtual networks even if some nodes might not be impacted by any of the
@@ -400,7 +400,7 @@ burst rate and burst all set to *20kb*. All the rate parameters are described
 in :lsctl:cmd:`rate`.
 
 Similarly you can check the rules for **VM A**, **VM C** and **VM D** and see
-for yourself they match with our intentation from the sketch above.
+for yourself they match with our indentation from the sketch above.
 
 You should already be comfortable with the rest of the instructions in the
 configuration file. If not, please start with :ref:`ex1`.
@@ -413,4 +413,4 @@ broadcast this amended packet to all other VMs in the virtual network. **VM A**
 upon reception of a packet will dump this packet in a log file and drop this
 packet. What patterns do you expect to see in this log file after some time?
 
-.. todo:: make references throughtout the examples to other parts of the doc
+.. todo:: make references throughout the examples to other parts of the doc

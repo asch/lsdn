@@ -25,7 +25,7 @@ Intended usage
 LSDN provides a `configuration language <lsctl>`, that allows you to describe
 the desired network configuration (we call it a `netmodel`): the `virtual
 networks <net>`, `physical machines <phys>` and `virtual machines <virt>` and
-their relationships. It can also be driven programatically, using a `capi`.
+their relationships. It can also be driven programmatically, using a `capi`.
 
 You run LSDN on each physical machine and provide it with the same netmodel,
 either by passing the same configuration file (you can use our
