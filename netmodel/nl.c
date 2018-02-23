@@ -308,6 +308,11 @@ lsdn_err_t lsdn_link_vlan_create(struct mnl_socket *sock, struct lsdn_if* dst_if
 	return link_create_send(sock, buf, nlh, linkinfo, vlan_name, dst_if);
 }
 
+static const lsdn_ip_t dummy_ipv6_mcast =
+	LSDN_INITIALIZER_IPV6(
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+
 //ip link add <vxlan_name> type vxlan id <vxlanid> [group <mcast_group>] dstport <port> dev <if_name>
 lsdn_err_t lsdn_link_vxlan_create(
 	struct mnl_socket *sock, struct lsdn_if* dst_if,
@@ -320,7 +325,6 @@ lsdn_err_t lsdn_link_vxlan_create(
 	nl_buf(buf);
 	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
 	struct nlattr *linkinfo;
-	lsdn_ip_t dummy_ip;
 
 	unsigned int ifindex = 0;
 	if (if_name)
@@ -360,9 +364,9 @@ lsdn_err_t lsdn_link_vxlan_create(
 	} else if (ipv == LSDN_IPv6) {
 		/* We need to explicitly notify the kernel we are using IPv6 tunneling
 		 * otherwise it defaults to IPv4, if neither group nor remote is
-		 * specified.
+		 * specified. However, the address, must NOT be multicast.
 		 */
-		mnl_attr_put(nlh, IFLA_VXLAN_GROUP6, sizeof(dummy_ip.v6.bytes), dummy_ip.v6.bytes);
+		mnl_attr_put(nlh, IFLA_VXLAN_GROUP6, sizeof(dummy_ipv6_mcast.v6.bytes), dummy_ipv6_mcast.v6.bytes);
 	}
 
 	mnl_attr_nest_end(nlh, vxlanid_linkinfo);
