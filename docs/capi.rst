@@ -126,5 +126,6 @@ Learn more about individual kinds of objects.
     capi/phys.rst
     capi/network.rst
     capi/virt.rst
+    capi/rules.rst
     capi/errors.rst
     capi/misc.rst
