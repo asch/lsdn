@@ -9,11 +9,12 @@ model of your virtual networks, which LSDN will then realize on top of the
 physical network, using various overlay technologies. You will need to tell LSDN
 both abouth the virtual networks and the physical network they will be using.
 
-There are three core concepts LSDN operates with: **virtual machines**,
-**physical machines** and **virtual networks**. In the rest of the guide (and in
-the source code) we abbreviate them as **virts**, **physes** and **nets**. If
-you are wondering if there are any physical networks, then no, LSDN just expects
-that the physical machines are connected together when needed.
+There are three core concepts (objects) LSDN operates with: **virtual
+machines**, **physical machines** and **virtual networks**. In the rest of the
+guide (and in the source code) we abbreviate them as **virts**, **physes** and
+**nets**. If you are wondering if there are any physical networks, then no, LSDN
+just expects that the physical machines are connected together when needed and
+that is all.
 
 The terminology is derived from the most common use case, but that does not mean
 that *virts* really have to be virtual machines and *physes* must really be
@@ -26,6 +27,27 @@ The *virts*, *physes* and *nets* have the following relationships:
    phys, in other words, they can **migrate**)
  - *physes* attach to a *net* -- this tells LSDN that the *phys* will have virts
    connecting to the network [#f1]_.
+
+Each of the object can also have attributes -- for example *physes* can have an
+IP address (some network overlay technologies require this information) and *virts*
+can have a MAC address (network overlays not supporting MAC learning require
+this information).
+
+One of the attributes common to all objects is a **name**. A *name* does not
+have impact on the functioning of the network, but you can use it to keep track
+of the object. If you are using :ref:`lsctl`, it is more or less mandatory,
+because it is the only way to refer to an object if you want to change it at a
+later point (for example when you want to migrate a *virt*).
+
+Collectively, the model is represented by a LSDN **context**, which contains all
+the *physes*, *virts* and *nets*. *Context* is a well known concept in C
+libraries, which essentially replaces global variables and ensures that the
+library can be safely used by multiple clients in the same process.
+
+.. note::
+
+    LSDN is not thread-safe. It assumes that a given context is never accessed
+    concurrently. Different context may be accessed concurrently.
 
 .. rubric:: Footnotes
 
@@ -43,6 +65,8 @@ The *virts*, *physes* and *nets* have the following relationships:
 Networks and their settings
 ---------------------------
 
+
+
 .. _virt:
 .. _attr_mac:
 
@@ -59,9 +83,9 @@ Physes
 
 .. _validation:
 
-----------------------
-Validation and Commit
-----------------------
+-------------------------------------
+Validation, Commit and Error Handling
+-------------------------------------
 
 Every host participating in a network must share a compatible network
 representation. This usually means that all hosts have the same model,
@@ -69,6 +93,10 @@ presumably read from a common configuration file or installed through a single
 orchestrator. It is then necessary to claim a *phys* as local, so that LSDN
 knows on which machines it is running. Several restrictions also apply
 to the creation of networks in LSDN. For details refer to section `restricts`.
+
+---------
+Debugging
+---------
 
 --------------------------------
 Supported tunneling technologies
