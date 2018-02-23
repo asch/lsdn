@@ -740,7 +740,6 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt){
 	renew(&virt->state);
 }
 
-/** Set virt's MAC address. */
 lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 {
 	lsdn_mac_t *mac_dup = malloc(sizeof(*mac_dup));
