@@ -80,26 +80,6 @@ LSDN_ENUM(rule_target, LSDN_MATCH);
 
 const char* lsdn_rule_target_name(enum lsdn_rule_target t);
 
-/** Maximum size of #lsdn_matchdata struct, in bytes.
- * This should be the same as `sizeof(union lsdn_matchdata)`. But this value
- * is used to declare size of #lsdn_matchdata.bytes field, so using `sizeof`
- * is not possible. */
-#define LSDN_MAX_MATCH_LEN 16
-
-/** Value to be matched. */
-union lsdn_matchdata {
-	/** Value as raw bytes. */
-	char bytes[LSDN_MAX_MATCH_LEN];
-	/** Value as MAC address. */
-	lsdn_mac_t mac;
-	/** Value as IPv4 address. */
-	lsdn_ipv4_t ipv4;
-	/** Value as IPv6 address. */
-	lsdn_ipv6_t ipv6;
-	/** Value as tunnel key ID. */
-	uint32_t enc_key_id;
-};
-
 /** Minimum Virt Rule priority. */
 #define LSDN_VR_PRIO_MIN 0
 /** Upper limit for Virt Rule priority.

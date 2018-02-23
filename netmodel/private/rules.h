@@ -40,6 +40,26 @@ bool lsdn_target_supports_masking(enum lsdn_rule_target);
 
 struct lsdn_flower_rule;
 
+/** Maximum size of #lsdn_matchdata struct, in bytes.
+ * This should be the same as `sizeof(union lsdn_matchdata)`. But this value
+ * is used to declare size of #lsdn_matchdata.bytes field, so using `sizeof`
+ * is not possible. */
+#define LSDN_MAX_MATCH_LEN 16
+
+/** Value to be matched. */
+union lsdn_matchdata {
+	/** Value as raw bytes. */
+	char bytes[LSDN_MAX_MATCH_LEN];
+	/** Value as MAC address. */
+	lsdn_mac_t mac;
+	/** Value as IPv4 address. */
+	lsdn_ipv4_t ipv4;
+	/** Value as IPv6 address. */
+	lsdn_ipv6_t ipv6;
+	/** Value as tunnel key ID. */
+	uint32_t enc_key_id;
+};
+
 #define LSDN_KEY_SIZE (LSDN_MAX_MATCH_LEN * LSDN_MAX_MATCHES)
 /* A single rule in lsdn_ruleset. Fill in the priority, match conditions and action. */
 struct lsdn_rule {
