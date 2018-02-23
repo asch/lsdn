@@ -65,7 +65,25 @@ library can be safely used by multiple clients in the same process.
 Networks and their settings
 ---------------------------
 
+**LSCTL:** :lsctl:cmd:`net`, :lsctl:cmd:`settings`
 
+**C API:** :c:func:`lsdn_net_new` and various ``lsdn_settings_*``.
+
+Virtual networks are defined by their *virtual network identifier* (**VID**) and
+the settings for the overlay technology they should use. The *VID* is a numeric
+identifier used to separate one virtual network from other and is mapped to VLAN
+IDs, VXLAN IDs or similar identifiers. The allowed range of the *VID* is defined
+by the used overlay technology and the must be unique.
+
+The used networking overlay technology (and any options related to that, like
+VXLAN port) is encapsuled in the **settings** object, which serves as a template
+for the new networks (with only the *VID* changing each time). A list of
+supported networking technologies is in the chapter :ref:`ovl`, including the
+additional options they support.
+
+Like other objects, networks can have a name. However, they do not have any
+other attributes, since everything important to their functioning is part of the
+*settings*.
 
 .. _virt:
 .. _attr_mac:
@@ -74,12 +92,87 @@ Networks and their settings
 Virts
 -----
 
-.. _phys:
+**LSCTL:** :lsctl:cmd:`virt`
+
+**C API:** :c:func:`lsdn_virt_new`, :c:func:`lsdn_virt_connect`,
+:c:func:`lsdn_virt_set_mac`
+
+*virts* are the computers/virtual machines that are going to connect to the
+virtual network. From LSDN standpoint, they are just a network interfaces that
+exists on a *phys* (usually ``tap`` for a virtual machine or ``veth`` for a
+container). LSDN does not care what is on the other end.
+
+When creating a *virt* you have to specify, which virtual network it is going to
+be part of. This can not be changed later.
+
+A *virt* also can not be part of multiple virtual networks. The intended
+solution is to simply create one *virt* for each virtual network you are going
+to connect to. LSDN does not need to know, they are connected to the same
+virtual machine/container on the other end. In this sense  *virt* can be
+described not as a virtual machine, but as a network interface of a virtual machine.
+
+Once created, you can specify which *phys* this *virt* will connect at and how
+is its network interface named on that phys. If you are using LSCTL, just run
+:lsctl:cmd:`virt` with a new ``-phys`` argument. In C API use
+:c:func:`lsdn_virt_connect`. If the *virt* was already connected, it will be
+reconnected (migrated) to the new phys (you want to do this in sync with the
+final stage of the migration of the virtual machine itself).
+
+Like other objects, *virts* can have names for your convenience. The names do
+not have to be unique globally, but just inside of a single *net*.
+
+Depending on the :ref:`networking technology <ovl>` used, you may need to inform
+LSDN about the virtual machine's MAC address (currently only one MAC address can
+be given). LSDN will use this MAC address for routing the packets to the
+machine.
+
+Firewall rules
+--------------
+**LSCTL:** :lsctl:cmd:`rule`
+
+**C API:** :c:func:`lsdn_vr_new` and other functions (see :ref:`capi/rules`)
+
+You can filter out specific packets based on their source/destination IP address
+range and source/destination MAC address range. The filtering can be done
+independently on ingress and egress trafic.
+
+The filtering rules are organized by their priority. All rules inside a given
+priority must match against the same target (a target is a masked part of an IP
+or MAC address -- for example first octet of the IP address) and must be unique.
+This restriction exists to ensure that only deterministic rules can be defined.
+
+Unfortunatelly, currently there is no way to ``ACCEPT`` packets early, as is
+common in e.g. ``iptables``.
+
+.. _qos:
+
+QoS
+---
+
+**LSCTL:** :lsctl:cmd:`rate`
+
+**C API:** :c:func:`lsdn_virt_set_rate_in`, :c:func:`lsdn_virt_set_rate_out`
+
+You can limit the amount of traffic going in or out of the *virt* for each
+direction. There are three settings:
+
+ - *avg_rate* provides the basic bandwidth limit
+ - *burst_size* allows the traffic to overshoot the limit for certain number of
+   bytes
+ - *burst_rate* (optional) absolute bandwidth limit applied even if traffic is
+   allowed to overshoot *avg_rate*
+
+If you do not want to allow any bursting, specify *burst_rate* equal to the
+maxium size of a single packet (the MTU). Setting *burst_rate* to zero will not
+work.
+
 .. _attr_ip:
+.. _phys:
 
 ------
 Physes
 ------
+
 
 .. _validation:
 
@@ -97,6 +190,8 @@ to the creation of networks in LSDN. For details refer to section `restricts`.
 ---------
 Debugging
 ---------
+
+.. _ovl:
 
 --------------------------------
 Supported tunneling technologies

@@ -169,6 +169,7 @@ in :numref:`netmodel_states`.
     DELETE -> free [label = "c. fail", color = "red"];
     DELETE -> free [label = "c. error", color = "orange"];
     RENEW -> RENEW [label = "update", color = "blue"];
+
     RENEW -> DELETE [label = "free", color = "blue"];
     RENEW -> NEW [label = "c. error", color = "orange"];
     RENEW -> FAIL [label = "c. fail", color = "red"];
