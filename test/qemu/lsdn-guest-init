@@ -3,7 +3,7 @@
 echo "Mounting build directory ..."
 
 mkdir -p /lsdn/build/
-mount -t 9p -o trans=virtio build /lsdn/build -oversion=9p2000.L
+mount -t 9p -o trans=virtio,cache=fscache build /lsdn/build -oversion=9p2000.L
 
 echo OK
 
