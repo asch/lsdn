@@ -535,8 +535,8 @@ you need to follow for execution in QEMU:
     2. Run ``./create_kernel.sh $linux-path``. This will generate valid kernel
        with our custom ``.config`` file.
     3. Run ``./create_rootfs.sh`` which will create the userspace for virtual
-	   machine with all dependencies. Here you need ``pacman`` for downloading
-	   all the packages.
+       machine with all dependencies. Here you need ``pacman`` for downloading
+       all the packages.
     4. Run ``./run-qemu $kernel-path $userspace-path all`` which will execute
        all tests and shut down.
 
