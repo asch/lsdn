@@ -178,7 +178,7 @@ in :numref:`netmodel_states`.
     FAIL -> FAIL [label = "c. fail", color = "red" ];
 
 The objects alway start in the **NEW** state, indicating that they will be
-actually created with the nearest commit.  If they are freed, the `free` call is
+actually created with the nearest commit.  If they are freed, the ``free`` call is
 actually done immediately. Any update leaves them in the *NEW* state, since
 there is nothing to update yet.
 

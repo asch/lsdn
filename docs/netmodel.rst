@@ -4,36 +4,70 @@
 Network representation
 ======================
 
-.. todo:: A bit slower introduction with more context.
+The public API (either :ref:`capi` or :ref:`lsctl`) gives you tools to build a a
+model of your virtual networks, which LSDN will then realize on top of the
+physical network, using various overlay technologies. You will need to tell LSDN
+both abouth the virtual networks and the physical network they will be using.
 
-The public API gives you tools to build a memory model of your networks. This
-must describe the shape of the physical network as well as all virtual networks.
+There are three core concepts LSDN operates with: **virtual machines**,
+**physical machines** and **virtual networks**. In the rest of the guide (and in
+the source code) we abbreviate them as **virts**, **physes** and **nets**. If
+you are wondering if there are any physical networks, then no, LSDN just expects
+that the physical machines are connected together when needed.
 
-On the physical side, LSDN needs to know about every participating host machine.
-Each such machine is called a _phys_ and is identified by its IP address. LSDN
-assumes that all _phys_es are reachable by each other.
+The terminology is derived from the most common use case, but that does not mean
+that *virts* really have to be virtual machines and *physes* must really be
+physical machines. Maybe the *virts* are Linux containers and *physes* are
+virtual machines running those containers?
 
-On the virtual side, each virtual _network_ is a collection of virtual machines,
-called _virt_s. A _virt_ is tied to its network and identified by a MAC address.
-In order to start communicating, it must _connect_ through a given Linux network
-interface on a given _phys_. While the network is running, a _virt_ can migrate
--- disconnect and reconnect via a different interface and/or on a different
-_phys_.
+The *virts*, *physes* and *nets* have the following relationships:
+ - *virts* always belong to one *net* (they can not be moved)
+ - *virts* are connected at one of the *physes* (they can connect at different
+   phys, in other words, they can **migrate**)
+ - *physes* attach to a *net* -- this tells LSDN that the *phys* will have virts
+   connecting to the network [#f1]_.
 
-Single _phys_ can of course host multiple _virt_s at the same time. A single
-_virt_, that is a single network inteface, can only be part of one virtual
-network. However, the same virtual machine can act as multiple _virt_s if it
-has multiple distinct network interfaces, and so participate in multiple
-networks at the same time.
-XXX Tohle nevím. Kontroluje se to někde, že se nepřipojí dva virty na stejném
-interface? Přišlo mi že ne. Možná by mělo? Nebo explicitně řekneme že se to smí
-a že to funguje?
+.. rubric:: Footnotes
+
+.. [#f1] In theory LSDN could figure out if a *phys* should be attached to a
+    *net* just be looking at if any of its *virts* are attached to that *net*.
+    But we have decided to make this explicit. LSDN checks if *physes* connected
+    to the same *net* have certain properties (for example the same IP version)
+    and we did not want to make these checks implicit. A switch may be provided
+    in future versions, though.
+
+.. _net:
+.. _vid:
+
+---------------------------
+Networks and their settings
+---------------------------
+
+.. _virt:
+.. _attr_mac:
+
+-----
+Virts
+-----
+
+.. _phys:
+.. _attr_ip:
+
+------
+Physes
+------
+
+.. _validation:
+
+----------------------
+Validation and Commit
+----------------------
 
 Every host participating in a network must share a compatible network
 representation. This usually means that all hosts have the same model,
 presumably read from a common configuration file or installed through a single
-orchestrator. It is then necessary to claim a _phys_ as local, so that LSDN
-knows to act on the local network interfaces. Several restrictions also apply
+orchestrator. It is then necessary to claim a *phys* as local, so that LSDN
+knows on which machines it is running. Several restrictions also apply
 to the creation of networks in LSDN. For details refer to section `restricts`.
 
 --------------------------------
