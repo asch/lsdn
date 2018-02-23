@@ -28,9 +28,9 @@ networks <net>`, `physical machines <phys>` and `virtual machines <virt>` and
 their relationships. It can also be driven programmatically, using a `capi`.
 
 You run LSDN on each physical machine and provide it with the same netmodel,
-either by passing the same configuration file (you can use our
-`dumping <capi/misc>` mechanism) or calling the same C API calls LSDN then takes
-care of the configuration so that the VMs in the same virtual network can
+either by passing the same configuration file (you can use our :c:func:`dumping
+<lsdn_dump_context_tcl>` mechanism) or calling the same C API calls LSDN then
+takes care of the configuration so that the VMs in the same virtual network can
 correctly talk to each other even if on different computers.
 
 If you run a static ZOO of VMs, you can simply copy over the file to the

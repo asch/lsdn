@@ -37,7 +37,9 @@ One of the attributes common to all objects is a **name**. A *name* does not
 have impact on the functioning of the network, but you can use it to keep track
 of the object. If you are using :ref:`lsctl`, it is more or less mandatory,
 because it is the only way to refer to an object if you want to change it at a
-later point (for example when you want to migrate a *virt*).
+later point (for example when you want to migrate a *virt*). If you do not
+specify a name, one will be generated for you. This ensures that the
+:c:func:`lsdn_dump_context_json` will always be able to create cross-references.
 
 Collectively, the model is represented by a LSDN **context**, which contains all
 the *physes*, *virts* and *nets*. *Context* is a well known concept in C
