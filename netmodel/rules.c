@@ -33,6 +33,17 @@ struct lsdn_vr_action LSDN_VR_DROP = {
 	}
 };
 
+/** Create a virt rule.
+ * Creates a rule with a given priority, to match packets to or from a given virt,
+ * and assigns an action when the rule is matched.
+ *
+ * Rule created with this function does not match anything. It must be configured through
+ * one or more of the `lsdn_vr_add_<match>` functions.
+ * @param virt Virt to which the rule applies.
+ * @param prio_num Rule priority. Lower number = higher priority.
+ * @param dir Inbound or outbound rule. 
+ * @param a Assigned action when rule matches.
+ * @return New #lsdn_vr struct. */
 struct lsdn_vr *lsdn_vr_new(
 	struct lsdn_virt *virt, uint16_t prio_num, enum lsdn_direction dir, struct lsdn_vr_action *a)
 {
@@ -97,11 +108,15 @@ void lsdn_vr_do_free_all_rules(struct lsdn_virt *virt)
 	assert(virt->ht_out_rules == NULL);
 }
 
+/** Deallocate a rule.
+ * @param vr Rule to deallocate. */
 void lsdn_vr_free(struct lsdn_vr *vr)
 {
 	free_helper(vr, do_free_vr);
 }
 
+/** Deallocate all rules for a virt.
+ * @param virt Virt whose rules will be removed. */
 void lsdn_vrs_free_all(struct lsdn_virt *virt)
 {
 	struct vr_prio *prio, *tmp;

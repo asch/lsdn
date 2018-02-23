@@ -28,25 +28,33 @@
 	x(LSDN_MATCH_ENC_KEY_ID, "enc_key_id")
 
 /** Virt rule method generator.
- * For each of the possible virt rule targets (see) */
+ * For each of the possible virt rule match targets (see #lsdn_rule_target), the shortcuts
+ * define inline functions to:
+ * * set the rule to match a given value
+ * * create a new rule matching the prefilled value
+ * * create a new rule matching value + mask.
+ * These are defined in terms of the basic action, `lsdn_vr_add_<name>_masked`,
+ * which configures the rule to match value + mask.
+ * @param doc Human-readable name of the rule target ("IP address").
+ * @param name Symbolic name of the rule target ("ip").
+ * @param type Type of the value ("lsdn_ip_t").
+ * @param fullmask Value of a full mask, i.e., all ones. */
 #define lsdn_vr_shortcuts(doc, name, type, fullmask) \
-	/** Add virt rule for a specified doc.
+	/** Configure virt rule to match a specified doc.
 	@param rule Pointer to virt rule.
-	@param value Full address.
-	@see lsdn_vr_shortcuts. */ \
+	@param value Match value. */ \
 	static inline void lsdn_vr_add_##name(struct lsdn_vr *rule, type value) \
 	{ \
 		lsdn_vr_add_masked_##name(rule, value, (fullmask)); \
 	} \
-	/** Create virt rule for doc with a mask.
+	/** Create virt rule matching doc with a mask.
 	@param virt LSDN virt.
 	@param dir Incoming or outgoing rule.
 	@param prio Rule priority.
-	@param value Address value.
+	@param value Match value.
 	@param mask Mask value.
 	@param action Rule action.
-	@return New lsdn_vr struct. Caller is responsible for freeing it.
-	@see lsdn_vr_shortcuts. */ \
+	@return New #lsdn_vr struct. */ \
 	static inline struct lsdn_vr *lsdn_vr_new_masked_##name( \
 		struct lsdn_virt *virt, enum lsdn_direction dir, uint16_t prio, \
 		type value, type mask, struct lsdn_vr_action *action) \
@@ -55,14 +63,13 @@
 		lsdn_vr_add_masked_##name(vr, value, mask); \
 		return vr; \
 	} \
-	/** Create virt rule for a specified doc.
+	/** Create virt rule matching a specified doc.
 	@param virt LSDN virt.
 	@param dir Incoming or outgoing rule.
 	@param prio Rule priority.
-	@param value Full address.
+	@param value Match value.
 	@param action Rule action.
-	@return New lsdn_vr struct. Caller is responsible for freeing it.
-	@see lsdn_vr_shortcuts. */ \
+	@return New #lsdn_vr struct. */ \
 	static inline struct lsdn_vr *lsdn_vr_new_##name( \
 		struct lsdn_virt *virt, enum lsdn_direction dir, \
 		uint16_t prio, type value, struct lsdn_vr_action *action)  \
@@ -73,9 +80,13 @@
 
 /** @defgroup rules Rules engine
  * @{ */
+
 /** Rule target. */
 LSDN_ENUM(rule_target, LSDN_MATCH);
 
+/** Maximum number of match targets per rule.
+ * In this implementation, a rule can match on at most
+ * two simultaneous objects (e.g. MAC address and IPv4 address). */
 #define LSDN_MAX_MATCHES 2
 
 /** Minimum Virt Rule priority. */
@@ -87,8 +98,22 @@ LSDN_ENUM(rule_target, LSDN_MATCH);
 /** Use this priority if you want your rule to take place during forwarding decisions. */
 #define LSDN_PRIO_FORWARD_DST_MAC (LSDN_VR_PRIO_MAX+1)
 
-/* lsdn virt's rule */
+/** Virt rule.
+ * @struct lsdn_vr
+ * @ingroup rules
+ * Represents a packet rule assigned to a virt. The rule has a priority, assigned direction
+ * (affecting incoming or outgoing packets), and an action. Usually, the rule will also
+ * have match conditions, such as IP or MAC address mask.
+ * @see lsdn_vr_new
+ * @rstref{capi/rules} */
 struct lsdn_vr;
+
+/** Virt rule action.
+ * @struct lsdn_vr_action
+ * @ingroup rules
+ * Represents an action to be performed on a packet that matches a rule.
+ *
+ * In this version, the only possible action is #LSDN_VR_DROP. */
 struct lsdn_vr_action;
 
 struct lsdn_vr *lsdn_vr_new(
@@ -98,19 +123,31 @@ void lsdn_vrs_free_all(struct lsdn_virt *virt);
 
 extern struct lsdn_vr_action LSDN_VR_DROP;
 
-/** Add virt rule for source MAC with a mask. */
+/** Configure virt rule to match source MAC with a mask.
+ * @param rule Virt rule.
+ * @param mask Mask value.
+ * @param value Match value. */
 void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value);
 lsdn_vr_shortcuts(source MAC, src_mac, lsdn_mac_t, lsdn_single_mac_mask)
 
-/** Add virt rule for destination MAC with a mask. */
+/** Configure virt rule to match destination MAC with a mask.
+ * @param rule Virt rule.
+ * @param mask Mask value.
+ * @param value Match value. */
 void lsdn_vr_add_masked_dst_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value);
 lsdn_vr_shortcuts(destination MAC, dst_mac, lsdn_mac_t, lsdn_single_mac_mask)
 
-/** Add virt rule for source IP with a mask. */
+/** Configure virt rule to match source IP address with a mask.
+ * @param rule Virt rule.
+ * @param mask Mask value.
+ * @param value Match value. */
 void lsdn_vr_add_masked_src_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value);
 lsdn_vr_shortcuts(source IP, src_ip, lsdn_ip_t, (value.v == LSDN_IPv4) ? lsdn_single_ipv4_mask : lsdn_single_ipv6_mask)
 
-/** Add virt rule for destination IP with a mask. */
+/** Configure virt rule to match destination IP address with a mask.
+ * @param rule Virt rule.
+ * @param mask Mask value.
+ * @param value Match value. */
 void lsdn_vr_add_masked_dst_ip(struct lsdn_vr *rule, lsdn_ip_t mask, lsdn_ip_t value);
 lsdn_vr_shortcuts(destination IP, dst_ip, lsdn_ip_t, (value.v == LSDN_IPv4) ? lsdn_single_ipv4_mask : lsdn_single_ipv6_mask)
 
