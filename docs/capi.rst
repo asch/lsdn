@@ -118,7 +118,7 @@ TODO už to lsdn_context_cleanup umí?
 Sections
 --------
 
-Learn more about individual kinds of objects.
+Learn more about individual kinds of objects and their functions.
 
 .. toctree::
 
@@ -129,3 +129,4 @@ Learn more about individual kinds of objects.
     capi/rules.rst
     capi/errors.rst
     capi/misc.rst
+    capi/dump.rst

@@ -5,7 +5,7 @@ Introduction
 ==================
 
 LSDN is a tool to easily configure networking for virtual machines (or
-containers) in Linux. It allows you to easily configure network tunnels
+containers) in Linux. It allows you to configure network tunnels
 (`ovl_vxlan`, `ovl_geneve` ...) for separating groups of VMs into their own
 virtual network.
 
@@ -28,9 +28,10 @@ networks <net>`, `physical machines <phys>` and `virtual machines <virt>` and
 their relationships. It can also be driven programatically, using a `capi`.
 
 You run LSDN on each physical machine and provide it with the same netmodel,
-either by passing the same configuration file or calling the same C API calls.
-LSDN then takes care of the configuration so that the VMs in the same virtual
-network can correctly talk to each other even if on different computers.
+either by passing the same configuration file (you can use our
+:ref:`capi/dump` mechanism) or calling the same C API calls LSDN then takes
+care of the configuration so that the VMs in the same virtual network can
+correctly talk to each other even if on different computers.
 
 If you run a static ZOO of VMs, you can simply copy over the file to the
 physical machines. If you have more complex virtualization setup, you are likely
