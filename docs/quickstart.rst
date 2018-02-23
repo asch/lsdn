@@ -13,6 +13,7 @@ is illustrated in :numref:`qnm`.
 .. _qnm:
 
 .. figure:: quickstart.svg
+    :align: center
 
     Network setup. Solid lines are physical machine connections, dashed lines
     denote communication between virtual machines.

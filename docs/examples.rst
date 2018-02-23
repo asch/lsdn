@@ -65,6 +65,7 @@ infrastructure will look like once we're done:
 
 .. figure:: Example1.svg
     :scale: 70 %
+    :align: center
 
     Virtual networks in Example 1
 
