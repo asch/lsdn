@@ -242,7 +242,7 @@ Directive reference
 
     Define new virtual network or change an existing one.
 
-    C API equivalents: :c:func:`lsdn_net_new`, :c:func:`lsdn_net_by_name`.
+    **C API equivalents:** :c:func:`lsdn_net_new`, :c:func:`lsdn_net_by_name`.
 
     :param int vid:
         Virtual network identifier. Network technologies like VXLANs or VLANs
@@ -275,7 +275,7 @@ Directive reference
 
     Define a new physical machine or change an existing one.
 
-    C API equivalents: :c:func:`lsdn_phys_new`, :c:func:`lsdn_phys_by_name`.
+    **C API equivalents:** :c:func:`lsdn_phys_new`, :c:func:`lsdn_phys_by_name`.
 
     :param string name:
         Optional, name of the physical machine. Does not change network
@@ -307,7 +307,7 @@ Directive reference
 
     Define a new virtual machine or change an existing one.
 
-    C API equivalents: :c:func:`lsdn_virt_new`, :c:func:`lsdn_virt_by_name`.
+    **C API equivalents:** :c:func:`lsdn_virt_new`, :c:func:`lsdn_virt_by_name`.
 
     :param string net:
         The virtual network this virt should be part of. Mandatory if creating
@@ -374,9 +374,7 @@ Directive reference
     Add a new firewall rule for a given virt. The rule applies if all the
     matches specified by the arguments are satisfied.
 
-    C API equivalents: 
-
-    .. todo:: Fill in once the respective section is completed.
+    **C API equivalents:** :c:func:`lsdn_vr_new` and other functions (see :ref:`capi/rules`)
 
 
     :param direction direction: Direction of the packets.
@@ -406,7 +404,7 @@ Directive reference
     Limit bandwidth in a given direction. If no arguments are given, all limits
     are lifted.
 
-    C API equivalents:
+    **C API equivalents:**
     .. todo:: Link to the attributes once documented.
 
     :param direction direction: Direction to limit.
@@ -432,7 +430,7 @@ Directive reference
 
         lsctl <your script> <local phys>
 
-    C API equivalents: :c:func:`lsdn_phys_claim_local`.
+    **C API equivalents:** :c:func:`lsdn_phys_claim_local`.
 
     :param string phys: The phys to mark as local.
     :scope none: This directive can appear at root level.
@@ -522,7 +520,7 @@ Directive reference
     If the validation or commit fails, the errors will be printed to stderr and
     the directive will end with an error. The script will be terminated.
 
-    C API equivalents: :c:func:`lsdn_commit`
+    **C API equivalents:** :c:func:`lsdn_commit`
 
     :scope none: This directive can only appear at root level.
 
@@ -533,7 +531,7 @@ Directive reference
     If the validation fails, the errors will be printed to stderr and
     the directive will end with an error. The script will be terminated.
 
-    C API equivalents: :c:func:`lsdn_validate`
+    **C API equivalents:** :c:func:`lsdn_validate`
 
     :scope none: This directive can only appear at root level.
 
@@ -544,7 +542,7 @@ Directive reference
     If the cleanup fails, the errors will be printed to stderr and
     the directive will end with an error. The script will be terminated.
 
-    C API equivalents: :c:func:`lsdn_context_cleanup`
+    **C API equivalents:** :c:func:`lsdn_context_cleanup`
 
     :scope none: This directive can only appear at root level.
 
@@ -553,7 +551,7 @@ Directive reference
     Free all the resources used by LSDN, but do not revert the changes. This is
     useful for memory leak debugging (Valgrind etc.).
 
-    C API equivalents: :c:func:`lsdn_context_free`
+    **C API equivalents:** :c:func:`lsdn_context_free`
 
     :scope none: This directive can only appear at root level.
 
