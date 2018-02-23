@@ -26,7 +26,7 @@ The *virts*, *physes* and *nets* have the following relationships:
  - *virts* are connected at one of the *physes* (they can connect at different
    phys, in other words, they can **migrate**)
  - *physes* attach to a *net* -- this tells LSDN that the *phys* will have virts
-   connecting to the network [#f1]_.
+   connecting to the network [#fattach]_.
 
 Each of the object can also have attributes -- for example *physes* can have an
 IP address (some network tunneling technologies require this information) and *virts*
@@ -51,7 +51,7 @@ library can be safely used by multiple clients in the same process.
 
 .. rubric:: Footnotes
 
-.. [#f1] In theory LSDN could figure out if a *phys* should be attached to a
+.. [#fattach] In theory LSDN could figure out if a *phys* should be attached to a
     *net* just be looking at if any of its *virts* are attached to that *net*.
     But we have decided to make this explicit. LSDN checks if *physes* connected
     to the same *net* have certain properties (for example the same IP version)
@@ -74,7 +74,7 @@ the settings for the tunneling technology they should use. The *VID* is a numeri
 identifier used to separate one virtual network from other and is mapped to VLAN
 IDs, VXLAN IDs or similar identifiers. The allowed range of the *VID* is defined
 by the used tunneling technology and the must be unique among all networks
-[#f1]_.
+[#funique]_.
 
 The used networking overlay technology (and any options related to that, like
 VXLAN port) is encapsuled in the **settings** object, which serves as a template
@@ -90,7 +90,7 @@ for un-named settings.
 
 .. rubric:: Footnotes
 
-.. [#f1] In theory, they could overlap if the *nets* are always connected to
+.. [#funique] In theory, they could overlap if the *nets* are always connected to
     different *physes* (and so there are is no ambiguity), but LSDN still checks
     that they are globally unique.
 
@@ -184,8 +184,8 @@ Physes
 ------
 **LSCTL:** :lsctl:cmd:`phys`, :lsctl:cmd:`attach`, :lsctl:cmd:`claimLocal`
 
-**C API:** :c:func:`lsdn_phys_new`, c:func:`lsdn_phys_set_ip`,
-    c:func:`lsdn_phys_claim_local`
+**C API:** :c:func:`lsdn_phys_new`, :c:func:`lsdn_phys_set_ip`,
+    :c:func:`lsdn_phys_claim_local`
 
 *physes* are used to described the underlying physical machines that will run
 your virtual machines.
