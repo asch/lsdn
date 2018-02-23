@@ -10,6 +10,8 @@ __pycache__
 /docs/html
 /docs/_build
 /docs/pdf
+/docs/spelling
+/docs/.doctrees
 /test/pacman-cache
 
 /dist/rpm/lsdn-*.tar.xz
