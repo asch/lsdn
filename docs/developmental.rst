@@ -215,7 +215,6 @@ at least reported and patched by someone else:
 We have also identified a bug in iproute2:
 
  - `tc: fix an off-by-one error while printing tc actions <https://marc.info/?l=linux-netdev&m=151898324311814>`_
-   (not yet merged)
 
 Naturally, our tooling also has problems, so we also fixed a bug in
 `sphinx <https://github.com/sphinx-doc/sphinx/pull/4627>`_ and
