@@ -73,8 +73,8 @@ Virtual networks are defined by their *virtual network identifier* (**VID**) and
 the settings for the tunneling technology they should use. The *VID* is a numeric
 identifier used to separate one virtual network from other and is mapped to VLAN
 IDs, VXLAN IDs or similar identifiers. The allowed range of the *VID* is defined
-by the used tunneling technology and the must be unique among all networks
-[#funique]_.
+by the used tunneling technology and the must be unique among all networks of
+the same type [#funique]_.
 
 The used networking overlay technology (and any options related to that, like
 VXLAN port) is encapsulated in the **settings** object, which serves as a template
