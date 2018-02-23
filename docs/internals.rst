@@ -153,6 +153,7 @@ in :numref:`netmodel_states`.
     :caption: Object states. Blue lines denote update (attribute change, free),
               green lines commit, orange lines errors during commit, red lines 
               errors where recovery has failed.
+    :align: center
 
     T [shape = point ];
     NEW; RENEW; DELETE; OK; free
