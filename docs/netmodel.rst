@@ -228,6 +228,22 @@ to the creation of networks in LSDN. For details refer to section `restricts`.
 Debugging
 ---------
 
+The LSDN library and the *lsctl* tool both respect the ``LSDN_DEBUG``
+environment variable. If you have any problem when committing a model, try
+settings ``LSDN_DEBUG=nlerr`` to print extended netlink messages. Alternatively,
+you can try ``LSDN_DEBUG=all`` for very verbose output.
+
+``LSDN_DEBUG`` accepts comma separated list of following message categories:
+
+=========== ================================================================
+Category    Description
+=========== ================================================================
+netops      High-level network commit operations (add virt, phys etc.)
+rules       Creation and deletion of TC flower rules.
+nlerr       Errors returned from Kernel (mostly netlink).
+all         All of the above
+=========== ================================================================
+
 .. _ovl:
 
 --------------------------------
