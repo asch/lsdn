@@ -14,6 +14,7 @@ LSDN User's Documentation
    capi
    internals
    developmental
+   doxygen
 
 .. only:: html
 
