@@ -129,4 +129,3 @@ Learn more about individual kinds of objects and their functions.
     capi/rules.rst
     capi/errors.rst
     capi/misc.rst
-    capi/dump.rst

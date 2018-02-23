@@ -288,7 +288,8 @@ LSDN_DECLARE_ATTR(inbound bandwidth limit, virt, rate_in, lsdn_qos_rate_t, const
 LSDN_DECLARE_ATTR(outbound bandwidth limit, virt, rate_out, lsdn_qos_rate_t, const lsdn_qos_rate_t*);
 /** @} */
 
-/** @defgroup misc Miscellaneous */
+/** @defgroup misc Miscellaneous
+ * TODO describe what you can find here. For example, dump functions. */
 
 const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type);
 
