@@ -37,6 +37,7 @@ lsdn_err_t lsdn_lbridge_free(struct lsdn_lbridge *br)
 	if (!br->ctx->disable_decommit)
 		if (lsdn_link_delete(br->ctx->nlsock, &br->bridge_if) != LSDNE_OK)
 			return LSDNE_INCONSISTENT;
+	lsdn_if_free(&br->bridge_if);
 
 	return LSDNE_OK;
 }
