@@ -6,7 +6,7 @@ Network representation
 
 The public API (either :ref:`capi` or :ref:`lsctl`) gives you tools to build a a
 model of your virtual networks, which LSDN will then realize on top of the
-physical network, using various overlay technologies. You will need to tell LSDN
+physical network, using various tunneling technologies. You will need to tell LSDN
 both abouth the virtual networks and the physical network they will be using.
 
 There are three core concepts (objects) LSDN operates with: **virtual
@@ -29,8 +29,8 @@ The *virts*, *physes* and *nets* have the following relationships:
    connecting to the network [#f1]_.
 
 Each of the object can also have attributes -- for example *physes* can have an
-IP address (some network overlay technologies require this information) and *virts*
-can have a MAC address (network overlays not supporting MAC learning require
+IP address (some network tunneling technologies require this information) and *virts*
+can have a MAC address (network tunnels not supporting MAC learning require
 this information).
 
 One of the attributes common to all objects is a **name**. A *name* does not
@@ -70,20 +70,29 @@ Networks and their settings
 **C API:** :c:func:`lsdn_net_new` and various ``lsdn_settings_*``.
 
 Virtual networks are defined by their *virtual network identifier* (**VID**) and
-the settings for the overlay technology they should use. The *VID* is a numeric
+the settings for the tunneling technology they should use. The *VID* is a numeric
 identifier used to separate one virtual network from other and is mapped to VLAN
 IDs, VXLAN IDs or similar identifiers. The allowed range of the *VID* is defined
-by the used overlay technology and the must be unique.
+by the used tunneling technology and the must be unique among all networks
+[#f1]_.
 
 The used networking overlay technology (and any options related to that, like
 VXLAN port) is encapsuled in the **settings** object, which serves as a template
-for the new networks (with only the *VID* changing each time). A list of
-supported networking technologies is in the chapter :ref:`ovl`, including the
-additional options they support.
+for the new networks (with only the *VID* changing each time). If you remove the
+template, the networks will be removed to. A list of supported networking
+technologies is in the chapter :ref:`ovl`, including the additional options they
+support.
 
 Like other objects, networks can have a name. However, they do not have any
 other attributes, since everything important to their functioning is part of the
-*settings*.
+*settings*. *Settings* can have names to and *lsctl* reserves a name ``default``
+for un-named settings.
+
+.. rubric:: Footnotes
+
+.. [#f1] In theory, they could overlap if the *nets* are always connected to
+    different *physes* (and so there are is no ambiguity), but LSDN still checks
+    that they are globally unique.
 
 .. _virt:
 .. _attr_mac:
@@ -103,7 +112,8 @@ exists on a *phys* (usually ``tap`` for a virtual machine or ``veth`` for a
 container). LSDN does not care what is on the other end.
 
 When creating a *virt* you have to specify, which virtual network it is going to
-be part of. This can not be changed later.
+be part of. This can not be changed later. If you remove the network, all it's
+*virts* will be also removed.
 
 A *virt* also can not be part of multiple virtual networks. The intended
 solution is to simply create one *virt* for each virtual network you are going
@@ -172,7 +182,32 @@ work.
 ------
 Physes
 ------
+**LSCTL:** :lsctl:cmd:`phys`, :lsctl:cmd:`attach`, :lsctl:cmd:`claimLocal`
 
+**C API:** :c:func:`lsdn_phys_new`, c:func:`lsdn_phys_set_ip`,
+    c:func:`lsdn_phys_claim_local`
+
+*physes* are used to described the underlying physical machines that will run
+your virtual machines.
+
+You will tell LSDN which machine it is currently running on (using
+:lsctl:cmd:`claimLocal` or :c:func:`lsdn_phys_claim_local`). LSDN will then make
+sure that the *virts* running on this machine are connected to the rest of the
+*virts* running on the other machines.
+
+If you your machine has multiple separate network interfaces (not bonded), you
+will want to create a new *phys* for each network interface on that machine and
+claim all such *physes* as local. In this sense, a *phys* is not a physical
+machine but a network interfaces of a physical machine.
+
+This use-case is not meant for a case where both network interfaces are
+connected to the same physical network and you just want to choose where data
+will flow. LSDN does not support two physes claimed as local connecting to the
+same virtual network, for technical reasons, so it will not work.
+
+Like other objects, *physes* can have names. They can also have and *ip*
+attribute, specifing IP address for the network overlay technologies that
+require it.
 
 .. _validation:
 
