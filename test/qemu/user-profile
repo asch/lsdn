@@ -1,3 +1,4 @@
 cd /lsdn/build/test
 export LSDN_PREFIX=/lsdn/build
 export LD_LIBRARY_PATH="$LSDN_PREFIX/netmodel:$LSDN_PREFIX/hooks:$LSDN_PREFIX/lsctl"
+export LSDN_DEBUG=nlerr
