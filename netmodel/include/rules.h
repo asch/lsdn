@@ -118,7 +118,7 @@ struct lsdn_vr *lsdn_vr_new(
 void lsdn_vr_free(struct lsdn_vr *vr);
 void lsdn_vrs_free_all(struct lsdn_virt *virt);
 
-extern struct lsdn_vr_action lsdn_vr_drop;
+extern struct lsdn_vr_action LSDN_VR_DROP;
 
 /** Add virt rule for source MAC with a mask. */
 void lsdn_vr_add_masked_src_mac(struct lsdn_vr *rule, lsdn_mac_t mask, lsdn_mac_t value);

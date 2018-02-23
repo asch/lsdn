@@ -29,8 +29,8 @@ int main(int argc, const char* argv[])
 	lsdn_virt_set_mac(v1, LSDN_MK_MAC(0x00, 0x00, 0x00, 0x00, 0x00, 0xa1));
 	lsdn_virt_connect(v1, phys, "1");
 
-	lsdn_vr_new_src_ip(v1, 0, LSDN_IN, LSDN_MK_IPV4(192, 168, 99, 2), &lsdn_vr_drop);
-	lsdn_vr_new_dst_ip(v1, 0, LSDN_OUT, LSDN_MK_IPV4(192, 168, 99, 3), &lsdn_vr_drop);
+	lsdn_vr_new_src_ip(v1, 0, LSDN_IN, LSDN_MK_IPV4(192, 168, 99, 2), &LSDN_VR_DROP);
+	lsdn_vr_new_dst_ip(v1, 0, LSDN_OUT, LSDN_MK_IPV4(192, 168, 99, 3), &LSDN_VR_DROP);
 
 	v2 = lsdn_virt_new(net);
 	lsdn_virt_set_mac(v2, LSDN_MK_MAC(0x00, 0x00, 0x00, 0x00, 0x00, 0xa2));

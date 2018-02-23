@@ -22,7 +22,9 @@ static void callback_drop(struct lsdn_filter *f, uint16_t order, void *user) {
 	lsdn_action_drop(f, order);
 }
 
-struct lsdn_vr_action lsdn_vr_drop = {
+/** DROP rule action.
+ * Packet matching a rule with this action will be dropped. */
+struct lsdn_vr_action LSDN_VR_DROP = {
 	.desc = {
 		.name = "drop",
 		.actions_count = 1,

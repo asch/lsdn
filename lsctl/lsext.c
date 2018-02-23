@@ -696,7 +696,7 @@ CMD(rule)
 			return TCL_ERROR;
 	}
 
-	struct lsdn_vr *vr = lsdn_vr_new(ctx->virt, prio, direction, &lsdn_vr_drop);
+	struct lsdn_vr *vr = lsdn_vr_new(ctx->virt, prio, direction, &LSDN_VR_DROP);
 	if (src_mac)
 		lsdn_vr_add_masked_src_mac(vr, src_mac_value, src_mac_mask);
 	if (dst_mac)
