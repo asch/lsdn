@@ -78,8 +78,6 @@ LSDN_ENUM(rule_target, LSDN_MATCH);
 
 #define LSDN_MAX_MATCHES 2
 
-const char* lsdn_rule_target_name(enum lsdn_rule_target t);
-
 /** Minimum Virt Rule priority. */
 #define LSDN_VR_PRIO_MIN 0
 /** Upper limit for Virt Rule priority.

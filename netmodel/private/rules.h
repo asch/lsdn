@@ -205,6 +205,8 @@ lsdn_err_t lsdn_broadcast_add(struct lsdn_broadcast *br, struct lsdn_broadcast_a
 lsdn_err_t lsdn_broadcast_remove(struct lsdn_broadcast_action *action);
 lsdn_err_t lsdn_broadcast_free(struct lsdn_broadcast *br);
 
+const char* lsdn_rule_target_name(enum lsdn_rule_target t);
+
 #define LSDN_VR_SUBPRIO 0
 struct lsdn_vr {
 	struct lsdn_list_entry rules_entry;
