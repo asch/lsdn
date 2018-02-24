@@ -17,22 +17,25 @@ host b3 { hardware ethernet 00:00:00:00:00:b3; fixed-address 192.168.99.5; }
 host c1 { hardware ethernet 00:00:00:00:00:c1; fixed-address 192.168.99.4; }
 EOF
 	echo > /tmp/dhcpd.leases
-	in_virt $1 $2 dhcpd -4 -cf /tmp/dhcpd.conf -lf /tmp/dhcpd.leases --no-pid $3
+	in_virt $1 $2 `which dhcpd` -4 -cf /tmp/dhcpd.conf -lf /tmp/dhcpd.leases --no-pid $3
 }
 
 function dhcp_client(){
 
-	if [ -a /bin/dhclient ] || [ -a /usr/bin/dhclient ]; then
-		local client="dhclient -1 -4"
-		rm /var/lib/dhclient/dhclient.leases || true
-		echo "timeout 5;" > /etc/dhclient.conf
+	if [ "$(which dhclient)" != "" ]; then
+		local client="$(which dhclient) -1 -4 -cf /tmp/dhclient.conf -lf /tmp/dhclient.lease"
+		rm /tmp/dhclient.lease 2>/dev/null || true
+		echo "timeout 5;" > /tmp/dhclient.conf
+		in_virt $1 $2 $client $3
+		# Oneshot does not return coerrect error code on all distros
+		grep -q /tmp/dhclient.lease -e lease
 	else
-		local client="dhcpcd -A -4 --oneshot -t 5"
-		rm /var/lib/dhcpcd/dhcpcd-*.lease || true
+		# -A disables ARP probes and makes the lease quicker
+		local client="$(which dhcpcd) -A -4 --oneshot -t 5"
+		rm /var/lib/dhcpcd/dhcpcd-*.lease 2>/dev/null || true
+		in_virt $1 $2 $client $3
 	fi
 
-	# -A disables ARP probes and makes the lease quicker
-	in_virt $1 $2 $client $3
 }
 
 function prepare(){

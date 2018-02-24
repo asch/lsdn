@@ -1,13 +1,20 @@
 #/bin/bash
 
-echo "Mounting build directory ..."
+if [ "${2:-}" == "" ]; then
+	echo "Mounting build directory ..."
 
-mkdir -p /lsdn/build/
-mount -t 9p -o trans=virtio,cache=fscache build /lsdn/build -oversion=9p2000.L
+	mkdir -p /lsdn/build/
+	mount -t 9p -o trans=virtio,cache=fscache build /lsdn/build -oversion=9p2000.L
 
-echo OK
+	echo OK
 
-cd /lsdn/build/test
+	cd /lsdn/build/test
+	export ROOTFS=1
+else
+	cd "${2}"/test
+	export LSDN_PREFIX="${2}"
+	export ROOTFS=0
+fi
 "$@"
 
 echo OK

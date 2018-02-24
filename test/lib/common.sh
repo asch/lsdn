@@ -166,13 +166,13 @@ set_ifattr(){
 enable_ipv4_forwarding(){
 	local ns="$1"
 	local if="$2"
-	in_ns "$ns-$if" sysctl -w net.ipv4.ip_forward=1
+	in_ns "$ns-$if" $(which sysctl) -w net.ipv4.ip_forward=1
 }
 
 enable_ipv6_forwarding(){
 	local ns="$1"
 	local if="$2"
-	in_ns "$ns-$if" sysctl -w net.ipv6.ip_forward=1
+	in_ns "$ns-$if" $(which sysctl) -w net.ipv6.ip_forward=1
 }
 
 add_default_route(){

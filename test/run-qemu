@@ -46,6 +46,7 @@ EOT
 QUIET="quiet"
 KVM=""
 GDB="-s"
+NO_ROOTFS=0
 
 while [[ ${1:-} == --* ]]; do
 	case $1 in
@@ -79,6 +80,9 @@ ROOTFS=$1; shift
 QEMU=qemu-system-x86_64
 SHELL=/bin/bash
 INIT="$SHELL /lsdn-guest-init qemu/prepare-guest-env"
+if [ "$ROOTFS" == "/" ]; then
+	INIT="$SHELL `pwd`/qemu/lsdn-guest-init qemu/prepare-guest-env $(realpath `pwd`/..)"
+fi
 SHELL="/bin/bash"
 CMDLINE=""
 RESULT=""

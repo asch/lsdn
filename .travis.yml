@@ -1,5 +1,4 @@
 language: c
-sudo: required
 dist: trusty
 
 notifications:
@@ -9,11 +8,23 @@ notifications:
         on_success: change
         on_failure: always
 
+addons:
+    apt:
+        packages:
+            - tcl-dev
+            - libmnl-dev
+            - libvirt-dev
+            - cmake
+            - realpath
+            - qemu uthash-dev
+            - libjson0-dev
+            - libdaemon-dev
+            - isc-dhcp-server
+            - isc-dhcp-client
+
 install:
-    - sudo apt-get install tcl-dev libmnl-dev libvirt-dev cmake valgrind qemu uthash-dev libjson0-dev libdaemon-dev
-    - pwd
     - wget https://rkapl.cz/uploads/lsdn-testenv-3.tar.xz -O testenv.tar.xz
-    - echo 'b53ffd6434dd1caf6b252adee6c5d6098a2646cf5c85c0bf7593dbf78f216a9e  testenv.tar.xz'|sha256sum -c
+    - echo '12359db1c67cad9be6ab5b7bfe22e1d9e0547b8427359fd8644e2746ef10767e  testenv.tar.xz'|sha256sum -c
     - tar xf testenv.tar.xz
 
 env:
@@ -29,4 +40,4 @@ script:
     - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DLARGE_TESTS=OFF -DKERNEL_HEADERS=`pwd`/../headers/include ..
     - make
     - cd test
-    - ./run-qemu ../../bzImage ../../rootfs all
+    - ./run-qemu ../../bzImage / all

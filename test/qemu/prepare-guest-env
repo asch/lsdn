@@ -1,18 +1,46 @@
 #!/bin/bash
 
+if [ ${ROOTFS:-1} -eq 0 -a ${ROOTFS_STAGE:-0} -eq 0 ]; then
+	# this is for backward compatibility with old lsdn-guest-init
+	export ROOTFS=1
+	# if we are using rootfs = /, do pivot root to carefully constructed root hybrid
+	mount -n -t tmpfs none /tmp
+	mkdir /tmp/new-root
+	mount -n -t tmpfs none /tmp/new-root
+
+	mkdir -p /tmp/new-root/proc
+	mkdir -p /tmp/new-root/sys
+	mkdir -p /tmp/new-root/run
+	mkdir -p /tmp/new-root/tmp
+	mkdir -p /tmp/new-root/var/run
+	mkdir -p /tmp/new-root/var/lib/dhcp
+	mkdir -p /tmp/new-root/var/lib/dhcpcd
+	mkdir -p /tmp/new-root/var/lib/dhclient
+	for d in usr lib bin sbin home lib64 dev etc; do
+		mkdir /tmp/new-root/$d
+		mount --bind /$d /tmp/new-root/$d
+	done
+	export ROOTFS_STAGE=1
+	echo Entering chroot ...
+	chroot /tmp/new-root $LSDN_PREFIX/test/qemu/prepare-guest-env
+fi
+
+cd $LSDN_PREFIX/test
 echo Preparing environment ...
-mount -t proc none /proc
-mount -t sysfs none /sys
+mount -n -t tmpfs none /tmp
+mount -n -t proc none /proc
+mount -n -t sysfs none /sys
+mount -n -t tmpfs none /run/
+mount -n --bind /run /var/run
 mkdir -p /run/netns
-mount -t tmpfs none /run/netns
-mount -t tmpfs none /tmp
+mkdir -p /run/resolvconf/interface
 echo OK
 
 echo -n 'Running '
-source /lsdn/build/test/qemu/user-profile
+source qemu/user-profile
 cat qemu/work
 . qemu/work
 
 echo $? > ctest.result
 
-/lsdn/build/test/halt
+$LSDN_PREFIX/test/halt
