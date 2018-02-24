@@ -876,7 +876,7 @@ static void validate_rate(struct lsdn_virt *v, const char *attr_name, const lsdn
 {
 	if (!rate)
 		return;
-	if (rate->avg_rate <= 1e-5 || rate->burst_size == 0 || rate->burst_rate <= 1e-5)
+	if (rate->avg_rate <= 1e-5 || rate->burst_size == 0 || rate->burst_rate <= -1e-5)
 		lsdn_problem_report(v->network->ctx, LSDNP_RATES_INVALID,
 			LSDNS_ATTR, attr_name,
 			LSDNS_VIRT, v, LSDNS_END);

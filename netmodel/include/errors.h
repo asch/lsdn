@@ -85,7 +85,7 @@ typedef enum {
 	x(LSDNP_COMMIT_NOMEM, "Committing %o failed because memory was exhausted.") \
 	/** Can not establish netlink communication */ \
 	x(LSDNP_NO_NLSOCK, "Can not establish netlink socket.") \
-	/** QoS has either zero rate or zero burst. See #lsdn_qos_rate_t for correct parameters. */ \
+	/** QoS has invalid parameters (both rate and burst must be positive). See #lsdn_qos_rate_t for correct parameters. */ \
 	x(LSDNP_RATES_INVALID, "Effective QoS (%o) rate on %o is not greater than zero. This is probably not the rate you are looking for.")
 
 /** Validation and commit errors. */
