@@ -90,7 +90,7 @@ typedef enum {
 	/** Can not establish netlink communication */ \
 	x(LSDNP_NO_NLSOCK, "Can not establish netlink socket.") \
 	/** QoS has either zero rate or zero burst. See #lsdn_qos_rate_t for correct parameters. */ \
-	x(LSDNP_RATES_INVALID, "Effective QoS (%o) rate on %o is zero. This is probably not the rate you are looking for.")
+	x(LSDNP_RATES_INVALID, "Effective QoS (%o) rate on %o is not greater than zero. This is probably not the rate you are looking for.")
 
 /** Validation and commit errors. */
 LSDN_ENUM(problem_code, LSDNP);
