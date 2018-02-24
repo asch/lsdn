@@ -213,16 +213,137 @@ require it.
 
 .. _validation:
 
--------------------------------------
-Validation, Commit and Error Handling
--------------------------------------
+----------
+Validation
+----------
+**LSCTL:** :lsctl:cmd:`validate`
+
+**C API:** :c:func:`lsdn_validate`
 
 Every host participating in a network must share a compatible network
 representation. This usually means that all hosts have the same model,
 presumably read from a common configuration file or installed through a single
 orchestrator. It is then necessary to claim a *phys* as local, so that LSDN
 knows on which machines it is running. Several restrictions also apply
-to the creation of networks in LSDN. For details refer to section `restricts`.
+to the creation of networks in LSDN.
+
+The validation step in LSDN serves to validate the network model. There are
+several reasons why the validation step is present in LSDN. One reason is that
+when a network model is being gradually built up using the :ref:`capi` the user
+does not have to worry too much about the order in which network objects are
+being created as long as the final netmodel is valid. The intermediate steps are
+not being checked on-the-fly. For example when creating a virtual machine its
+MAC attribute may be specified just before `committing <commit>` the network
+model even though for a particular network type this information may be
+mandatory (this is specified for each network type in
+:ref:`networking technology <ovl>`).
+
+Another advantage of this approach is that when there are problems detected
+during the validation phase they will all get reported one by one. LSDN
+conveniently provides a :c:func:`lsdn_problem_stderr_handler` function which
+will report every detected problem on the standard error. It is also possible to
+invoke the :c:func:`lsdn_validate` step with a different error handler. This
+error handler must have the same function signature as
+:c:func:`lsdn_problem_stderr_handler`.
+
+This way you can try some network scenario and if the validation reports to you
+some problems it has detected in the network model you may fix all these
+issues at once and perhaps the next network validation phase will succeed.
+
+Fixing all the issues present in your network model in the validation step
+greatly reduces the risk of creating inconsistent network models in the kernel
+and it also alleviates the complexity of the creation of the individual 
+network objects in the right order inside the kernel.
+
+The validation phase will ensure the network model does not violate any of the
+restrictions listed in `restricts`.
+
+.. _commit:
+
+-------------------------
+Commit and Error Handling
+-------------------------
+**LSCTL:** :lsctl:cmd:`commit`
+
+**C API:** :c:func:`lsdn_commit`
+
+When we commit a network model the first thing LSDN does it `validates
+<validation>` the whole network model. Only if the validation phase succeeds,
+the commit phase may proceed. This way the user does not even need to be aware of the
+validation phase involved and can only commit the netmodel when appropriate.
+This often eliminates the possibility of getting the network in some undesirable
+state.
+
+We need to be able to distinguish among network objects already created and
+committed in the kernel and network objects newly created, but not yet
+committed. LSDN will keep track of the state of each network object. Basically
+what we need to do is to remember which objects are already present in the
+kernel in their most up-to-date state and which objects have been newly created
+or updated since the last time they have been committed (if ever) and which
+objects have been deleted. Each attribute you add, remove from or change on a
+network object is considered as an update of this object.
+
+If you want to know more about LSDN state management and also to view a diagram
+of all states and transitions between these states have a look at the
+:ref:`internals_netmodel` section.
+
+It is important to note that any updates exercised on the kernel data structures
+representing our network objects are only performed on local objects, where:
+ - *phys* is local iff it has been claimed local (either with
+   :lsctl:cmd:`claimLocal` or :c:func:`lsdn_phys_claim_local`),
+ - *virt* is local iff it pertains to a local *phys*.
+
+However, local objects may sometimes need to be updated as a result of a non
+local network object being added, updated or removed. E.g. when a MAC address of
+a non local *virt* changes inside a network where this information is mandatory
+(such as in `static VXLAN <ovl_vxlan_static>` networks) then local *phys*
+objects will need to be updated as well.
+
+Also, there are transitive dependencies among the network objects. In
+particular, when:
+
+ - *virt* is deleted then all its `rules` and `rates` are deleted as well,
+ - *net* is deleted then all its *virts* are deleted as well,
+ - *phys* is deleted then all *virts* attached to this *phys* are deleted as
+   well.
+
+After the initial validation step is completed, LSDN will then proceed with the
+actual commit phase which is further subdivided into two subphases:
+
+ - *decommit*
+ - *recommit*
+
+In the *decommit* subphase LSDN will consider all the network objects that need
+to be either updated or deleted and it will delete both of these objects from
+the kernel data structures. However, LSDN will keep track of those objects which
+have been initially updated, but not deleted, as they will need to be committed
+back again in the next subphase.
+
+The second subphase is the *recommit* phase in which LSDN will iterate over all
+local *phys* objects and commit any new or updated *virts* residing on this
+*phys*.
+
+You can perhaps think of the whole commit phase as finding the smallest possible
+delta between the objects ready to be committed and those already committed. In
+the special case of committing for the very first time we can imagine we have
+only committed an empty network model (which, by the way, is also possible to
+do).
+
+Unfortunately, things can go wrong in the commit phase even when the network
+model passes the validation phase. Depending on the phase at which an error
+occured we may or may not be able to keep the network model consistent.
+
+If an error occurs in the *recommit* phase, a limited rollback is performed and
+the kernel rules remain in mixed state. Some objects may have been successfully
+committed, others might still be in the old state because the commit failed. In
+such cases the user can retry the commit to install the remaining objects.
+
+If an error occurs in the *decommit* phase, however, there is no safe way to
+recover. Given that kernel rules are not installed atomically and there are
+usually several rules tied to an object, LSDN can't know what is the installed
+state after rule removal fails. In this case the model is considered to be in an
+inconsistent state. The only way to proceed is to tear down the whole model and
+reconstruct it from scratch.
 
 ---------
 Debugging
@@ -410,25 +531,36 @@ interface. In this case no separation is needed nor desired.
 Network Restrictions
 --------------------
 Certain restrictions apply to the set of possible networks and their
-configurations that can be created using LSDN. All the restrictions we are
-going to describe in a moment shall be familiar to anyone who has some
-experience with computer networks.
+configurations that can be created using LSDN. Anywhere where the keyword
+**mandatory** is written in the following list with regards to a network type,
+please refer :ref:`ovl` to see if the rule applies to a given network type:
 
-- You can not assign the same MAC address to two different virts that are
-  part of the same virtual network.
+- You can not assign the same MAC address to two different *virts* that are part
+  of the same virtual network,
 - Any two virtual networks of the same network type must not be assigned the
-  same virtual network identifier.
+  same virtual network identifier,
 - Any two VXLAN networks sharing the same phys, where one network is of type
   :ref:`ovl_vxlan_static` and the other is either of type
-  :ref:`ovl_vxlan_e2e` or :ref:`ovl_vxlan_mcast`, must use different UDP
-  ports.
-- Any virt inside a :ref:`ovl_vxlan_static` VXLAN network must be explicitly
-  assigned a unique MAC address.
-- All virts inside the same network must by assigned an unique IP address.
-  Moreover, all IP addresses assigned to virts in the same network must be
-  be of the same IP version (both IPv4 and IPv6 versions are supported by LSDN).
-
-.. todo:
-
-    Go through the various network types and describe their functioning and
-    limitations. 
+  :ref:`ovl_vxlan_e2e` or :ref:`ovl_vxlan_mcast`, must use different UDP ports,
+- A *virt* must be explicitly assigned a MAC address when this is **mandatory**
+  for a given network type,
+- IP address has been specified for a *phys* if it hosts a *net* where this
+  information is **mandatory**,
+- No duplicate IP addresses were specified for any two *phys*,
+- All *phys* attached to the same *net* have the same IP versions of their IP
+  addresses,
+- While trying to connect a *virt* to a *net* on *phys*, the *phys* is attached
+  to *net*,
+- Interface specified for *virt* exists,
+- No duplicate MAC addresses were specified for any two *virts* connected to the
+  same *net* if this attribute is **mandatory** for a given network type,
+- Any two *nets* created on the same *phys* have compatible network types,
+- The virtual network identifier is within the allowed range for a given
+  network type where this is **mandatory**,
+- No two *nets* of the same network type have the same virtual network
+  identifier,
+- No two rules on the same *virt* sharing the same priority have different match
+  targets or masks,
+- Two rules on the same *virt* sharing the same priority are not equal,
+- QoS rates specified for a *virt* are within the allowed range
+  (:lsctl:cmd:`rate`).
