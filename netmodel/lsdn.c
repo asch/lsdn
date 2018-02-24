@@ -742,6 +742,9 @@ void lsdn_virt_disconnect(struct lsdn_virt *virt){
 
 lsdn_err_t lsdn_virt_set_mac(struct lsdn_virt *virt, lsdn_mac_t mac)
 {
+	if (virt->attr_mac && lsdn_mac_eq(*virt->attr_mac, mac))
+		ret_err(virt->network->ctx, LSDNE_OK);
+
 	lsdn_mac_t *mac_dup = malloc(sizeof(*mac_dup));
 	if (mac_dup == NULL)
 		ret_err(virt->network->ctx, LSDNE_NOMEM);
