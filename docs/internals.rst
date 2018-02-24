@@ -193,7 +193,7 @@ objects in *DELETE* state can not be updated, since they are no longer visible
 and should not be used by the user of the API. They also can not be found by
 their name.
 
-If a *NEW* object is updated, it is moved to the **RENEW** state. This means
+If an *OK* object is updated, it is moved to the **RENEW** state. This means
 that on the next update, it is removed from the kernel, moved to *NEW* state,
 and in the same commit added back to the kernel and moved back to the *OK*
 state. Updating the *RENEW* object again does nothing and freeing it moves it to
