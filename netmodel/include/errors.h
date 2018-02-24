@@ -26,10 +26,6 @@ typedef enum {
 	LSDNE_NOIF,
 	/** Netlink error. */
 	LSDNE_NETLINK,
-	/** Operating system error. */
-	LSDNE_OS,
-	/** Incompatible rules with the same priority */
-	LSDNE_INCOMPATIBLE_MATCH,
 	/** Network model validation failed, and the old model is in effect. */
 	LSDNE_VALIDATE,
 	/** Network model commit failed and a mix of old, new and dysfunctional objects are in effect.
