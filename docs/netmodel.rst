@@ -54,7 +54,7 @@ library can be safely used by multiple clients in the same process.
 .. rubric:: Footnotes
 
 .. [#fattach] In theory LSDN could figure out if a *phys* should be attached to a
-    *net* just be looking at if any of its *virts* are attached to that *net*.
+    *net* just by checking if any of its *virts* are attached to that *net*.
     But we have decided to make this explicit. LSDN checks if *physes* connected
     to the same *net* have certain properties (for example the same IP version)
     and we did not want to make these checks implicit. A switch may be provided
