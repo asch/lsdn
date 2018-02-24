@@ -307,6 +307,7 @@ There will be just one virtual network with four VMs (**A**, **B**, **C** and
 **D**). Schematically the scenario will look like this:
 
 .. graphviz::
+    :align: center
 
     digraph {
         rankdir=LR;
