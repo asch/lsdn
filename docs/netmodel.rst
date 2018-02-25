@@ -186,8 +186,7 @@ Physes
 ------
 **LSCTL:** :lsctl:cmd:`phys`, :lsctl:cmd:`attach`, :lsctl:cmd:`claimLocal`
 
-**C API:** :c:func:`lsdn_phys_new`, :c:func:`lsdn_phys_set_ip`,
-    :c:func:`lsdn_phys_claim_local`
+**C API:** :c:func:`lsdn_phys_new`, :c:func:`lsdn_phys_set_ip`, :c:func:`lsdn_phys_claim_local`
 
 *physes* are used to described the underlying physical machines that will run
 your virtual machines.
@@ -220,13 +219,6 @@ Validation
 
 **C API:** :c:func:`lsdn_validate`
 
-Every host participating in a network must share a compatible network
-representation. This usually means that all hosts have the same model,
-presumably read from a common configuration file or installed through a single
-orchestrator. It is then necessary to claim a *phys* as local, so that LSDN
-knows on which machines it is running. Several restrictions also apply
-to the creation of networks in LSDN.
-
 The validation step in LSDN serves to validate the network model. There are
 several reasons why the validation step is present in LSDN. One reason is that
 when a network model is being gradually built up using the :ref:`capi` the user
@@ -241,14 +233,22 @@ mandatory (this is specified for each network type in
 Another advantage of this approach is that when there are problems detected
 during the validation phase they will all get reported one by one. LSDN
 conveniently provides a :c:func:`lsdn_problem_stderr_handler` function which
-will report every detected problem on the standard error. It is also possible to
-invoke the :c:func:`lsdn_validate` step with a different error handler. This
-error handler must have the same function signature as
+will report every detected problem on the standard error output. It is also
+possible to invoke the :c:func:`lsdn_validate` step with a different error
+handler. This error handler must have the same function signature as
 :c:func:`lsdn_problem_stderr_handler`.
 
 This way you can try some network scenario and if the validation reports to you
 some problems it has detected in the network model you may fix all these
 issues at once and perhaps the next network validation phase will succeed.
+
+Every host participating in a network must share a compatible network
+representation. This usually means that all hosts have the same model,
+presumably read from a common configuration file or installed through a single
+orchestrator. It is then necessary to :lsctl:cmd:`claim` (or
+:c:func:`lsdn_phys_claim_local`) a *phys* as local, so that LSDN knows on which
+which machines it is running. Several restrictions also apply to the creation of
+networks in LSDN.
 
 Fixing all the issues present in your network model in the validation step
 greatly reduces the risk of creating inconsistent network models in the kernel
@@ -260,9 +260,9 @@ restrictions listed in `restricts`.
 
 .. _commit:
 
--------------------------
-Commit and Error Handling
--------------------------
+------
+Commit
+------
 **LSCTL:** :lsctl:cmd:`commit`
 
 **C API:** :c:func:`lsdn_commit`
@@ -344,6 +344,60 @@ usually several rules tied to an object, LSDN can't know what is the installed
 state after rule removal fails. In this case the model is considered to be in an
 inconsistent state. The only way to proceed is to tear down the whole model and
 reconstruct it from scratch.
+
+.. _error_handling:
+
+--------------
+Error Handling
+--------------
+**C API:** :c:func:`lsdn_context_set_nomem_callback`, :c:func:`lsdn_context_abort_on_nomem`, :c:type:`lsdn_err_t`
+
+During construction of the network model there are several things that can go
+wrong. LSDN will report these errors to the user of the :ref:`capi`. All the
+possible error types are grouped in :c:type:`lsdn_err_t`.
+
+A successful operation will return the :c:member:`LSDNE_OK` error code.
+
+When parsing an IP address of a *phys* or when parsing a MAC attribute of a
+*virt* the operation may fail if the provided address is invalid. In that case
+LSDN will report this as a :c:member:`LSDNE_PARSE` error.
+
+When assigning a name to a network object (such as *virt*, *phys* or *net*) the
+assignment may fail with the :c:member:`LSDNE_DUPLICATE` error code if an object
+of the same type with this name already exists.
+
+A :c:member:`LSDNE_NOIF` error code will be returned when querying the
+recommended MTU for a *virt* if the given *virt* has no locally assigned
+interface (see :c:func:`lsdn_virt_get_recommended_mtu`).
+
+A :c:member:`LSDNE_NETLINK` error code is returned when LSDN is unable to
+establish a netlink socket for communicating with the kernel.
+
+:c:member:`LSDNE_VALIDATE` is returned when the network model validation failed.
+This can happen while validating the network with :lsctl:cmd:`validate` or
+:c:func:`lsdn_validate`. It can also happen when committing the network model
+with :lsctl:cmd:`commit` or :c:func:`lsdn_commit`, because the network model is
+always validated first. In the latter case of committing the network model, the
+current network model will stay in effect.
+
+The :c:member:`LSDNE_COMMIT` error code means a network model commit failed and
+a mix of old, new and dysfunctional objects are in effect. You may retry the
+commit and see if the error was only temporary.
+
+:c:member:`LSDNE_INCONSISTENT` is more serious than the :c:member:`LSDNE_COMMIT`
+failure, since the commit operation can not be successfully retried. The only
+operation possible is to rebuild the whole model again.
+
+You may also encounter a :c:member:`LSDNE_NOMEM` error. LSDN deals with
+out-of-memory errors in the following fashion: whenever it fails to allocate
+dynamic memory it will call a registered callback (if any) that may deal with
+this error as it sees fit. The callback is registered with the
+:c:func:`lsdn_context_set_nomem_callback` function. It is possible to register
+the :c:func:`lsdn_context_abort_on_nomem` function provided by LSDN. This error
+handler will simply print an error message on the standard error output and will
+immediately abort the program should any dynamic memory allocation fail. Of
+course, you may register your own out-of-memory callback as long as the function
+signature of the callback is that of :c:func:`lsdn_context_abort_on_nomem`.
 
 ---------
 Debugging
@@ -536,9 +590,9 @@ configurations that can be created using LSDN. Anywhere where the keyword
 please refer :ref:`ovl` to see if the rule applies to a given network type:
 
 - You can not assign the same MAC address to two different *virts* that are part
-  of the same virtual network,
-- Any two virtual networks of the same network type must not be assigned the
-  same virtual network identifier,
+  of the same *net*,
+- Any two *nets* of the same network type must not be assigned the same virtual
+  network identifier,
 - Any two VXLAN networks sharing the same phys, where one network is of type
   :ref:`ovl_vxlan_static` and the other is either of type
   :ref:`ovl_vxlan_e2e` or :ref:`ovl_vxlan_mcast`, must use different UDP ports,
