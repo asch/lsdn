@@ -4,7 +4,7 @@
 Network representation
 ======================
 
-The public API (either :ref:`capi` or :ref:`lsctl`) gives you tools to build a a
+The public API (either :ref:`capi` or :ref:`lsctl`) gives you tools to build a 
 model of your virtual networks, which LSDN will then realize on top of the
 physical network, using various tunneling technologies. You will need to tell LSDN
 both about the virtual networks and the physical network they will be using.
@@ -18,23 +18,23 @@ that is all.
 
 The terminology is derived from the most common use case, but that does not mean
 that *virts* really have to be virtual machines and *physes* must really be
-physical machines. Maybe the *virts* are Linux containers and *physes* are
-virtual machines running those containers?
+physical machines. Perhaps the *virts* are Linux containers and *physes* are
+just virtual machines running those containers.
 
 The *virts*, *physes* and *nets* have the following relationships:
- - *virts* always belong to one *net* (they can not be moved)
- - *virts* are connected at one of the *physes* (they can connect at different
-   phys, in other words, they can **migrate**)
- - *physes* attach to a *net* -- this tells LSDN that the *phys* will have virts
-   connecting to the network [#fattach]_.
+ - *virts* always belong to one *net* (they can not be moved between *nets*)
+ - *virts* are connected at one of the *physes* (however, they can connect at a
+   different *phys*, in other words, they can **migrate**)
+ - *physes* attach to a *net* -- this tells LSDN that the *phys* will have
+   *virts* connecting to the network [#fattach]_.
 
-Each of the object can also have attributes -- for example *physes* can have an
+Each of these objects can also have attributes -- for example *physes* can have an
 IP address (some network tunneling technologies require this information) and *virts*
 can have a MAC address (network tunnels not supporting MAC learning require
 this information).
 
 One of the attributes common to all objects is a **name**. A *name* does not
-have impact on the functioning of the network, but you can use it to keep track
+have impact on the functionality of the network, but you can use it to keep track
 of the object. If you are using :ref:`lsctl`, it is more or less mandatory,
 because it is the only way to refer to an object if you want to change it at a
 later point (for example when you want to migrate a *virt*). If you do not
@@ -73,21 +73,21 @@ Networks and their settings
 
 Virtual networks are defined by their *virtual network identifier* (**VID**) and
 the settings for the tunneling technology they should use. The *VID* is a numeric
-identifier used to separate one virtual network from other and is mapped to VLAN
+identifier used to separate one virtual network from another and is mapped to VLAN
 IDs, VXLAN IDs or similar identifiers. The allowed range of the *VID* is defined
-by the used tunneling technology and the must be unique among all networks of
-the same type [#funique]_.
+by the used tunneling technology and must be unique among all networks of the
+same type [#funique]_.
 
 The used networking overlay technology (and any options related to that, like
 VXLAN port) is encapsulated in the **settings** object, which serves as a template
 for the new networks (with only the *VID* changing each time). If you remove the
-template, the networks will be removed to. A list of supported networking
+template, the networks will be removed too. A list of supported networking
 technologies is in the chapter :ref:`ovl`, including the additional options they
 support.
 
 Like other objects, networks can have a name. However, they do not have any
-other attributes, since everything important to their functioning is part of the
-*settings*. *Settings* can have names to and *lsctl* reserves a name ``default``
+other attributes, since everything important for their functioning is part of the
+*settings*. *Settings* can have names and *lsctl* reserves a ``default`` name
 for unnamed settings.
 
 .. rubric:: Footnotes
@@ -109,18 +109,18 @@ Virts
 :c:func:`lsdn_virt_set_mac`
 
 *virts* are the computers/virtual machines that are going to connect to the
-virtual network. From LSDN standpoint, they are just a network interfaces that
-exists on a *phys* (usually ``tap`` for a virtual machine or ``veth`` for a
+virtual network. From LSDN standpoint, they are just network interfaces that
+exist on a *phys* (usually ``tap`` for a virtual machine or ``veth`` for a
 container). LSDN does not care what is on the other end.
 
-When creating a *virt* you have to specify, which virtual network it is going to
+When creating a *virt* you have to specify which virtual network it is going to
 be part of. This can not be changed later. If you remove the network, all it's
-*virts* will be also removed.
+*virts* will be removed as well.
 
-A *virt* also can not be part of multiple virtual networks. The intended
-solution is to simply create one *virt* for each virtual network you are going
-to connect to. LSDN does not need to know, they are connected to the same
-virtual machine/container on the other end. In this sense  *virt* can be
+A *virt* also can not be part of multiple virtual networks. The intention
+is to simply create one *virt* for each virtual network you are going
+to connect to. LSDN does not need to know whether a *virt* is connected to a
+virtual machine or a container on the other end. In this sense  *virt* can be
 described not as a virtual machine, but as a network interface of a virtual machine.
 
 Once created, you can specify which *phys* this *virt* will connect at and how
@@ -133,10 +133,10 @@ final stage of the migration of the virtual machine itself).
 Like other objects, *virts* can have names for your convenience. The names do
 not have to be unique globally, but just inside of a single *net*.
 
-Depending on the :ref:`networking technology <ovl>` used, you may need to inform
-LSDN about the virtual machine's MAC address (currently only one MAC address can
-be given). LSDN will use this MAC address for routing the packets to the
-machine.
+Depending on the :ref:`networking technology <ovl>` used, you may also need to
+inform LSDN about the virtual machine's MAC address (currently only one MAC
+address can be assigned). LSDN will use this MAC address for routing network
+packets to the machine.
 
 Firewall rules
 --------------
@@ -196,15 +196,15 @@ You will tell LSDN which machine it is currently running on (using
 sure that the *virts* running on this machine are connected to the rest of the
 *virts* running on the other machines.
 
-If you your machine has multiple separate network interfaces (not bonded), you
-will want to create a new *phys* for each network interface on that machine and
-claim all such *physes* as local. In this sense, a *phys* is not a physical
-machine but a network interfaces of a physical machine.
+If your machine has multiple separate network interfaces (not bonded), you will
+want to create a new *phys* for each network interface on that machine and claim
+all such *physes* as local. In this sense, a *phys* is not a physical machine
+but a network interface of a physical machine.
 
 This use-case is not meant for a case where both network interfaces are
 connected to the same physical network and you just want to choose where data
 will flow. LSDN does not support two physes claimed as local connecting to the
-same virtual network, for technical reasons, so it will not work.
+same virtual network for technical reasons, so it will not work.
 
 Like other objects, *physes* can have names. They can also have and *ip*
 attribute, specifying IP address for the network overlay technologies that
@@ -405,17 +405,18 @@ Debugging
 
 The LSDN library and the *lsctl* tool both respect the ``LSDN_DEBUG``
 environment variable. If you have any problem when committing a model, try
-settings ``LSDN_DEBUG=nlerr`` to print extended netlink messages. Alternatively,
+setting ``LSDN_DEBUG=nlerr`` to print extended netlink messages. Alternatively,
 you can try ``LSDN_DEBUG=all`` for very verbose output.
 
-``LSDN_DEBUG`` accepts comma separated list of following message categories:
+``LSDN_DEBUG`` accepts a comma separated list of the following message
+categories:
 
 =========== ================================================================
 Category    Description
 =========== ================================================================
 netops      High-level network commit operations (add virt, phys etc.)
 rules       Creation and deletion of TC flower rules.
-nlerr       Errors returned from Kernel (mostly netlink).
+nlerr       Errors returned from kernel (mostly netlink).
 all         All of the above
 =========== ================================================================
 
@@ -432,7 +433,7 @@ using and what restrictions it has.
 
 Theoretically, you should be able to define your network model once and then
 switch the networking technologies as you wish. But in practice some
-technologies may need more detailed network model than others. For example,
+technologies may need more detailed network models than others. For example,
 ``ovl_vxlan_mcast`` does not need to known the MAC addresses of the virtual
 machines and ``ovl_vlan`` does not need to know the IP addresses of the physical
 machines nor the MAC addresses of the virtual machines.
@@ -473,8 +474,9 @@ VXLAN
 
 VXLAN is a Layer-3 UDP-based tunneling protocol. It is available in three
 variants in LSDN, depending on the routing method used. All of the variants
-need the connected participating physical machines to have the `attr_ip` set
-and they must all see each other on the IP network directly (no NAT).
+need the connected participating physical machines to have the
+`IP attribute <attr_ip>` set and they must all see each other on the IP network
+directly (no NAT).
 
 VXLAN tags have 24 bits (16 million networks). VXLANs by default use UDP port
 *4789*, but this is configurable and could in theory be used to expand the
@@ -482,9 +484,9 @@ VXLAN tags have 24 bits (16 million networks). VXLANs by default use UDP port
 
 **IPv6 note**: VXLANs support IPv6 addresses, but they can not be mixed. All
 physical nodes must use the same IP version and the version of multicast address
-for ``ovl_vlan_mcast`` VXLAN must be the same. This does not prevent you from
+for `ovl_vlan_mcast` VXLAN must be the same. This does not prevent you from
 using both IPv6 and IPv4 on the same physical node, you just have to choose one
-version for the LSDN `attr_ip`.
+version for the *phys* `IP attribute <attr_ip>`.
 
 .. _ovl_vxlan_mcast:
 
@@ -493,7 +495,7 @@ Multicast
 **Available as**: :lsctl:cmd:`settings vxlan/mcast` (lsctl),
 :c:func:`lsdn_settings_new_vxlan_mcast` (C API).
 
-This is a self configuring variant of VXLAN. No further information for each
+This is a self configuring variant of VXLANs. No further information for any
 machine needs to be provided, because the VXLAN routes all unknown and broadcast
 packets to a designated multicast IP address and the VXLAN iteratively learns
 the source IP addresses.  Hence the only additional information is the multicast
@@ -514,8 +516,9 @@ Endpoint-to-Endpoint
 
 Partially self-configuring variant of VXLANs. LSDN must be informed
 about the IP address of each physical machine participating in the network using
-the `attr_ip`. All unknown and broadcast packets are sent to all the physical
-machines and the VXLAN iteratively learns the IP address - MAC address mapping.
+the `IP attribute <attr_ip>`. All unknown and broadcast packets are sent to all
+the physical machines and the VXLAN iteratively learns the IP address - MAC
+address mapping.
 
 **Restrictions**:
  - 24 bit `vid <vid>`
@@ -530,11 +533,11 @@ Fully static
 **Available as**: :lsctl:cmd:`settings vxlan/static` (lsctl),
 :c:func:`lsdn_settings_new_vxlan_static` (C API).
 
-VXLAN with fully static packet routing. LSDN must be informed about the IP
-address of each physical machine (using `attr_ip`) and MAC address of each
-virtual machine (using `attr_mac`) participating in the network. LSDN then
-constructs a routing table from this information. Broadcast packets are
-duplicated and sent to all machines.
+VXLAN with fully static packet routing. LSDN must be informed about the
+`IP address <attr_ip>` of each physical machine and the `MAC address <attr_mac`
+of each virtual machine participating in the network. LSDN then constructs a
+routing table from this information. Broadcast packets are duplicated and sent
+to all machines.
 
 **Restrictions**:
  - 24 bit `vid <vid>`
@@ -559,8 +562,8 @@ Geneve is a Layer-3 UDP-based tunneling protocol. All participating physical
 machines must see each other on the IP network directly (no NAT).
 
 Geneve uses fully static routing. LSDN must be informed about the IP address of
-each physical machine (using `attr_ip`) and MAC address of each virtual machine
-(using `attr_mac`) participating in the network.
+each physical machine (using `IP attribute <attr_ip>`) and
+`MAC address <attr_mac>` of each virtual machine participating in the network.
 
 **Restrictions**:
   - 24 bit `vid <vid>`
@@ -587,7 +590,7 @@ Network Restrictions
 Certain restrictions apply to the set of possible networks and their
 configurations that can be created using LSDN. Anywhere where the keyword
 **mandatory** is written in the following list with regards to a network type,
-please refer :ref:`ovl` to see if the rule applies to a given network type:
+please refer to :ref:`ovl` to see if the rule applies to a given network type:
 
 - You can not assign the same MAC address to two different *virts* that are part
   of the same *net*,

@@ -45,7 +45,7 @@ objects, perform actions like attaching a virt to a phys, etc.
 
 You can also destroy the object by calling ``lsdn_<type>_free``. This ensures
 that the object is deinitialized properly and the network model remains in
-consistent state. All child objects are also destroyed.  Because of this
+a consistent state. All child objects are also destroyed.  Because of this
 behavior, you don't need to keep track of all created objects in your program.
 Specifically, due to everything being ultimately associated with a context,
 ``lsdn_context_free`` will safely deallocate all memory.
@@ -89,7 +89,7 @@ Once a model is constructed, you must mark a phys as local, by calling
 Afterwards, calling :c:func:`lsdn_commit` will walk the model, generate rules and
 install them into the kernel. There is no real-time connection between memory
 representation of the network model and the kernel rules. All changes to the
-model are only reflected in the kernel after a call to ``lsdn_commit``.
+model are only reflected in the kernel after a call to :c:func:`lsdn_commit`.
 
 After you're done with your program, you have two choices for deleting the model
 from memory. A call to :c:func:`lsdn_context_free` will deallocate the model, but keep
@@ -111,7 +111,7 @@ problem callback supplied to ``lsdn_commit`` will be notified of failed objects.
 In the worse case, a rule removal will fail and the kernel rules will remain in
 an inconsistent state, not corresponding to a valid network model. This is
 indicated by :c:member:`LSDNE_INCONSISTENT` error code. It is impossible to recover from
-this condition, you need to call ``lsdn_context_cleanup`` and start over.
+this condition, you need to call :c:func:`lsdn_context_cleanup` and start over.
 TODO už to lsdn_context_cleanup umí?
 
 --------

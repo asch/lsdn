@@ -16,11 +16,11 @@ library itself relies on *libmnl* library for netlink communication helpers,
 tables.
 
 The command-line tools (:ref:`lsctl <prog_lsctl>` and :ref:`lsctld
-<prog_lsctld>`) are built upon /our **lsdn-tclext** library, which provides the
+<prog_lsctld>`) are built upon our **lsdn-tclext** library, which provides the
 lsctl language engine and is layered on the C API. For more info, see
 :ref:`internals_cmdline`.
 
-The *lsdn* library itself is composed from several layers/components (see
+The *lsdn* library itself is composed of several layers/components (see
 :numref:`layering` for illustration). At the bottom layer, we have several
 mostly independent utility components:
 
@@ -33,7 +33,7 @@ mostly independent utility components:
    variable
  - ``errors.c`` contains :c:type:`lsdn_err_t` error codes and
    infrastructure for reporting commit problems (which do not use simple
-   :c:type:`lsdn_err_t` errors). The problem reporting actual relies on the
+   :c:type:`lsdn_err_t` errors). The actual problem reporting relies on the
    netmodel :c:type:`lsdn_context`.
  - ``list.h`` embedded linked-list implementation (every C project needs its own
    :) )
@@ -46,15 +46,15 @@ For this, it relies on the **rules** (in ``rules.c``) system, which helps you
 manage a chain of TC flower filters and their rules. The system also allows the
 firewall rules (given by the user) and the routing rules (defined by the virtual network
 topology) to share the same flower table. However, the sharing is currently not done,
-because we instead opted to share the routing table among all virts connect
-through the given phys instead. Since firewall rules are per-virt, the can not
+because we instead opted to share the routing table among all virts connected
+through the given phys instead. Since firewall rules are per-virt, they can not
 live in the shared table. Another function of this module is that it helps us
-overcome the 32 actions limit in the kernel for our broadcast rules.
+overcome the limit of having at most 32 actions in the kernel for our broadcast rules.
 
 The *netmodel* core only manages the aspects common to all network types --
 life cycle, firewall rules and QoS, but calls back to a concrete network type
 plugin for constructing the virtual network. This is done through the
-:c:type:`lsdn_netops` structure and described more thoroughly in
+:c:type:`lsdn_netops` structure and is described more thoroughly in
 :ref:`internals_netops`.
 
 The currently supported network types are in ``net_direct.c``, ``net_vlan.c``,
@@ -141,8 +141,8 @@ Importantly, it also provides the state management needed for implementing the
 commit functionality, which is important for the overall ease-of-use of the C
 API. The network model layer must keep track of both the current state of the
 network model and what is committed. Also it tracks which objects have changed
-attributes and need to be update. Finally, it keeps objects that were deleted y
-the user, but are still committed alive.
+attributes and need to be updated. Finally, it keeps track of objects that were
+deleted by the user, but are still committed alive.
 
 For this, it is important to understand a life-cycle of an object, illustrated
 in :numref:`netmodel_states`.
@@ -188,14 +188,14 @@ Once a *NEW* object is successfully committed, it moves to the **OK** state. A
 commit has no effect on such object, since it is up-to-date.
 
 If a *NEW* object is freed, it is moved to the **DELETE** state, but its memory
-is retained, until commit is called and the object is deleted from kernel. The
+is retained until commit is called and the object is deleted from kernel. The
 objects in *DELETE* state can not be updated, since they are no longer visible
-and should not be used by the user of the API. They also can not be found by
+and should not be used by the user of the API. Also, they can not be found by
 their name.
 
 If an *OK* object is updated, it is moved to the **RENEW** state. This means
 that on the next update, it is removed from the kernel, moved to *NEW* state,
-and in the same commit added back to the kernel and moved back to the *OK*
+and in the same commit added back to the kernel and moved once again to the *OK*
 state. Updating the *RENEW* object again does nothing and freeing it moves it to
 the *DELETE* state, since that takes precedence.
 
@@ -227,11 +227,11 @@ To support a new type of network :
 
  - add your network to the ``lsdn_nettype`` enum (in ``private/lsdn.h``)
  - add the settings for your network to the ``lsdn_settings`` struct (in
-   ``private/lsdn.h``). Place the in the anonymous union, where settings for
+   ``private/lsdn.h``). Place them in the anonymous union, where settings for
    other types are placed.
  - declare a function ``lsdn_settings_new_xxx`` (in ``include/lsdn.h``)
  - create a new file ``net_xxx.c`` for all your code and add it to the
-   ``CMakeLists.txt``
+   ``CMakeLists.txt`` file
 
 The **settings_new** function will inform LSDN how to use your network type.
 Do not forget to do the following things in your *settings_new* function:
@@ -251,7 +251,7 @@ correct error handling (see :ref:`capi/errors`).
 
 However, the most important part of the *settings* is the **lsdn_net_ops**
 structure -- the callbacks invoked by LSDN to let you construct the network.
-First let us get a quick look at the structure definition (full commented
+First let us have a quick look at the structure definition (full commented
 definition is in the source code or Doxygen):
 
 .. doxygenstruct:: lsdn_net_ops
@@ -267,10 +267,10 @@ connecting the tunnel(s) to the virtual machines (that will be connected later).
 
 If your network does all packet routing by itself, use the ``lbridge.c``
 module. It will create an ordinary Linux bridge and allow you to connect your
-tunnel interface that bridge. We assume your tunnel has a Linux network interface. 
+tunnel interface via that bridge. We assume your tunnel has a Linux network interface. 
 If not, you will have to come up with some other way of connecting it to the
 Linux bridge, or use something else than a Linux bridge. In that case, feel
-free not to you ``lbridge.c`` and do custom processing in
+free not to use ``lbridge.c`` and do custom processing in
 :c:member:`lsdn_net_ops::create_pa`.
 
 If the routing in your network is static, use :ref:`internals_sbridge`. It will
@@ -295,7 +295,7 @@ create tunnels for each other remote machine. In that case, the
 :c:member:`lsdn_net_ops::add_remote_pa` callback is the right place.
 
 Finally, you need to fill in the :c:member:`lsdn_net_ops::type` with the name of
-your network type. This will be used as identifier in the JSON dumps. At this
+your network type. This will be used as an identifier in the JSON dumps. At this
 point you might want to decide if your network should be supported in
 :ref:`lsctl` and modify ``lsext.c`` accordingly. The network type names in LSCTL
 and JSON should match.
@@ -303,13 +303,13 @@ and JSON should match.
 The other callbacks are mandatory. Naturally, you will want to implement the
 ``remove``/``destroy`` callbacks for all your ``add``/``create`` callbacks. There
 are also validation callbacks, that allow you to reject invalid network
-configuration early (see c:ref:`validation`). Finally, LSDN can check the
+configuration early (see :c:ref:`validation`). Finally, LSDN can check the
 uniqueness of the listening IP address/port combinations your tunnels use, if you
 provide them using :c:member:`lsdn_net_ops::get_ip` and
 :c:member:`lsdn_net_ops::get_port`.
 
 
-Since example is the best explanation, we encourage you to look at some of the
+Since an example is the best explanation, we encourage you to look at some of the
 existing plugins -- *VLAN* (``net_vlan.c``) for learning networks, *Geneve*
 (``net_geneve.c``) for static networks.
 
@@ -324,17 +324,17 @@ that it can be integrated with the metadata based Linux tunnels.
 
 Metadata-based tunnels (or sometimes called lightweight IP tunnels) are Linux
 tunnels that can choose their tunnel endpoint by looking at a special packet
-metadata. This means you do not need to create new network interface for each
+metadata. This means you do not need to create a new network interface for each
 endpoint you wan to communicate with, but one shared interface can be used, with
 only the metadata changing. In our case, we use TC actions to set these
-metadata depending on the destination MAC address (since we now where a virtual
+metadata depending on the destination MAC address (since we know where a virtual
 machine with that MAC lives). The setup is illustrated in :numref:`sbridge_fig`.
 
 .. _sbridge_fig:
 
 .. graph:: sbridge
     :caption: Two virtual networks using a static routing (using TC) and shared
-              metadata tunnel. Lines illustrate connection of each VM.
+              metadata tunnel. Lines illustrate a connection of each VM.
     :align: center
 
     {VM1 VM2} -- sbridge1
@@ -352,7 +352,7 @@ machine with that MAC lives). The setup is illustrated in :numref:`sbridge_fig`.
     phys_if [label=<Physical network interface>]
 
 The static bridge is not a simple implementation of Linux bridge in TC. A bridge
-is a virtual interfaces with multiple enslaved interfaces connected to it.
+is a virtual interface with multiple enslaved interfaces connected to it.
 However, the static bridge needs to deal with the tunnel metadata during its
 routing. For that, it provides the following C structures.
 
@@ -361,13 +361,14 @@ create a helper interface to hold the routing rules.
 
 Struct **lsdn_sbridge_phys_if** represents a Linux network interface connected
 to the bridge. This will typically be a virtual machine interface or a tunnel.
-Unlike classic bridge, a single interface may be connected to multiple bridges.
+Unlike with a classic bridge, a single interface may be connected to multiple
+bridges.
 
 Struct **lsdn_sbridge_if** represents the connection of *sbridge_phys_if* to the
-bridge. For virtual machines *sbridge_if* and *sbridge_phys_if* will correspond
-1:1, since virtual machine can not be connected to multiple bridges. If a
-sbridge is shared, you have to provide a criteria splitting up the traffic,
-usually by the :ref:`vid`.
+bridge. For virtual machines *sbridge_if* and *sbridge_phys_if* will be in a one
+to one correspondence, since virtual machine can not be connected to multiple
+bridges. If a sbridge is shared, you have to provide a criteria splitting up the
+traffic, usually by the :ref:`vid`.
 
 Struct **lsdn_sbridge_route** represents a route through given *sbridge_if*. For
 a virtual machine, there will be just a single route, but metadata tunnel
@@ -400,15 +401,15 @@ Command-line
 ~~~~~~~~~~~~
 
 The :ref:`lsctl` are interpreted by the *lsdn-tclext* library.
-We have chosen to use the TCL language as a basic for our configuration
-language. Although it might seem as a strange choice, it provides a bigger
+We have chosen to use the TCL language as a basis for our configuration
+language. Although it might seem as a strange choice, it provides bigger
 flexibility for creating DSLs than let's say JSON or YAML. Basically, TCL
 enforces just a single syntactic rule:``{}`` and ``[]`` parentheses.
 
 Originally, we had a YAML configuration parser, but the project has changed its
-heading very significantly and the parser was left behind. A TCL bindings were
-done as a quick experiment and since have aged quite well. The YAML parser was
-later dropped instead of updating it.
+heading very significantly and the parser was left behind. TCL bindings were
+done as a quick experiment and have aged quite well since then. The YAML parser was
+later abandoned altogether.
 
 Naturally, there are advantages to JSON/YAML too. Since our language is
 Turing complete, it is not as easily analyzed by machines. However, it is always
@@ -452,13 +453,13 @@ CTest
 .....
 
 The core of the environment is ``CTest`` testing tool from ``CMake``. It
-provides very nice way how to define all the tests in the modular way. We create
+provides a very nice way how to define all the tests in a modular way. We create
 test parts which can be combined together for one complex test. This means that
 you can for example say that you want to use ``geneve`` as a backend for the
 network, you want to test ``migrate`` which means that the migration of virtual
 machines will be tested and as a verifier use ``ping``. ``CTest`` configuration
 file is called ``CMakeLists.txt`` and tests composed from parts can be added
-with ``test_parts(...)`` command. Examples follow, starting with example
+with ``test_parts(...)`` command. Examples follow, starting with the example
 described above: ::
 
 	test_parts(geneve migrate ping)
@@ -473,7 +474,7 @@ in memory and ping: ::
 	test_parts(direct migrate-daemon ping)
 
 For complete list of all tests see ``CMakeLists.txt`` in the ``test`` directory
-and all parts usable to create complex test are in ``test/parts``. To run all
+and all parts usable to create complex tests are in ``test/parts``. To run all
 the tests inside the ``CTest`` testing tool just go to ``test`` folder and run ::
 
 	ctest
@@ -493,13 +494,13 @@ will use for our virtual networking.
 LSDN is usually used in this function for configuring all the virtual interfaces
 and virtual network appliances.
 
-For testing if the applied configuration is working, e.g. has the expected
+To test if the applied configuration is working, i.e. it has the expected
 behavior, function ``test()`` is used. Most often ``ping`` is used here, but
 you can use anything for testing the functionality.
 
 If you want to do some special cleanup you can use ``cleanup()`` function.
 
-Back to *part* primitive - you can combine various parts together but every
+Back to the *part* primitive - you can combine various parts together but every
 rational test should define all the described functions no matter how many parts
 are used.
 
@@ -516,21 +517,21 @@ comfortable way. It's usage is self-explanatory: ::
 	  -t  run the test stage
 	  -z  run the cleanup stage
 
-Thus for running test for the example from the beginning but use just
-``connect`` and ``prepare`` stage you can call: ::
+Thus for running a test for the example from the beginning, but just using the
+``connect`` and ``prepare`` stages you can call: ::
 
 	./run -pc geneve migrate ping
 
 QEMU
 ....
 
-Because we are dependent on fairly new version of Linux Kernel we provide
-scripts for executing tests in virtualized environment. This is useful when you
+Because we are dependent on fairly new versions of the Linux Kernel we provide
+scripts for executing tests in a virtualized environment. This is useful when you
 use some traditional Linux distribution like Ubuntu with older kernel and you do
 not want to compile or install custom recent kernel.
 
 As a hypervisor we use QEMU with Arch Linux user-space. Here are several steps
-you need to follow for execution in QEMU:
+you need to follow for the execution in QEMU:
 
     1. Download actual Linux Kernel to ``$linux-path``.
     2. Run ``./create_kernel.sh $linux-path``. This will generate valid kernel

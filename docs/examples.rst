@@ -414,5 +414,3 @@ of a packet will append it's own name to the contents of the packet and
 broadcast this amended packet to all other VMs in the virtual network. **VM A**
 upon reception of a packet will dump this packet in a log file and drop this
 packet. What patterns do you expect to see in this log file after some time?
-
-.. todo:: make references throughout the examples to other parts of the doc

@@ -246,7 +246,7 @@ Directive reference
 
     :param int vid:
         Virtual network identifier. Network technologies like VXLANs or VLANs
-        use these number to separate different networks. The ID must be unique
+        use these numbers to separate different networks. The ID must be unique
         among all networks of the same network type. The parameter is forbidden
         if network already exists. The permissible range of network identifiers
         differs for individual network types (see :ref:`netmodel`).
@@ -404,8 +404,7 @@ Directive reference
     Limit bandwidth in a given direction. If no arguments are given, all limits
     are lifted.
 
-    **C API equivalents:**
-    .. todo:: Link to the attributes once documented.
+    **C API equivalents:** :c:func:`lsdn_virt_set_rate_in`, :c:func:`lsdn_virt_set_rate_out`, :c:func:`lsdn_virt_clear_rate_in`, :c:func:`lsdn_virt_clear_rate_out`.
 
     :param direction direction: Direction to limit.
     :param speed avg: Average speed allowed.
@@ -417,7 +416,7 @@ Directive reference
 
     Inform LSDN that it is running on this physical machine.
 
-    You might want to distribute the same configuration to all physical
+    You might want to distribute the same configuration file to all physical
     machines, just with different physical machines claimed as local. You can
     use the following command to allow the control of the local phys using the 
     first command-line argument to the script: ::
@@ -526,7 +525,7 @@ Directive reference
 
 .. lsctl:cmd:: validate |
 
-    Check the changes done so far for errors.
+    Check the network model for errors.
 
     If the validation fails, the errors will be printed to stderr and
     the directive will end with an error. The script will be terminated.
@@ -579,7 +578,7 @@ Run ``lsctl`` with the name of your configuration script like this:
     lsctl my_configuration.lsctl
 
 You can also pass additional arguments to lsctl, which will be all available in
-the ``$argv`` variable. See :lsctl:cmd:`claimLocal` for usage example.
+the ``$argv`` variable. See :lsctl:cmd:`claimLocal` for an example use.
 
 If you run ``lsctl`` without arguments, you will receive an interactive shell,
 where you can enter directives one after another.
@@ -589,7 +588,7 @@ where you can enter directives one after another.
 Using lsctld and lsctlc
 -----------------------
 
-If you want to use migrations, you have to keep a ``lsctld`` daemon running in
+If you want to migrate machines, you have to keep a ``lsctld`` daemon running in
 the background, so that it can remember the current state of the network and
 make changes appropriately. You can send new configuration directives to the
 daemon using the ``lsctlc`` command.
@@ -602,7 +601,7 @@ file-system, so let's use ``/var/run/lsdn``:
 
     lsctld -s /var/run/lsdn
 
-After that, commands can be sent to ``lsctld`` using ``lsctlc``. Either pass
+Afterwards, commands can be sent to ``lsctld`` using ``lsctlc``. Either pass
 them on standard input:
 
 .. code-block:: bash

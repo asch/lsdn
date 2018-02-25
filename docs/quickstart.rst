@@ -6,9 +6,9 @@ Quick-Start
 
 Let's use LSDN to configure a simple network: four VMs, running on two physical
 machines. We will call the physical machines *A* and *B* and the virtual machines
-*1*, *2*, *3* and *4*. The machines *1* and *2* are running on physical machine
-*A*, machines *3* and *4* are located on physical machine *B*. The configuration
-is illustrated in :numref:`qnm`.
+*1*, *2*, *3* and *4*. The virtual machines *1* and *2* are running on physical
+machine *A*, virtual machines *3* and *4* are located on physical machine *B*.
+The configuration is illustrated in :numref:`qnm`.
 
 .. _qnm:
 
@@ -23,8 +23,8 @@ means we will create two virtual networks, one for VM *1* and *3*, second for VM
 *2* and *4*.
 
 As mentioned in the `intro`, there are two major ways to use LSDN --
-`configuration files <quickstart_lsctl>` and `C API <quickstart_c>`. Let's look
-at both ways.
+`configuration files <quickstart_lsctl>` and `C API <quickstart_c>`. We will
+look at both possibilities.
 
 Setting up virtual machines
 ---------------------------
@@ -32,7 +32,7 @@ Setting up virtual machines
 You are free to use any Virtual Machine Manager you like: bare Qemu/KVM, libvirt
 or VirtualBox or run containers (via LXC for example). The only thing LSDN needs
 to know is which network interfaces on the host are assigned to the virtual
-machine. Typically, this will be a *tap* interface for a VM and a *veth*
+machines. Typically, this will be a *tap* interface for a VM and a *veth*
 interface for a container.
 
 .. _qemu:
@@ -93,7 +93,7 @@ this:
       <!-- original <model> and <address> -->
      </interface>
 
-Change also the other virtual machines but with different MAC and TAP interface
+Also change the other virtual machines but with different MAC and TAP interface
 names (look at the `qemu` section for correct values).
 
 .. _quickstart_lsctl:
@@ -127,7 +127,7 @@ First, create the file ``config.lsctl`` with the following contents:
         virt -name 4 -if tap1 -mac "f2:9b:4f:48:2d:d1" -net 2
     }
 
-    # Tell LSDN what machine we are configuring right now.
+    # Tell LSDN what machine we are configuring right now
     claimLocal [lindex $argv 0]
     # Activate everything
     commit
@@ -139,7 +139,7 @@ together and you may also need to change the interface to reflect your physical
 setup.
 
 Then make sure the file is available on both physical machines *A* and *B* and
-run following commands:
+run the following commands:
 
  - on *A*: ``$ lsctl config.lsctl A``
  - on *B*: ``$ lsctl config.lsctl B``
