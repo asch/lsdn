@@ -289,6 +289,7 @@ of all states and transitions between these states have a look at the
 
 It is important to note that any updates exercised on the kernel data structures
 representing our network objects are only performed on local objects, where:
+
  - *phys* is local iff it has been claimed local (either with
    :lsctl:cmd:`claimLocal` or :c:func:`lsdn_phys_claim_local`),
  - *virt* is local iff it pertains to a local *phys*.
@@ -484,7 +485,7 @@ VXLAN tags have 24 bits (16 million networks). VXLANs by default use UDP port
 
 **IPv6 note**: VXLANs support IPv6 addresses, but they can not be mixed. All
 physical nodes must use the same IP version and the version of multicast address
-for `ovl_vlan_mcast` VXLAN must be the same. This does not prevent you from
+for `ovl_vxlan_mcast` VXLAN must be the same. This does not prevent you from
 using both IPv6 and IPv4 on the same physical node, you just have to choose one
 version for the *phys* `IP attribute <attr_ip>`.
 
@@ -534,7 +535,7 @@ Fully static
 :c:func:`lsdn_settings_new_vxlan_static` (C API).
 
 VXLAN with fully static packet routing. LSDN must be informed about the
-`IP address <attr_ip>` of each physical machine and the `MAC address <attr_mac`
+`IP address <attr_ip>` of each physical machine and the `MAC address <attr_mac>`
 of each virtual machine participating in the network. LSDN then constructs a
 routing table from this information. Broadcast packets are duplicated and sent
 to all machines.
