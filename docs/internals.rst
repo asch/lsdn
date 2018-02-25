@@ -54,8 +54,8 @@ overcome the limit of having at most 32 actions in the kernel for our broadcast 
 The *netmodel* core only manages the aspects common to all network types --
 life cycle, firewall rules and QoS, but calls back to a concrete network type
 plugin for constructing the virtual network. This is done through the
-:c:type:`lsdn_netops` structure and is described more thoroughly in
-:ref:`internals_netops`.
+:c:type:`lsdn_net_ops` structure and is described more thoroughly in
+:ref:`internals_net_ops`.
 
 The currently supported network types are in ``net_direct.c``, ``net_vlan.c``,
 ``net_vxlan.c`` (all types of VXLANs) and ``net_geneve.c``. Depending on the
@@ -214,7 +214,7 @@ already deleted, it bypasses the *FAIL* state.
     If validation fails, commit is not performed at all and object states
     do not change at all.
 
-.. _internals_netops:
+.. _internals_net_ops:
 
 How to support a new network type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -242,7 +242,7 @@ Do not forget to do the following things in your *settings_new* function:
     - ``nettype`` (as you have added above)
     - ``switch_type`` (static, partially static, or learning, purely
       informational, has no effect)
-    - ``ops`` (*lsdn_net_ops* will be described shortly)
+    - ``ops`` (:c:type:`lsdn_net_ops` will be described shortly)
  - return the new settings
 
 Also note that your function will be part of the C API and should use
