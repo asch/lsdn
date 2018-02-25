@@ -458,7 +458,7 @@ then the networking equipment along the way must support this. The support is
 called *802.1ad* or sometimes *QinQ*.
 
 **Restrictions:**
- - 12 bit `vid`
+ - 12 bit `vid <vid>`
  - Physical nodes in the same virtual network must by located on the same
    Ethernet network
  - Care must be taken when nesting
@@ -478,7 +478,7 @@ and they must all see each other on the IP network directly (no NAT).
 
 VXLAN tags have 24 bits (16 million networks). VXLANs by default use UDP port
 *4789*, but this is configurable and could in theory be used to expand the
-`vid` space. LSDN currently does not do this.
+`vid <vid>` space. LSDN currently does not do this.
 
 **IPv6 note**: VXLANs support IPv6 addresses, but they can not be mixed. All
 physical nodes must use the same IP version and the version of multicast address
@@ -500,7 +500,7 @@ the source IP addresses.  Hence the only additional information is the multicast
 group IP address.
 
 **Restrictions**:
- - 24 bit `vid`
+ - 24 bit `vid <vid>`
  - Physical nodes in the same virtual network must be reachable on the IP layer
  - UDP and IP header overhead
  - Requires multicast support
@@ -518,7 +518,7 @@ the `attr_ip`. All unknown and broadcast packets are sent to all the physical
 machines and the VXLAN iteratively learns the IP address - MAC address mapping.
 
 **Restrictions**:
- - 24 bit `vid`
+ - 24 bit `vid <vid>`
  - Physical nodes in the same virtual network must be reachable on the IP layer
  - UDP and IP header overhead
  - Unknown and broadcast packets are duplicated for each physical machine
@@ -537,7 +537,7 @@ constructs a routing table from this information. Broadcast packets are
 duplicated and sent to all machines.
 
 **Restrictions**:
- - 24 bit `vid`
+ - 24 bit `vid <vid>`
  - Physical nodes in the same virtual network must be reachable on the IP layer
  - UDP and IP header overhead
  - Unknown and broadcast packets are duplicated for each physical machine
@@ -563,7 +563,7 @@ each physical machine (using `attr_ip`) and MAC address of each virtual machine
 (using `attr_mac`) participating in the network.
 
 **Restrictions**:
-  - 24 bit `vid`
+  - 24 bit `vid <vid>`
   - Physical nodes in the same virtual network must be reachable on the IP layer
   - UDP and IP header overhead
   - Unknown and broadcast packets are duplicated for each physical machine
