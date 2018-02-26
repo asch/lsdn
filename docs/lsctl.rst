@@ -263,8 +263,8 @@ Directive reference
         overlay type (VLAN, VXLAN etc.). If not given, the ``default`` settings
         will be used. Settings of existing net can not be changed.
     :param remove:
-        Removes the network. This will effectively also remove any child object
-        (e.g. any `virt` inside this network).
+        Optional, remove the network. This will effectively also remove any
+        child object (e.g. any `virt` inside this network).
     :scope none:
         This directive can appear at root level.
     :scope phys:
@@ -291,12 +291,12 @@ Directive reference
         using the `attach` directive. Can not be used when nested inside `net`
         directive.
     :param remove:
-        Optional, removes the physical machine. This will effectively also
+        Optional, remove the physical machine. This will effectively also
         disconnect any `virt` residing on this machine.
     :param ifClear:
-        Optional, clears the machine's interface name, if any.
+        Optional, clear the machine's interface name, if any.
     :param ipClear:
-        Optional, clears the IP address of the `phys`, if any.
+        Optional, clear the IP address of the `phys`, if any.
     :scope none:
         This directive can appear at root level.
     :scope net:
@@ -324,9 +324,9 @@ Directive reference
         Set the network interface used by the virtual machine to connect at the
         phys. Mandatory, if ``-phys`` argument was used.
     :param remove:
-        Optional, removes the virtual machine.
+        Optional, remove the virtual machine.
     :param macClear:
-        Optional, clears the virtual machine's MAC address, if any.
+        Optional, clear the virtual machine's MAC address, if any.
     :scope none:
         This directive can appear at root level.
     :scope net:
