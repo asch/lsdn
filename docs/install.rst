@@ -30,12 +30,16 @@ If you are running **Arch Linux**, run: ::
 
 If you are running **CentOS 7**, run: ::
 
-    gcc cmake uthash-devel libmnl-devel libdaemon-devel json-c-devel
+    yum install gcc cmake uthash-devel libmnl-devel libdaemon-devel json-c-devel
 
 However, you will need the ``EPEL`` repository for the ``uthash`` package and
 you will need to install ``tcl-devel`` package from a different source (for
 example
 `Psychotic Ninja <https://centos.pkgs.org/7/psychotic-ninja-plus-x86_64/tcl-devel-8.6.5-2.el7.psychotic.x86_64.rpm.html>`_).
+
+If you are running **openSUSE**, run: ::
+
+    zypper install gcc cmake uthash libmnl-devel libdaemon-devel linux-glibc-devel tcl-devel libjson-c-devel
 
 You will also need fairly recent Linux Kernel headers (at least 4.14) to build
 LSDN. To actually run LSDN, we recommend 4.15, as 4.14 still has some bugs in
@@ -101,6 +105,17 @@ Jokes aside, run: ::
     dpkg-buildpackage
 
 The packages ``lsdn`` and ``lsdn-dev`` will be available in the parent folder.
+
+RPM-based distributions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Spec file is located in ``dist/rpm`` directory. In addition, a convenience
+build script is provided. Make sure your system has all the dependencies (see
+above) and also ``rpm-build``. Then, run: ::
+
+    sh dist/rpm/rpmbuild.sh
+
+Resulting rpms will be placed in the ``dist/rpm`` directory.
 
 -------------
 Running tests
