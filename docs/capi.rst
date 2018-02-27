@@ -115,7 +115,7 @@ this condition, you need to call :c:func:`lsdn_context_cleanup` and start over.
 TODO už to lsdn_context_cleanup umí?
 
 --------
-Sections
+Reference
 --------
 
 Learn more about individual kinds of objects and their functions.
