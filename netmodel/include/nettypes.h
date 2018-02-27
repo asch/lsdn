@@ -161,7 +161,7 @@ void lsdn_ip_to_string(const lsdn_ip_t *ip, char *buf);
 lsdn_ip_t lsdn_ip_mask_from_prefix(enum lsdn_ipv v, int prefix);
 bool lsdn_is_prefix_valid(enum lsdn_ipv ipv, int prefix);
 int lsdn_ip_prefix_from_mask(const lsdn_ip_t *mask);
-bool lsdn_ip_mask_is_valid(const lsdn_ip_t *mask);
+bool lsdn_ip_mask_is_prefix(const lsdn_ip_t *mask);
 
 /** Convert #lsdn_ipv4_t to `uint32_t`.
  * @param v4 address to convert.

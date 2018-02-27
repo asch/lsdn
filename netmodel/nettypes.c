@@ -241,7 +241,7 @@ lsdn_ip_t lsdn_ip_mask_from_prefix(enum lsdn_ipv v, int prefix)
  * A valid network mask is an IP address which, in bits, is a sequence of 1s followed by a sequence of 0s.
  * @param mask address to check.
  * @return `true` if the IP address is a valid mask, `false` otherwise. */
-bool lsdn_ip_mask_is_valid(const lsdn_ip_t *mask)
+bool lsdn_ip_mask_is_prefix(const lsdn_ip_t *mask)
 {
 	size_t LEN;
 	const uint8_t *bytes;
@@ -283,7 +283,7 @@ bool lsdn_ip_mask_is_valid(const lsdn_ip_t *mask)
  * @return number of leading 1 bits. */
 int lsdn_ip_prefix_from_mask(const lsdn_ip_t *mask)
 {
-	assert(lsdn_ip_mask_is_valid(mask));
+	assert(lsdn_ip_mask_is_prefix(mask));
 	int prefix = 0;
 	size_t LEN;
 	const uint8_t *bytes;
