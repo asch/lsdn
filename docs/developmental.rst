@@ -320,13 +320,14 @@ the team and finish it.
 	  Doxygen and code reviews. Thanks to it he fixed logical mistakes in the
 	  project and commented the whole source code in a great detail. He was
 	  partly involved also in non-generated documentation. He maintains package
-	  for distributions using RPM.
-	* *Adam Vyškovský* was together with Roman the main developer of internals,
-	  however he also wrote big portion of non-generated documentation and most
-	  notably periodically revised it and fixed non-trivial amount of mistakes.
-	  He spent enormous amount of time during debugging the netlink
-	  communication with Linux kernel, which was absolutely crucial for the
-	  project.
+	  for distributions using RPM. He was the original author of the CMake
+	  automated tests.
+	* *Adam Vyškovský* was together with Roman the main developer of internals
+	  and is the main author of the TCL/JSON exporter, however he also wrote big
+	  portion of non-generated documentation and most notably periodically
+	  revised it and fixed non-trivial amount of mistakes.  He spent enormous
+	  amount of time during debugging the netlink communication with Linux
+	  kernel, which was absolutely crucial for the project.
 
 At this place Jiri Benc, the official leader from Red Hat Czech, should be
 mentioned because discussion with him was always full of knowledge and his
