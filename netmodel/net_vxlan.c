@@ -106,6 +106,9 @@ struct lsdn_net_ops lsdn_net_vxlan_mcast_ops = {
 };
 
 /** Create settings for a new VXLAN-multicast network.
+ * @param ctx LSDN context.
+ * @param mcast_ip Multicast group IP address.
+ * @param port UDP port for VXLAN tunnel.
  * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_mcast(
 	struct lsdn_context *ctx,
@@ -239,6 +242,8 @@ struct lsdn_net_ops lsdn_net_vxlan_e2e_ops = {
 };
 
 /** Create settings for a new VXLAN-e2e network.
+ * @param ctx LSDN context.
+ * @param port UDP port for VXLAN tunnel.
  * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port)
 {
@@ -502,6 +507,8 @@ struct lsdn_net_ops lsdn_net_vxlan_static_ops = {
 };
 
 /** Create settings for a new VXLAN-static network.
+ * @param ctx LSDN context.
+ * @param port UDP port for VXLAN tunnel.
  * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port)
 {

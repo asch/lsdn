@@ -64,6 +64,7 @@ static struct lsdn_net_ops lsdn_net_vlan_ops = {
 };
 
 /** Create settings for a new VLAN network.
+ * @param ctx LSDN context.
  * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_vlan(struct lsdn_context *ctx)
 {

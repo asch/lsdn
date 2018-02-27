@@ -50,6 +50,7 @@ static struct lsdn_net_ops lsdn_net_direct_ops = {
 };
 
 /** Create settings for a new direct network.
+ * @param ctx LSDN context.
  * @return new #lsdn_settings instance. */
 struct lsdn_settings *lsdn_settings_new_direct(struct lsdn_context *ctx)
 {
