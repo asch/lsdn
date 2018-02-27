@@ -1,14 +1,29 @@
-====================
-User's Documentation
-====================
+.. only:: latex
 
-.. toctree::
-	:maxdepth: 3
+	====================
+	User's Documentation
+	====================
 
-	intro
-	install
-	quickstart
-	netmodel
-	lsctl
-	examples
-	capi
+	.. toctree::
+		:maxdepth: 3
+
+		intro
+		install
+		quickstart
+		netmodel
+		lsctl
+		examples
+		capi
+
+.. only:: html
+
+	.. toctree::
+		:maxdepth: 3
+
+		intro
+		install
+		quickstart
+		netmodel
+		lsctl
+		examples
+		capi
