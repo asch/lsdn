@@ -103,6 +103,7 @@ static void exit_wrapper(int code)
 		daemon_pid_file_remove();
 	}
 
+	free(cmd);
 	Tcl_Finalize();
 	unlink(opt_socket);
 	exit(code);
