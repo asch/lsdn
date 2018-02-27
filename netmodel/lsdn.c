@@ -37,9 +37,8 @@ static void propagate(enum lsdn_state *from, enum lsdn_state *to) {
  * The name is based on the context name, type of the object (net, phys, virt, etc.) and
  * a unique object counter on the context. It is in the form `"ctxname-type-12"`.
  *
- * Results are saved in #lsdn_context.namebuf, so every subsequent call overwrites the previous
- * results. Users need to make a copy of the returned string. This is not a problem because
- * the usual usage is inside #lsdn_name_set which does make a private copy.
+ * Results are saved in a reused buffer, so every subsequent call overwrites the previous
+ * results. Users need to make a copy of the returned string.
  *
  * @see lsdn_mk_net_name, lsdn_mk_phys_name, lsdn_mk_virt_name, lsdn_mk_iface_name, lsdn_mk_settings_name
  * @param ctx LSDN context
@@ -85,13 +84,21 @@ struct lsdn_context *lsdn_context_new(const char* name)
 	return ctx;
 }
 
+/** Configure rule overwriting.
+ * By default, LSDN will overwrite existing tc rules and network interfaces.
+ * This is to ensure that rules created by previous crashed instances do not cause problems.
+ * Set this flag to `false` to prevent overwriting existing rules.
+ *
+ * @param ctx LSDN context.
+ * @param overwrite `true` if LSDN should overwrite existing rules. `false` if it should keep them intact. */
 void lsdn_context_set_overwrite(struct lsdn_context *ctx, bool overwrite)
 {
 	ctx->overwrite = overwrite;
 }
+
 /** Query if LSDN should overwrite any of the interfaces or rules.
- * @see lsdn_context_set_overwrite
- */
+ * @return value of overwrite flag.
+ * @see lsdn_context_set_overwrite */
 bool lsdn_context_get_overwrite(struct lsdn_context *ctx)
 {
 	return ctx->overwrite;
