@@ -309,7 +309,7 @@ the team and finish it.
 	  the University as well as mediated the communication inside the team. He
 	  created the LSDN daemon and the way how it communicates with the client.
 	  He also worked on the testing environment's scripts, developmental and
-	  testing part of documentation and maintained the Arch Linux package.
+	  testing part of documentation and maintains the Arch Linux package.
 	* *Roman Kápl* is the main developer of the project. He participated on all
 	  parts of the project, most notably on internal parts, which are directly
 	  communication with kernel. There is no part of the project, which Roman
