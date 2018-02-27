@@ -256,15 +256,16 @@ bool lsdn_ip_mask_is_valid(const lsdn_ip_t *mask)
 		if (bytes[i] == 0xFF)
 			continue;
 
-		uint8_t pow = 1;
-		uint8_t pref = 0xFF - pow;
+		uint8_t d = 1;
+		uint8_t n = 0xFF - d;
 		bool ok = false;
-		for (size_t j = 0; j < 7; j++) {
-			if (bytes[i] == pref)
+		while (d) {
+			if (bytes[i] == n)
 				ok = true;
-			pow *= 2;
-			pref -= pow;
+			d *= 2;
+			n -= d;
 		}
+
 		if (!ok)
 			return false;
 
