@@ -107,7 +107,7 @@ Running tests
 -------------
 
 LSCTL includes a test-suite that constructs various virtual networks and tries
-pinging VMs inside those networks. ``sudo make check`` starts these tests.
+pinging VMs inside those networks. ``sudo make test`` starts these tests.
 
 If you plan on developing LSDN, you might want to run the tests inside another
 level of VM. There is already a testing ready for those purposes, built on QEMU
