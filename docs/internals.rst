@@ -1,8 +1,3 @@
-.. _internals:
-
-Internals
----------
-
 If you plan on hacking LSCTL, this chapter is for you. It will describe the
 available internal APIs and how they interact.
 

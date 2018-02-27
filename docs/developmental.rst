@@ -1,6 +1,3 @@
-Developmental Documentation
-===========================
-
 LSDN project focuses on the problem of easily manageable networking setup in the
 environment of virtual machines and cloud environment generally. It perfectly
 fits to large scale deployment for managing complex virtual networks in data

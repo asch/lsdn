@@ -1,9 +1,10 @@
-=========================================
+.. _users:
+
+=========================
 LSDN User's Documentation
-=========================================
+=========================
 
 .. toctree::
-   :maxdepth: 3
 
    intro
    install
@@ -12,8 +13,38 @@ LSDN User's Documentation
    lsctl
    examples
    capi
+
+
+.. _internals:
+
+===========================================
+LSDN Programmer's Documentation (Internals)
+===========================================
+
+.. toctree::
+   :maxdepth: 3
+
    internals
+
+.. _developmental:
+
+================================
+LSDN Developmental Documentation
+================================
+
+.. toctree::
+   :maxdepth: 3
+
    developmental
+
+.. _doxygen:
+
+====================================
+LSDN Generated Doxygen Documentation
+====================================
+.. toctree::
+   :maxdepth: 3
+
    doxygen
 
 .. only:: html
