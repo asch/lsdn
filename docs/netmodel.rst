@@ -138,6 +138,8 @@ inform LSDN about the virtual machine's MAC address (currently only one MAC
 address can be assigned). LSDN will use this MAC address for routing network
 packets to the machine.
 
+.. _rules:
+
 Firewall rules
 --------------
 **LSCTL:** :lsctl:cmd:`rule`
@@ -156,7 +158,7 @@ This restriction exists to ensure that only deterministic rules can be defined.
 Unfortunately, currently there is no way to ``ACCEPT`` packets early, as is
 common in e.g. ``iptables``.
 
-.. _qos:
+.. _rates:
 
 QoS
 ---
