@@ -235,7 +235,20 @@ LSDN_DECLARE_ATTR(interface, phys, iface, const char*, const char*);
 /** @} */
 
 
-/** @defgroup virt Virt management
+/** @defgroup virt Virt (virtual machine)
+ * Functions for manipulating and configuring virt objects.
+ *
+ * Virt is a representation of a tenant in the virtual network. By default, it
+ * does not need any attributes. However, you can configure its MAC address on
+ * the virtual network (required for some network types), and set inbound and
+ * outbound QoS rates.
+ *
+ * Virt is created as part of a network, but to participate in the network, it
+ * must first be connected, through a phys and a network interface on that phys.
+ * It is possible to disconnect a virt and reconnect it on a different phys,
+ * e.g., when the VM is migrated to a different physical host. The migration is
+ * transparent to the virtual network, but obviously, the virt is unreachable
+ * while disconnected.
  * @{ */
 struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net);
 void lsdn_virt_free(struct lsdn_virt* vsirt);
@@ -243,12 +256,8 @@ struct lsdn_net *lsdn_virt_get_net(struct lsdn_virt *virt);
 lsdn_err_t lsdn_virt_set_name(struct lsdn_virt *virt, const char *name);
 const char* lsdn_virt_get_name(struct lsdn_virt *virt);
 struct lsdn_virt* lsdn_virt_by_name(struct lsdn_net *net, const char *name);
-lsdn_err_t lsdn_virt_connect(
-	struct lsdn_virt *virt, struct lsdn_phys *phys, const char *iface);
+lsdn_err_t lsdn_virt_connect(struct lsdn_virt *virt, struct lsdn_phys *phys, const char *iface);
 void lsdn_virt_disconnect(struct lsdn_virt *virt);
-/** Get a recommended MTU for a given virt.
- * The MTU is based on the current state and connection port of the virt (it is not based on the
- * committed stated). The phys interface must already exist. */
 lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu);
 
 /** Bandwidth limit for virt's interface (for one direction).

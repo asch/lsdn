@@ -650,6 +650,9 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	ret_ptr(net->ctx, virt);
 }
 
+/** Get the virt's network.
+ * @param virt Virt object.
+ * @return #lsdn_net object of the network that this virt is part of. */
 struct lsdn_net *lsdn_virt_get_net(struct lsdn_virt *virt)
 {
 	return virt->network;
@@ -778,7 +781,16 @@ const lsdn_mac_t *lsdn_virt_get_mac(struct lsdn_virt *virt)
 
 /** Get recommended MTU for a given virt.
  * Calculates the appropriate MTU value, taking into account the network's tunneling 
- * method overhead. */
+ * method overhead.
+ *
+ * The MTU is based on the current state and connection port of the virt (it is not based on the
+ * committed state). The phys interface must already exist.
+ *
+ * @param virt Virt object.
+ * @param mtu Pointer into which the MTU is stored.
+ * @retval LSDNE_OK Operation was successful.
+ * @retval LSDNE_NETLINK Netlink communication error.
+ * @retval LSDNE_NOIF Virt's connected interface does not exist. */
 lsdn_err_t lsdn_virt_get_recommended_mtu(struct lsdn_virt *virt, unsigned int *mtu)
 {	
 	struct lsdn_context *ctx = virt->network->ctx;
