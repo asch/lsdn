@@ -62,8 +62,8 @@ configuration:
     ip addr change dev eth0 192.168.0.1/24
     ip link set eth0 up
 
-Do the same for the remaining virtual machines, but with a different MAC and TAP
-interface name. There is no need to change the ``net0`` strings:
+Do the same for the remaining virtual machines, but each time with a different
+MAC and TAP interface name. There is no need to change the ``net0`` strings:
 
  - on *A* create VM using ``ifname=tap0``, ``mac=14:9b:dd:6b:81:71``
    and set up IP address as ``192.168.0.1`` (we just did that in example above).
@@ -101,6 +101,10 @@ names (look at the `qemu` section for correct values).
 Using configuration files
 -------------------------
 
+Now that we have set-up the virtual machines, we can use LSDN to connect them.
+We will start with an example using the configuration files (as opposed to
+the :ref:`C API <quickstart_c>`), as it is simpler.
+
 First, create the file ``config.lsctl`` with the following contents:
 
 .. code-block:: tcl
@@ -128,6 +132,7 @@ First, create the file ``config.lsctl`` with the following contents:
     }
 
     # Tell LSDN what machine we are configuring right now
+    # (first commandline argument must contain the phys. machine name)
     claimLocal [lindex $argv 0]
     # Activate everything
     commit
@@ -149,7 +154,7 @@ Congratulations, your network is set-up. Try it:
  - in VM *1*: ``$ ping 192.168.0.3``
  - in VM *2*: ``$ ping 192.168.0.4``
 
-And they are correctly isolated too ``$ ping 192.168.0.2`` won't work in VM *1*.
+And they are correctly isolated too, since ``$ ping 192.168.0.2`` won't work in VM *1*.
 
 .. _quickstart_c:
 
@@ -263,4 +268,4 @@ Your network is now set-up using the C API. Try:
  - in VM *1*: ``$ ping 192.168.0.3``
  - in VM *2*: ``$ ping 192.168.0.4``
 
-And they are correctly isolated too ``$ ping 192.168.0.2`` won't work in VM *1*.
+And they are correctly isolated too, since ``$ ping 192.168.0.2`` won't work in VM *1*.
