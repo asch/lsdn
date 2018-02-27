@@ -18,13 +18,14 @@ that is all.
 
 The terminology is derived from the most common use case, but that does not mean
 that *virts* really have to be virtual machines and *physes* must really be
-physical machines. Perhaps the *virts* are Linux containers and *physes* are
-just virtual machines running those containers.
+physical machines. For example the *virts* could be Linux containers and
+*physes* could be virtual machines running those containers.
 
 The *virts*, *physes* and *nets* have the following relationships:
+
  - *virts* always belong to one *net* (they can not be moved between *nets*)
- - *virts* are connected at one of the *physes* (however, they can connect at a
-   different *phys*, in other words, they can **migrate**)
+ - *virts* are connected at one of the *physes* (however, they can be
+   reconnected at a different *phys*, in other words, they can **migrate**)
  - *physes* attach to a *net* -- this tells LSDN that the *phys* will have
    *virts* connecting to the network [#fattach]_.
 
@@ -39,7 +40,8 @@ of the object. If you are using :ref:`lsctl`, it is more or less mandatory,
 because it is the only way to refer to an object if you want to change it at a
 later point (for example when you want to migrate a *virt*). If you do not
 specify a name, one will be generated for you. This ensures that the
-:c:func:`lsdn_dump_context_json` will always be able to create cross-references.
+:c:func:`the export/dump mechanism <lsdn_dump_context_json>` will always be able
+to create cross-references.
 
 Collectively, the model is represented by a LSDN **context**, which contains all
 the *physes*, *virts* and *nets*. *Context* is a well known concept in C
@@ -49,16 +51,16 @@ library can be safely used by multiple clients in the same process.
 .. note::
 
     LSDN is not thread-safe. It assumes that a given context is never accessed
-    concurrently. Different context may be accessed concurrently.
+    concurrently. Different context can be accessed concurrently.
 
 .. rubric:: Footnotes
 
 .. [#fattach] In theory LSDN could figure out if a *phys* should be attached to a
     *net* just by checking if any of its *virts* are attached to that *net*.
     But we have decided to make this explicit. LSDN checks if *physes* connected
-    to the same *net* have certain properties (for example the same IP version)
-    and we did not want to make these checks implicit. A switch may be provided
-    in future versions, though.
+    to the same *net* have certain properties (for example their IP address must
+    use the same IP version) and we did not want to make these checks implicit.
+    A switch may be provided in future versions, though.
 
 .. _net:
 .. _vid:
@@ -79,15 +81,14 @@ by the used tunneling technology and must be unique among all networks of the
 same type [#funique]_.
 
 The used networking overlay technology (and any options related to that, like
-VXLAN port) is encapsulated in the **settings** object, which serves as a template
-for the new networks (with only the *VID* changing each time). If you remove the
-template, the networks will be removed too. A list of supported networking
-technologies is in the chapter :ref:`ovl`, including the additional options they
-support.
+VXLAN port) is encapsulated in the **settings** object, which serves as a
+template for the new networks (with only the *VID* changing each time). A list
+of supported networking technologies is in the chapter :ref:`ovl`, including the
+additional options they support.
 
 Like other objects, networks can have a name. However, they do not have any
 other attributes, since everything important for their functioning is part of the
-*settings*. *Settings* can have names and *lsctl* reserves a ``default`` name
+*settings*. *Settings* can have names and *lsctl* reserves a the name ``default``
 for unnamed settings.
 
 .. rubric:: Footnotes
@@ -109,7 +110,7 @@ Virts
 :c:func:`lsdn_virt_set_mac`
 
 *virts* are the computers/virtual machines that are going to connect to the
-virtual network. From LSDN standpoint, they are just network interfaces that
+virtual network. From LSDN's standpoint, they are just network interfaces that
 exist on a *phys* (usually ``tap`` for a virtual machine or ``veth`` for a
 container). LSDN does not care what is on the other end.
 
@@ -117,11 +118,10 @@ When creating a *virt* you have to specify which virtual network it is going to
 be part of. This can not be changed later. If you remove the network, all it's
 *virts* will be removed as well.
 
-A *virt* also can not be part of multiple virtual networks. The intention
-is to simply create one *virt* for each virtual network you are going
-to connect to. LSDN does not need to know whether a *virt* is connected to a
-virtual machine or a container on the other end. In this sense  *virt* can be
-described not as a virtual machine, but as a network interface of a virtual machine.
+A *virt* also can not be part of multiple virtual networks. The recommended
+solution in that case is to simply create one *virt* for each virtual network
+you are going to connect to. In this sense *virt* can be described not as a
+virtual machine, but as a network interface of a virtual machine.
 
 Once created, you can specify which *phys* this *virt* will connect at and how
 is its network interface named on that phys. If you are using LSCTL, just run
@@ -135,8 +135,8 @@ not have to be unique globally, but just inside of a single *net*.
 
 Depending on the :ref:`networking technology <ovl>` used, you may also need to
 inform LSDN about the virtual machine's MAC address (currently only one MAC
-address can be assigned). LSDN will use this MAC address for routing network
-packets to the machine.
+address can be assigned, this may change in future versions). LSDN will use this
+MAC address for routing network packets to the machine.
 
 .. _rules:
 
@@ -204,9 +204,9 @@ all such *physes* as local. In this sense, a *phys* is not a physical machine
 but a network interface of a physical machine.
 
 This use-case is not meant for a case where both network interfaces are
-connected to the same physical network and you just want to choose where data
-will flow. LSDN does not support two physes claimed as local connecting to the
-same virtual network for technical reasons, so it will not work.
+connected to the same physical network and you just want to choose which one
+will be used. LSDN does not support two physes claimed as local connecting to
+the same virtual network for technical reasons, so it will not work.
 
 Like other objects, *physes* can have names. They can also have and *ip*
 attribute, specifying IP address for the network overlay technologies that
@@ -249,7 +249,7 @@ representation. This usually means that all hosts have the same model,
 presumably read from a common configuration file or installed through a single
 orchestrator. It is then necessary to :lsctl:cmd:`claim` (or
 :c:func:`lsdn_phys_claim_local`) a *phys* as local, so that LSDN knows on which
-which machines it is running. Several restrictions also apply to the creation of
+machine it is running. Several restrictions also apply to the creation of
 networks in LSDN.
 
 Fixing all the issues present in your network model in the validation step
@@ -268,6 +268,9 @@ Commit
 **LSCTL:** :lsctl:cmd:`commit`
 
 **C API:** :c:func:`lsdn_commit`
+
+Commiting a network model means telling LSDN to actually set-up the network
+inside Linux kernel.
 
 When we commit a network model the first thing LSDN does it `validates
 <validation>` the whole network model. Only if the validation phase succeeds,
@@ -294,13 +297,13 @@ representing our network objects are only performed on local objects, where:
 
  - *phys* is local iff it has been claimed local (either with
    :lsctl:cmd:`claimLocal` or :c:func:`lsdn_phys_claim_local`),
- - *virt* is local iff it pertains to a local *phys*.
+ - *virt* is local iff it is connected at a local *phys*.
 
 However, local objects may sometimes need to be updated as a result of a non
 local network object being added, updated or removed. E.g. when a MAC address of
 a non local *virt* changes inside a network where this information is mandatory
-(such as in `static VXLAN <ovl_vxlan_static>` networks) then local *phys*
-objects will need to be updated as well.
+(such as in `static VXLAN <ovl_vxlan_static>` networks) then local routing
+information in the kernel must be updated.
 
 Also, there are transitive dependencies among the network objects. In
 particular, when:
@@ -308,7 +311,8 @@ particular, when:
  - *virt* is deleted then all its `rules` and `rates` are deleted as well,
  - *net* is deleted then all its *virts* are deleted as well,
  - *phys* is deleted then all *virts* attached to this *phys* are deleted as
-   well.
+   well,
+ - *settings* are deleted then all *nets* of this type are deleted as well.
 
 After the initial validation step is completed, LSDN will then proceed with the
 actual commit phase which is further subdivided into two subphases:
@@ -395,12 +399,17 @@ You may also encounter a :c:member:`LSDNE_NOMEM` error. LSDN deals with
 out-of-memory errors in the following fashion: whenever it fails to allocate
 dynamic memory it will call a registered callback (if any) that may deal with
 this error as it sees fit. The callback is registered with the
-:c:func:`lsdn_context_set_nomem_callback` function. It is possible to register
-the :c:func:`lsdn_context_abort_on_nomem` function provided by LSDN. This error
-handler will simply print an error message on the standard error output and will
-immediately abort the program should any dynamic memory allocation fail. Of
-course, you may register your own out-of-memory callback as long as the function
-signature of the callback is that of :c:func:`lsdn_context_abort_on_nomem`.
+:c:func:`lsdn_context_set_nomem_callback` function. It is possible to set a
+default handler using  :c:func:`lsdn_context_abort_on_nomem` function provided
+by LSDN. This error handler will simply print an error message on the standard
+error output and will immediately abort the program should any dynamic memory
+allocation fail. Of course, you may register your own out-of-memory callback as
+long as the function signature of the callback is that of
+:c:func:`lsdn_context_abort_on_nomem`. You can also use the callback to
+implement a ``setjmp/longjmp`` error handling scheme.
+
+If no nomem callback is registered (the default), the :c:member:`LSDNE_NOMEM`
+error is simply returned to the caller.
 
 ---------
 Debugging
@@ -430,9 +439,9 @@ Supported tunneling technologies
 --------------------------------
 
 Currently LSDN supports three network tunneling technologies: `ovl_vlan`,
-`ovl_vxlan` (in three variants) and `ovl_geneve`. They all use the same basic
-networking model in LSDN, but it is important to realize what technology you are
-using and what restrictions it has.
+`ovl_vxlan` (in three variants) and `ovl_geneve`. They are all configured the
+same in LSDN (only the `settings <net>` differ), but it is important to realize
+what technology you are using and what restrictions it has.
 
 Theoretically, you should be able to define your network model once and then
 switch the networking technologies as you wish. But in practice some
@@ -485,11 +494,14 @@ VXLAN tags have 24 bits (16 million networks). VXLANs by default use UDP port
 *4789*, but this is configurable and could in theory be used to expand the
 `vid <vid>` space. LSDN currently does not do this.
 
-**IPv6 note**: VXLANs support IPv6 addresses, but they can not be mixed. All
-physical nodes must use the same IP version and the version of multicast address
-for `ovl_vxlan_mcast` VXLAN must be the same. This does not prevent you from
-using both IPv6 and IPv4 on the same physical node, you just have to choose one
-version for the *phys* `IP attribute <attr_ip>`.
+.. note::
+
+    VXLANs support IPv6 addresses, but they can not be mixed with IPv4. All
+    physical nodes must use the same IP version and the version of multicast
+    address for `ovl_vxlan_mcast` VXLAN must be the same. This does not prevent
+    you from using both IPv6 and IPv4 on the same physical node for other
+    purposes than LSDN, you just have to choose one version for the *phys* `IP
+    attribute <attr_ip>`.
 
 .. _ovl_vxlan_mcast:
 
