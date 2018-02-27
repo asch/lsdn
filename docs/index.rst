@@ -1,8 +1,8 @@
 .. _users:
 
-=========================
-LSDN User's Documentation
-=========================
+====================
+User's Documentation
+====================
 
 .. toctree::
    :maxdepth: 3
@@ -11,9 +11,9 @@ LSDN User's Documentation
 
 .. _internals:
 
-===========================================
-LSDN Programmer's Documentation (Internals)
-===========================================
+======================================
+Programmer's Documentation (Internals)
+======================================
 
 .. toctree::
    :maxdepth: 3
@@ -22,9 +22,9 @@ LSDN Programmer's Documentation (Internals)
 
 .. _developmental:
 
-================================
-LSDN Developmental Documentation
-================================
+===========================
+Developmental Documentation
+===========================
 
 .. toctree::
    :maxdepth: 3
@@ -33,9 +33,9 @@ LSDN Developmental Documentation
 
 .. _doxygen:
 
-====================================
-LSDN Generated Doxygen Documentation
-====================================
+===============================
+Generated Doxygen Documentation
+===============================
 .. toctree::
    :maxdepth: 3
 
