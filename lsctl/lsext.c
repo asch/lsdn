@@ -951,7 +951,7 @@ CMD(validate)
 		return TCL_ERROR;
 
 	if(lsdn_validate(ctx->lsctx, lsdn_problem_stderr_handler, NULL) != LSDNE_OK)
-		return tcl_error(interp, "commit error");
+		return tcl_error(interp, "validation error");
 	return TCL_OK;
 }
 
