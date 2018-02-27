@@ -47,9 +47,14 @@
 
 #define LISTEN_BACKLOG 10
 
+#define BUF_SIZE 1024
+size_t cmd_size = 4096;
+
 static const char* opt_pidfile;
 static const char* opt_socket;
 static bool opt_foreground;
+static char buf[BUF_SIZE];
+static char *cmd;
 
 int get_unix_socket()
 {
@@ -283,6 +288,12 @@ int main(int argc, char *argv[]) {
 	}
 	daemon_log(LOG_INFO, "Lsctl commands registered");
 
+	cmd = malloc(cmd_size);
+	if (!cmd) {
+		daemon_log(LOG_ERR, "Out of memory");
+		exit_wrapper(6);
+	}
+
 	if (!opt_foreground)
 		daemon_retval_send(0);
 	daemon_log(LOG_INFO, "Successfully started");
@@ -330,18 +341,22 @@ int main(int argc, char *argv[]) {
 			struct sockaddr_un client_addr;
 			socklen_t client_addr_size = sizeof(struct sockaddr_un);
 			int fdc = accept(sockfd, (struct sockaddr *) &client_addr, &client_addr_size);
-#define CMD_SIZE 4096
-#define BUF_SIZE 1024
-			char buf[BUF_SIZE];
-			char cmd[CMD_SIZE];
-			bzero(buf, BUF_SIZE);
-			bzero(cmd, CMD_SIZE);
+			cmd[0] = '\0';
 			dup2(fdc, 1);
 			dup2(fdc, 2);
 			size_t n, pos = 0;
 			while ((n = read(fdc, buf, BUF_SIZE)) != 0) {
+				if (pos + n >= cmd_size) {
+					cmd_size *= 2;
+					cmd = realloc(cmd, cmd_size);
+					if (!cmd) {
+						daemon_log(LOG_ERR, "Out of memory");
+						exit_wrapper(6);
+					}
+				}
 				strncpy(&cmd[pos], buf, n);
 				pos += n;
+				cmd[pos] = '\0';
 			}
 
 			if ((ret = Tcl_Eval(interp, cmd)) != TCL_OK ) {
