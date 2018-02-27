@@ -6,6 +6,8 @@
 #include "../include/lsdn.h"
 #include "lsdn.h"
 
+void lsdn_problem_report(struct lsdn_context *ctx, enum lsdn_problem_code code, ...);
+
 /** Return error code and/or call OoM callback.
  * Checks if the error is #LSDNE_NOMEM and invokes `lsdn_context.nomem_cb`
  * if specified. Then it returns the error.

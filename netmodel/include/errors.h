@@ -10,45 +10,6 @@
 
 struct lsdn_context;
 
-/** Possible LSDN errors. */
-typedef enum {
-	/** No error. */
-	LSDNE_OK = 0,
-	/** Out of memory. */
-	LSDNE_NOMEM,
-	/** Parsing from string has failed.
-	 * Can occur when parsing IPs, MACs etc. */
-	LSDNE_PARSE,
-	/** Duplicate name.
-	 * Can occur when setting name for a network, virt or phys. */
-	LSDNE_DUPLICATE,
-	/** Interface does not exist. */
-	LSDNE_NOIF,
-	/** Netlink error. */
-	LSDNE_NETLINK,
-	/** Network model validation failed, and the old model is in effect. */
-	LSDNE_VALIDATE,
-	/** Network model commit failed and a mix of old, new and dysfunctional objects are in effect.
-	 *
-	 * If object state is #LSDN_OK, the new model is in effect for that object, if it is #LSDN_RENEW
-	 * or #LSDN_NEW, the old model is in effect.
-	 *
-	 * The object can also get to #LSDN_NEW state during updating, if the updating failed. This
-	 * makes the object behave as if it did not exist.
-	 *
-	 * In either case, you can retry the commit and it will work if the error was temporary.
-	 *
-	 * The error could also be permanent, if, for example, a user have created a network interface
-	 * that shares a name with what LSDN was going to use. In that case, you will be getting the
-	 * error repeatedly. You can either ignore it or delete the failing part of the model. */
-	LSDNE_COMMIT,
-	/** Cleanup operation has failed and this left an object in state inconsistent with the model.
-	 *
-	 * This failure is more serious than #LSDNE_COMMIT failure, since the commit operation can
-	 * not be successfully retried. The only operation possible is to rebuild the whole model again. */
-	LSDNE_INCONSISTENT,
-} lsdn_err_t;
-
 /** Generator for #lsdn_problem_code.
  * @see LSDN_ENUM
  * @see lsdn_problem_code */
@@ -88,6 +49,52 @@ typedef enum {
 	/** QoS has invalid parameters (both rate and burst must be positive). See #lsdn_qos_rate_t for correct parameters. */ \
 	x(LSDNP_RATES_INVALID, "Effective QoS (%o) rate on %o is not greater than zero. This is probably not the rate you are looking for.")
 
+/** @defgroup errors Error codes and error handling
+ * Definitions and descriptions of error codes, and error related functions.
+ *
+ * Functions that can fail usually return an error code from #lsdn_err_t. This
+ * is not very specific, so in addition, some functions allow you to specify a
+ * _problem callback_ function. This is a user-defined function that gets called
+ * separately for every error encountered - such as when validating or
+ * committing the model.
+ *
+ * Convenience functions are provided to dump error strings either to stderr or
+ * to a specified `FILE`.
+ *
+ * @{ */
+
+/** Possible LSDN errors. */
+typedef enum {
+	/** No error. */
+	LSDNE_OK = 0,
+	/** Out of memory. */
+	LSDNE_NOMEM,
+	/** Parsing from string has failed.
+	 * Can occur when parsing IPs, MACs etc. */
+	LSDNE_PARSE,
+	/** Duplicate name.
+	 * Can occur when setting name for a network, virt or phys. */
+	LSDNE_DUPLICATE,
+	/** Interface does not exist. */
+	LSDNE_NOIF,
+	/** Netlink error. */
+	LSDNE_NETLINK,
+	/** Network model validation failed, and the old model is in effect. */
+	LSDNE_VALIDATE,
+	/** Network model commit failed and a mix of old, new and dysfunctional objects are in effect.
+	 * You can retry the commit and it will work if the error was temporary.
+	 *
+	 * The error could also be permanent, if, for example, a user have created a network interface
+	 * that shares a name with what LSDN was going to use. In that case, you will be getting the
+	 * error repeatedly. You can either ignore it or delete the failing part of the model. */
+	LSDNE_COMMIT,
+	/** Cleanup operation has failed and this left an object in state inconsistent with the model.
+	 *
+	 * This failure is more serious than #LSDNE_COMMIT failure, since the commit operation can
+	 * not be successfully retried. The only operation possible is to rebuild the whole model again. */
+	LSDNE_INCONSISTENT,
+} lsdn_err_t;
+
 /** Validation and commit errors. */
 LSDN_ENUM(problem_code, LSDNP);
 
@@ -103,7 +110,8 @@ enum lsdn_problem_ref_type {
 	LSDNS_NET,
 	/** Problem with #lsdn_virt. */
 	LSDNS_VIRT,
-	/** Problem with #lsdn_if. */
+	/* Problem with #lsdn_if. */
+	/** Problem with a network interface. */
 	LSDNS_IF,
 	/** Problem with `vnet_id`. */
 	LSDNS_NETID,
@@ -143,11 +151,13 @@ struct lsdn_problem {
 	struct lsdn_problem_ref *refs;
 };
 
-void lsdn_problem_format(FILE* out, const struct lsdn_problem *problem);
-void lsdn_problem_report(struct lsdn_context *ctx, enum lsdn_problem_code code, ...);
 
 /** Problem handler callback.
  * @param diag description of the problem.
  * @param user user-specified data. */
 typedef void (*lsdn_problem_cb)(const struct lsdn_problem *diag, void *user);
+
 void lsdn_problem_stderr_handler(const struct lsdn_problem *problem, void *user);
+void lsdn_problem_format(FILE* out, const struct lsdn_problem *problem);
+
+/** @} */
