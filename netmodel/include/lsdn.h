@@ -289,7 +289,18 @@ LSDN_DECLARE_ATTR(outbound bandwidth limit, virt, rate_out, lsdn_qos_rate_t, con
 /** @} */
 
 /** @defgroup misc Miscellaneous
- * TODO describe what you can find here. For example, dump functions. */
+ * Miscellaneous functions and definitions.
+ *
+ * This section documents the various odds and ends that didn't fit anywhere else.
+ *
+ * * String dump functions for converting the memory model to JSON or TCL representation
+ * * Network-related definitions, such as frame lengths, header lengths, minimum and maximum IDs
+ * * Network address types and enums
+ * * Address initializer macros
+ * * Address string parsing / dumping functions
+ * * Address comparison functions
+ * * Prefix validation functions
+ * * Constants for broadcast addresses and full masks. */
 
 const char *lsdn_mk_name(struct lsdn_context *ctx, const char *type);
 
