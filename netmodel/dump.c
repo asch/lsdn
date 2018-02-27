@@ -596,15 +596,17 @@ static int convert_rules(struct json_object *rules, struct dump_ctx *dctx)
 						lsdn_err_t res = lsdn_parse_ip(&ip, json_object_get_string(zal));
 						if (res != LSDNE_OK)
 							return 1;
+						dump_ctx_append_str(dctx, "/");
 						if (lsdn_ip_mask_is_prefix(&ip)) {
 							int prefix = lsdn_ip_prefix_from_mask(&ip);
-							sprintf(ip_pref, "/%d", prefix);
+							sprintf(ip_pref, "%d", prefix);
 							dump_ctx_append(dctx, ip_pref, NULL);
 						} else {
-							dump_ctx_append(dctx, "/", json_object_get_string(zal), NULL);
+							dump_ctx_append(dctx, json_object_get_string(zal), NULL);
 						}
 					}
 				}
+				dump_ctx_append_str(dctx, " ");
 			}
 		}
 		dump_ctx_end_line(dctx);
