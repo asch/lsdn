@@ -64,7 +64,7 @@ the directory where you put the downloaded sources: ::
 Now try running ``lsctl`` to see if the package was installed correctly.
 
 If you have installed kernel headers manually (see previous section), instead
-of running ``cmake``, run: ::
+of running ``cmake ..``, run: ::
 
     cmake -DKERNEL_HEADERS=$header_dir/include ..
 
@@ -78,8 +78,8 @@ distributions of Linux.
 Arch
 ~~~~
 
-On Arch Linux the PKGBUILD file is located in dist/arch/ and the package can be
-built and installed as follows: ::
+The PKGBUILD file for Arch Linux is located in ``dist/arch/`` and the package can
+be built and installed as follows: ::
 
 	cd dist/arch/
 	makepkg
@@ -110,6 +110,6 @@ LSCTL includes a test-suite that constructs various virtual networks and tries
 pinging VMs inside those networks. ``sudo make test`` starts these tests.
 
 If you plan on developing LSDN, you might want to run the tests inside another
-level of VM. There is already a testing ready for those purposes, built on QEMU
-and minimal Arch root file system. More information can be found in the
-Developer documentation :ref:`test_harness`.
+level of VM. There is already a testing environment ready for those purposes,
+built on QEMU and minimal Arch root file system. More information can be found
+in the Developer documentation section :ref:`test_harness`.
