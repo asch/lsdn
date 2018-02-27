@@ -115,12 +115,12 @@ The **Bookstore** network will be tunneled through the VXLAN tunnels. We have
 assigned the network a virtual network identifier *1*. The network will span all
 the machines **A**, **B** and **C** - that's what we have written with the :lsctl:cmd:`attach`
 statement. The next line describes a virtual machine that will reside on machine
-**A**. It will connect via an interface which is simply called *1*. We have also
-assigned a MAC address to this virtual machine. Again, LSDN expects that an
-interface called *1* is already present on the physical machine **A** and that it
-is assigned the same MAC address we have given it in the configuration file.
-Similarly, the next three lines describe three other virtual machines inside the
-**Bookstore** network.
+**A**. It will connect via an interface which is simply called *1* (yes,
+interface can have arbitrary names). We have also assigned a MAC address to this
+virtual machine. Again, LSDN expects that an interface called *1* is already
+present on the physical machine **A** and that it is assigned the same MAC
+address we have given it in the configuration file.  Similarly, the next three
+lines describe three other virtual machines inside the **Bookstore** network.
 
 In a very similar fashion we have created a *Bakery* virtual network:
 

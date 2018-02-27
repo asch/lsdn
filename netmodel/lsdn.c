@@ -90,7 +90,8 @@ struct lsdn_context *lsdn_context_new(const char* name)
  * Set this flag to `false` to prevent overwriting existing rules.
  *
  * @param ctx LSDN context.
- * @param overwrite `true` if LSDN should overwrite existing rules. `false` if it should keep them intact. */
+ * @param overwrite `true` if LSDN should overwrite existing kernel objects.
+ *	`false` if it should fail if the kernel object already exists. */
 void lsdn_context_set_overwrite(struct lsdn_context *ctx, bool overwrite)
 {
 	ctx->overwrite = overwrite;

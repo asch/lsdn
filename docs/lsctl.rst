@@ -197,6 +197,9 @@ Argument types
     is not given, it is equivalent to 128 for IPv6 and 32 for IPv4, that is
     subnet containing the single IP address.
 
+    Instead of writing a prefix after the ``/``, a network mask can be given,
+    using the same format as for the IP address.
+
     Examples:
 
     .. code-block:: none
@@ -204,6 +207,7 @@ Argument types
         2a00:1028:8380:f86::2
         2a00:1028:8380:f86::0/64
         192.168.56.0/24
+        192.168.56.0/255.255.255.0
 
 .. lsctl:type:: mac
 
@@ -560,7 +564,7 @@ Command-line tools
 
 .. default-role:: ref
 
-The LSCTL configuration language is accepted by the command-line tools:
+The LSCTL configuration language is accepted by the command-line tools
 `lsctl <prog_lsctl>` and `lsctld <prog_lsctld>`. The one you should choose
 depends on your use-case. `lsctl <prog_lsctl>` is used for simple run-and-forget
 configuration, while `lsctld <prog_lsctld>` runs in the background and supports

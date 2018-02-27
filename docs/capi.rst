@@ -23,7 +23,7 @@ The context basically represents the network model as a whole. It allows you to
 commit it to kernel tables, configure common behaviors such as handling
 out-of-memory conditions, and simplify memory management.
 
-Your application should always have exactly one context. Through it you can
+Your application will typically have exactly one context. Through it you can
 create networks, physes and virts, like you would with ``lsctl``.
 
 You can modify the network model in memory as much as you like. To apply the
