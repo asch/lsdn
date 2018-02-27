@@ -10,16 +10,25 @@ void lsdn_list_init(struct lsdn_list_entry *head)
 	head->previous = head;
 }
 
-/** Insert an entry into the list. */
-/* TODO do we really have a function that just checks the assert
- * and otherwise does the SAME THING? */
+/** Insert an entry into the list.
+ *
+ * Both the position and entry must be already initialized using lsdn_list_init
+ * and the entry must not already be member of a list. Prefer this function to
+ * lsdn_list_init_add if objects change list membership during their lifetime
+ * (it has assert for checking that you have removed the object from previous
+ * list).
+ */
 void lsdn_list_add(struct lsdn_list_entry *position, struct lsdn_list_entry *entry)
 {
+	/* Since the entry is initialized, we can check if it is empty */
 	assert(lsdn_is_list_empty(entry));
 	lsdn_list_init_add(position, entry);
 }
 
-/** Really insert an entry into the list. */
+/** Initialize an entry and insert it into the list.
+ *
+ * The position must be already initialized.
+ */
 void lsdn_list_init_add(struct lsdn_list_entry *position, struct lsdn_list_entry *entry)
 {
 	entry->previous = position;
