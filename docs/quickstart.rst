@@ -165,7 +165,7 @@ The equivalent network setup created using the LSDN `C API <capi>`:
     #include <string.h>
     #include <stdint.h>
 
-    #include <lsdn.h>
+    #include <lsdn/lsdn.h>
 
     /* Use the default GENEVE port */
     static uint16_t geneve_port = 6081;
