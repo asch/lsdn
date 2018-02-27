@@ -539,7 +539,7 @@ SHOW_GROUPED_MEMB_INC  = NO
 # If the FORCE_LOCAL_INCLUDES tag is set to YES then doxygen will list include
 # files with double quotes in the documentation rather than with sharp brackets.
 # The default value is: NO.
-# XXX
+
 FORCE_LOCAL_INCLUDES   = NO
 
 # If the INLINE_INFO tag is set to YES then a tag [inline] is inserted in the

@@ -105,8 +105,8 @@ struct lsdn_user_hooks {
 	void (*lsdn_startup_hook)(struct lsdn_net *net, struct lsdn_phys *phys, void *user);
 	/** Custom value for #lsdn_startup_hook. */
 	void *lsdn_startup_hook_user;
-	/** Shutdown hook.
-	 * Currently unused. TODO. */
+	/** Shutdown hook. */
+	/* Currently unused. TODO. */
 	void (*lsdn_shutdown_hook)(struct lsdn_net *net, struct lsdn_phys *phys, void *user);
 	/** Custom value for #lsdn_shutdown_hook. */
 	void *lsdn_shutdown_hook_user;

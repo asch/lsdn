@@ -112,11 +112,10 @@ In the worse case, a rule removal will fail and the kernel rules will remain in
 an inconsistent state, not corresponding to a valid network model. This is
 indicated by :c:member:`LSDNE_INCONSISTENT` error code. It is impossible to recover from
 this condition, you need to call :c:func:`lsdn_context_cleanup` and start over.
-TODO už to lsdn_context_cleanup umí?
 
---------
+---------
 Reference
---------
+---------
 
 Learn more about individual kinds of objects and their functions.
 

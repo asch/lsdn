@@ -122,8 +122,8 @@ enum lsdn_problem_ref_type {
 struct lsdn_problem_ref {
 	/** Problem type. */
 	enum lsdn_problem_ref_type type;
-	/** Pointer to the appropriate struct.
-	 * TODO this should probably be a union? */
+	/** Pointer to the appropriate struct. */
+	/* TODO this should probably be a union? */
 	void *ptr;
 };
 

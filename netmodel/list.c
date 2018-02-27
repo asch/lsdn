@@ -10,10 +10,9 @@ void lsdn_list_init(struct lsdn_list_entry *head)
 	head->previous = head;
 }
 
-/** Insert an entry into the list.
- * TODO do we really have a function that just checks the assert
- * and otherwise does the SAME THING?
- */
+/** Insert an entry into the list. */
+/* TODO do we really have a function that just checks the assert
+ * and otherwise does the SAME THING? */
 void lsdn_list_add(struct lsdn_list_entry *position, struct lsdn_list_entry *entry)
 {
 	assert(lsdn_is_list_empty(entry));
