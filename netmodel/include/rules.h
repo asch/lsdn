@@ -79,6 +79,19 @@
 
 
 /** @defgroup rules Rules engine
+ * Virt rules engine configuration.
+ *
+ * LSDN supports a basic firewall filtering. It is possible to set up packet
+ * rules matching several criteria (source or destination addresses or ranges,
+ * tunnel key ID) and assign them to inbound or outbound queues of a particular
+ * virt. Currently, the firewall can only drop matching packets. There is no
+ * support for creating custom firewall actions.
+ *
+ * #lsdn_vr is its own kind of object, tied to a virt. It can either be created
+ * preconfigured to match something, or set as empty and configured later.
+ *
+ * Rules are evaluated in order of increasing priority. The lower the priority
+ * value, the higher the actual priority.
  * @{ */
 
 /** Rule target. */
