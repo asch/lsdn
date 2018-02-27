@@ -1,6 +1,6 @@
-=========================
-LSDN User's Documentation
-=========================
+====================
+User's Documentation
+====================
 
 .. toctree::
 	:maxdepth: 3
