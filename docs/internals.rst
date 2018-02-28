@@ -137,7 +137,7 @@ commit functionality, which is important for the overall ease-of-use of the C
 API. The network model layer must keep track of both the current state of the
 network model and what is committed. Also it tracks which objects have changed
 attributes and need to be updated. Finally, it keeps track of objects that were
-deleted by the user, but are still committed alive.
+deleted by the user, but are still commited.
 
 For this, it is important to understand a life-cycle of an object, illustrated
 in :numref:`netmodel_states`.
@@ -176,13 +176,13 @@ in :numref:`netmodel_states`.
 
 The objects always start in the **NEW** state, indicating that they will be
 actually created with the nearest commit.  If they are freed, the ``free`` call is
-actually done immediately. Any update leaves them in the *NEW* state, since
+done immediately. Any update leaves them in the *NEW* state, since
 there is nothing to update yet.
 
 Once a *NEW* object is successfully committed, it moves to the **OK** state. A
-commit has no effect on such object, since it is up-to-date.
+commit has no effect on  an *OK* object, since it is up-to-date.
 
-If a *NEW* object is freed, it is moved to the **DELETE** state, but its memory
+If a *OK* object is freed, it is moved to the **DELETE** state, but its memory
 is retained until commit is called and the object is deleted from kernel. The
 objects in *DELETE* state can not be updated, since they are no longer visible
 and should not be used by the user of the API. Also, they can not be found by
@@ -195,7 +195,7 @@ state. Updating the *RENEW* object again does nothing and freeing it moves it to
 the *DELETE* state, since that takes precedence.
 
 If a commit for some reason fails, LSDN tries to unroll all operations for that
-object and returns the object temporarily to the *ERR* state. After the commit
+object and returns the object to a temporary *ERR* state. After the commit
 has ended, it moves all objects from *ERR* state to the *NEW* state.  This means
 that on the next commit, the operations will be retried again, unless the user
 decides to delete the object.
@@ -234,10 +234,12 @@ Do not forget to do the following things in your *settings_new* function:
  - allocate new ``lsdn_settings`` structure via malloc
  - initialize the settings using ``lsdn_settings_init_common`` function
  - fill in the:
+
     - ``nettype`` (as you have added above)
     - ``switch_type`` (static, partially static, or learning, purely
       informational, has no effect)
     - ``ops`` (:c:type:`lsdn_net_ops` will be described shortly)
+
  - return the new settings
 
 Also note that your function will be part of the C API and should use
@@ -247,7 +249,7 @@ correct error handling (see :ref:`capi/errors`).
 However, the most important part of the *settings* is the **lsdn_net_ops**
 structure -- the callbacks invoked by LSDN to let you construct the network.
 First let us have a quick look at the structure definition (full commented
-definition is in the source code or Doxygen):
+definition is in the source code or `doxygen`):
 
 .. doxygenstruct:: lsdn_net_ops
     :project: lsdn-full
@@ -258,7 +260,7 @@ The first callback that will be called is :c:member:`lsdn_net_ops::create_pa`.
 PA is a shorthand for phys attachment and the call means that the physical
 machine this LSDN is managing has attached to a virtual network. Typically you
 will need to prepare a tunnel(s) connecting to the virtual network and a bridge
-connecting the tunnel(s) to the virtual machines (that will be connected later).
+connecting the tunnel(s) to the virtual machines (they will be connected later).
 
 If your network does all packet routing by itself, use the ``lbridge.c``
 module. It will create an ordinary Linux bridge and allow you to connect your
@@ -314,13 +316,13 @@ Static bridge
 ~~~~~~~~~~~~~
 
 The static-bridge subsystem provides helper functions to help you manage an L2
-router built on TC flower rules and actions. The TC implementation means
-that it can be integrated with the metadata based Linux tunnels.
+router built on TC flower rules and actions. Because it is based on TC it can be
+integrated with the metadata based Linux tunnels.
 
 Metadata-based tunnels (or sometimes called lightweight IP tunnels) are Linux
 tunnels that can choose their tunnel endpoint by looking at a special packet
 metadata. This means you do not need to create a new network interface for each
-endpoint you wan to communicate with, but one shared interface can be used, with
+endpoint you want to communicate with, but one shared interface can be used, with
 only the metadata changing. In our case, we use TC actions to set these
 metadata depending on the destination MAC address (since we know where a virtual
 machine with that MAC lives). The setup is illustrated in :numref:`sbridge_fig`.
@@ -349,7 +351,7 @@ machine with that MAC lives). The setup is illustrated in :numref:`sbridge_fig`.
 The static bridge is not a simple implementation of Linux bridge in TC. A bridge
 is a virtual interface with multiple enslaved interfaces connected to it.
 However, the static bridge needs to deal with the tunnel metadata during its
-routing. For that, it provides the following C structures.
+routing. For that, it provides the following C structures:
 
 Struct **lsdn_sbridge** represents the bridge as a whole. Internally, it will
 create a helper interface to hold the routing rules.
@@ -363,7 +365,7 @@ Struct **lsdn_sbridge_if** represents the connection of *sbridge_phys_if* to the
 bridge. For virtual machines *sbridge_if* and *sbridge_phys_if* will be in a one
 to one correspondence, since virtual machine can not be connected to multiple
 bridges. If a sbridge is shared, you have to provide a criteria splitting up the
-traffic, usually by the :ref:`vid`.
+traffic, usually by the :ref:`virtual network identifier <vid>`.
 
 Struct **lsdn_sbridge_route** represents a route through given *sbridge_if*. For
 a virtual machine, there will be just a single route, but metadata tunnel
@@ -371,7 +373,7 @@ interfaces can provide multiple routes, each leading to a different physical
 machine. The users of the static-bridge module must provide TC actions to set
 the correct metadata for that route.
 
-Struct **lsdn_sbridge_mac** tells to use a given route when sending packets to a
+Struct **lsdn_sbridge_mac** tells LSDN to use a given route when sending packets to a
 given MAC address. There will be a *sbridge_mac* for each VM on a physical
 machine where the route leads.
 
@@ -383,7 +385,7 @@ this:
  callback                                                          sbridge
  ================================================================= ==================================================
  :c:member:`create_pa <lsdn_net_ops::create_pa>` (first call)      create **phys_if** for tunnel
- :c:member:`create_pa <lsdn_net_ops::create_pa>`                   create **sbridge** and **sbridge_if** for tunnel
+ :c:member:`create_pa <lsdn_net_ops::create_pa>`                   create **sbridge** and **if** for tunnel
  :c:member:`add_virt <lsdn_net_ops::add_virt>`                     create **if**, **route** and **mac**
  :c:member:`add_remote_pa <lsdn_net_ops::add_remote_pa>`           create **route** for the physical machine
  :c:member:`add_remote_virt <lsdn_net_ops::add_remote_virt>`       create **mac** for the route

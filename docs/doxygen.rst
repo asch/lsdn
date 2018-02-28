@@ -1,3 +1,5 @@
+.. _doxygen:
+
 Doxygen (Generated documentation)
 =================================
 
