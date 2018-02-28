@@ -113,7 +113,7 @@ static int resolve_net_arg(
 	} else {
 		*net = NULL;
 	}
-	if (!net && needed)
+	if (!*net && needed)
 		return tcl_error(interp, "network must be specified, either using -net argument or from net scope");
 	return TCL_OK;
 }
@@ -136,7 +136,7 @@ static int resolve_phys_arg(
 	} else {
 		*phys = NULL;
 	}
-	if (!phys && needed)
+	if (!*phys && needed)
 		return tcl_error(interp, "phys must be specified, either using -phys argument or from phys scope");
 	return TCL_OK;
 }
