@@ -111,7 +111,7 @@ Development Tools
 .................
 
 The platform independent builds with all the dependency and version checks are
-done thanks to **cmake** in cooperation with **pkgfile**. This is much nicer and
+done thanks to **cmake** in cooperation with **pkgconfig**. This is much nicer and
 more featureful alternative to autoconf tools.
 
 Furthermore we kept everything since the beginning in the **GIT** repository on
