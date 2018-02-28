@@ -172,6 +172,10 @@ for several mailing lists:
 For real-time communication we used **IRC** channel #lsdn on Freenode. This is
 useful especially for flame-wars and arguing about future design of the tool.
 
+We have developed a simple bot for our mailing list to remind us of important
+deadlines and nag people who have not commited to the repository for a long
+time. This helped us "feel" the schedule and keeped us focused on work.
+
 Documentation Tools
 ...................
 
