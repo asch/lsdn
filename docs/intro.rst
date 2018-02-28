@@ -7,7 +7,7 @@ Introduction
 LSDN is a tool which allows you to easily configure networks with virtual
 machines (or containers) in Linux. It let's you configure network tunnels
 (`ovl_vxlan`, `ovl_geneve` ...) for separating groups of VMs into their own
-virtual networks
+virtual networks.
 
 Each virtual network behaves (from the perspective of a VM) as if all the
 computers were connected to a simple switch and were on the same LAN.
