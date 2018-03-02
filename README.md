@@ -29,6 +29,11 @@ kernel sources and install new kernel headers `make headers_install
 INSTALL_HDR_PATH=$header_dir`. Instead of running `cmake ..` run `cmake
 -DKERNEL_HEADERS=$header_dir/include ..` and LSDN should build.
 
+## Quick-Start
+
+See [Quick-Start Section](http://lsdn.readthedocs.io/en/latest/quickstart.html)
+for kick-start.
+
 ## Documentation
 
 The complete documentation, including more detailed build and installation
