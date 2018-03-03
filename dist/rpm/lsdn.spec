@@ -1,7 +1,6 @@
 # fedora Tcl macros because SUSE's are not compatible
 %{!?tcl_version: %global tcl_version %(echo 'puts $tcl_version' | tclsh)}
-%{?tcl_archdir: %global tcl_sitearch %{tcl_archdir}}
-%{!?tcl_sitearch: %global tcl_sitearch %{_libdir}/tcl%{tcl_version}}
+%{!?tcl_sitearch: %global tcl_sitearch %(echo 'puts [file dirname $tcl_library]' | tclsh)}
 
 Name:           lsdn
 Version:        0.1
