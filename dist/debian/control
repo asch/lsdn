@@ -1,7 +1,8 @@
 Source: lsdn
+Version: 0.1
 Priority: optional
 Maintainer: Roman Kapl <code@rkapl.cz>
-Build-Depends: debhelper (>= 8.0.0), cmake
+Build-Depends: debhelper (>= 8.0.0), cmake, pkg-config, tcl-dev (>= 8.6), uthash-dev, libmnl-dev, libjson-c-dev, libdaemon-dev, libvirt-dev
 Standards-Version: 3.9.4
 Section: libs
 Homepage: https://github.com/asch/lsdn
