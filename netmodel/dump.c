@@ -443,7 +443,7 @@ static int dump_ctx_append_str(struct dump_ctx *dctx, const char *str)
 	int ret = 0;
 	if (dump_ctx_check_state(dctx))
 		return ret;
-	if ((ret = fprintf(dctx->memstream, str)) < 0)
+	if ((ret = fputs(str, dctx->memstream)) < 0)
 		dump_ctx_set_state(dctx, 1);
 	return ret;
 }
