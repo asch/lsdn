@@ -22,7 +22,7 @@ You will also need CMake and (naturally) GCC for building the packages.
 
 If you are running **Ubuntu** or **Debain**, run: ::
 
-    apt install tcl-dev uthash-dev libmnl-dev libjson0-dev libdaemon-dev libvirt-dev cmake build-essential
+    apt install tcl-dev uthash-dev libmnl-dev libjson-c-dev libdaemon-dev libvirt-dev cmake build-essential
 
 If you are running **Arch Linux**, run: ::
 
