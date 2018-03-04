@@ -16,6 +16,13 @@ well as for huge virtual networks in data centers.
 There is a package in the [AUR](https://aur.archlinux.org/) called
 [lsdn-git](https://aur.archlinux.org/packages/lsdn-git/).
 
+### RPM based distributions
+
+Fedora and openSUSE packages are available from the Open Build Service project
+[home:matejcik:lsdn](https://build.opensuse.org/project/show/home:matejcik:lsdn).
+
+RPMs themselves can be found here: https://download.opensuse.org/repositories/home:/matejcik:/lsdn/
+
 ### Manual Build
 ```
 mkdir build
