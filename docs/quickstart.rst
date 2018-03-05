@@ -125,7 +125,7 @@ First, create the file ``config.lsctl`` with the following contents:
         virt -name 2 -if tap1 -mac "92:89:90:93:61:75" -net 2
     }
 
-    phys -name A -if eth0 -ip "192.168.10.2" {
+    phys -name B -if eth0 -ip "192.168.10.2" {
         attach 1 2
         virt -name 3 -if tap0 -mac "42:94:a5:f9:69:c6" -net 1
         virt -name 4 -if tap1 -mac "f2:9b:4f:48:2d:d1" -net 2
