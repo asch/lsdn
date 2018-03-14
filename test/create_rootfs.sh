@@ -2,7 +2,7 @@
 rm -rf rootfs
 mkdir -p rootfs/var/lib/pacman
 mkdir -p pacman-cache
-PACKAGES="bash cmake dhcp util-linux iproute2 grep valgrind procps-ng iputils tcl dhcpcd libdaemon openbsd-netcat json-c"
+PACKAGES="bash cmake dhcp util-linux iproute2 grep valgrind procps-ng iputils tcl dhcpcd libdaemon openbsd-netcat json-c which"
 OPTIONAL="gdb tcpdump pacman binutils vim netperf"
 if [ "${MINIMAL:-0}" -ne "1" ]; then
     PACKAGES="$PACKAGES $OPTIONAL"
