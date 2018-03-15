@@ -285,12 +285,6 @@ struct lsdn_net *lsdn_net_new(struct lsdn_settings *s, uint32_t vnet_id)
 
 	lsdn_name_init(&net->name);
 	lsdn_names_init(&net->virt_names);
-	lsdn_err_t err = lsdn_name_set(&net->name, &net->ctx->net_names, lsdn_mk_net_name(net->ctx));
-	assert(err != LSDNE_DUPLICATE);
-	if (err == LSDNE_NOMEM) {
-		free(net);
-		ret_ptr(s->ctx, NULL);
-	}
 	lsdn_list_init_add(&s->setting_users_list, &net->settings_users_entry);
 	lsdn_list_init_add(&s->ctx->networks_list, &net->networks_entry);
 	lsdn_list_init(&net->attached_list);
@@ -640,12 +634,6 @@ struct lsdn_virt *lsdn_virt_new(struct lsdn_net *net){
 	lsdn_if_init(&virt->connected_if);
 	lsdn_if_init(&virt->committed_if);
 	lsdn_name_init(&virt->name);
-	lsdn_err_t err = lsdn_name_set(&virt->name, &net->virt_names, lsdn_mk_virt_name(net->ctx));
-	assert(err != LSDNE_DUPLICATE);
-	if (err == LSDNE_NOMEM) {
-		free(virt);
-		ret_ptr(net->ctx, NULL);
-	}
 	lsdn_list_init_add(&net->virt_list, &virt->virt_entry);
 	lsdn_list_init(&virt->virt_view_list);
 	ret_ptr(net->ctx, virt);

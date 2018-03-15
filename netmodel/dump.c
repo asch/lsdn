@@ -223,9 +223,11 @@ static struct json_object *jsonify_lsdn_virt(struct lsdn_virt *virt)
 		goto err;
 
 	struct json_object *jstr;
-	if ((jstr = json_object_new_string(virt->name.str)) == NULL)
-		goto err;
-	json_object_object_add(jobj_virt, "virtName", jstr);
+	if (virt->name.str) {
+		if ((jstr = json_object_new_string(virt->name.str)) == NULL)
+			goto err;
+		json_object_object_add(jobj_virt, "virtName", jstr);
+	}
 	if (virt->attr_mac) {
 		lsdn_mac_to_string(virt->attr_mac, mac);
 		if ((jstr = json_object_new_string(mac)) == NULL)
@@ -273,10 +275,13 @@ static struct json_object *jsonify_lsdn_net(struct lsdn_net *net)
 	if (!jobj_net)
 		goto err;
 
-	struct json_object *jstr = json_object_new_string(net->name.str);
-	if (!jstr)
-		goto err;
-	json_object_object_add(jobj_net, "netName", jstr);
+	struct json_object *jstr;
+	if (net->name.str) {
+		jstr = json_object_new_string(net->name.str);
+		if (!jstr)
+			goto err;
+		json_object_object_add(jobj_net, "netName", jstr);
+	}
 	if ((jstr = json_object_new_string(net->settings->name.str)) == NULL)
 		goto err;
 	json_object_object_add(jobj_net, "settings", jstr);
@@ -644,12 +649,16 @@ static int parse_json_lsdn_nets(struct json_object *jobj, struct dump_ctx *dctx)
 		dump_ctx_start_line(dctx);
 		dump_ctx_append(dctx, "net", NULL);
 		struct json_object *val;
-		if (json_object_object_get_ex(jnet, "vnetId", &val))
-			dump_ctx_append(dctx, "-vid", json_object_get_string(val), NULL);
+		json_object_object_get_ex(jnet, "vnetId", &val);
+		dump_ctx_append(dctx, "-vid", json_object_get_string(val), NULL);
 		if (json_object_object_get_ex(jnet, "settings", &val))
 			dump_ctx_append(dctx, "-settings", json_object_get_string(val), NULL);
-		if (json_object_object_get_ex(jnet, "netName", &val))
+		if (json_object_object_get_ex(jnet, "netName", &val)) {
 			dump_ctx_append(dctx, json_object_get_string(val), NULL);
+		} else {
+			json_object_object_get_ex(jnet, "vnetId", &val);
+			dump_ctx_append(dctx, json_object_get_string(val), NULL);
+		}
 		dump_ctx_append(dctx, "{", NULL);
 		dump_ctx_end_line(dctx);
 		dump_ctx_inc_indent(dctx);
