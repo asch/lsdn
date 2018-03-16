@@ -47,6 +47,9 @@ the used networking technologies and you might encounter crashes. This means you
 will either need to run a recent version of your distribution or install the
 kernel manually.
 
+The exception is RHEL and CentOS -- they backport features into their kernels
+very agressively and you migh be get lucky even with an 3.x CentOS/RHEL kernel.
+
 If you do not plan on running LSDN on your machine, it is also possible to
 install just the kernel headers by running: ::
 
