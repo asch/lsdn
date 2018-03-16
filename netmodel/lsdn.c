@@ -1022,7 +1022,6 @@ static void decommit_rules(struct lsdn_virt *virt, struct vr_prio *ht_prio, enum
 static void rates_action(struct lsdn_filter *f, uint16_t order, struct lsdn_virt *v, const lsdn_qos_rate_t *rate)
 {
 	unsigned int mtu = 0xFFFF;
-	(void) lsdn_virt_get_recommended_mtu(v, &mtu);
 	lsdn_action_police(f,
 		order, rate->avg_rate, rate->burst_size, rate->burst_rate, mtu,
 		TC_ACT_PIPE, TC_ACT_SHOT);
