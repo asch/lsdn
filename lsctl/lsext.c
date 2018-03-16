@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include "../netmodel/include/lsdn.h"
 #include "../netmodel/include/rules.h"
+#include "../netmodel/include/dump.h"
 
 static int tcl_error(Tcl_Interp *interp, const char *err) {
 	Tcl_SetResult(interp, (char*) err, NULL);
@@ -1113,6 +1114,34 @@ static int attach_or_detach(
 	return r;
 }
 
+enum dump_format {DF_JSON, DF_TCL};
+CMD(show)
+{
+	if(check_scope(interp, ctx, S_ROOT) != TCL_OK)
+		return TCL_ERROR;
+
+	enum dump_format format = DF_TCL;
+	const Tcl_ArgvInfo opts[] = {
+		{TCL_ARGV_CONSTANT, "-json", (void*) DF_JSON, &format},
+		{TCL_ARGV_CONSTANT, "-tcl", (void*) DF_TCL, &format},
+		{TCL_ARGV_END}
+	};
+	if(Tcl_ParseArgsObjv(interp, opts, &argc, argv, NULL) != TCL_OK)
+		return TCL_ERROR;
+
+	char * dump = NULL;
+	if (format == DF_TCL)
+		dump = lsdn_dump_context_tcl(ctx->lsctx);
+	else if (format == DF_JSON)
+		dump = lsdn_dump_context_json(ctx->lsctx);
+
+	if (dump == NULL)
+		return tcl_error(interp, "Not enough memory to dump");
+	puts(dump);
+	free(dump);
+	return TCL_OK;
+}
+
 CMD(attach)
 {
 	return attach_or_detach(interp, ctx, argc, argv, lsdn_phys_attach);
@@ -1173,6 +1202,7 @@ int register_lsdn_tcl(Tcl_Interp *interp)
 	REGISTER(flushVr);
 	REGISTER(rule);
 	REGISTER(rate);
+	REGISTER(show);
 
 	if (Tcl_Export(interp, ns, "*", 0) == TCL_ERROR) {
 		return TCL_ERROR;

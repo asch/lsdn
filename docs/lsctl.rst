@@ -549,6 +549,18 @@ Directive reference
 
     :scope none: This directive can only appear at root level.
 
+.. lsctl:cmd:: show | -tcl -json
+
+    Show the network model so far. Shows even changes that are not yet commited.
+
+    :param tcl: Dump the network model in LSCTL format.
+    :param json: Dump the network model in JSON format.
+
+    **C API equivalents:** :c:func:`lsdn_dump_context_tcl`,
+    :c:func:`lsdn_dump_context_json`.
+
+    :scope none: This directive can only appear at root level.
+
 .. lsctl:cmd:: free |
 
     Free all the resources used by LSDN, but do not revert the changes. This is
