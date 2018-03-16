@@ -67,6 +67,11 @@ the directory where you put the downloaded sources: ::
 
 Now try running ``lsctl`` to see if the package was installed correctly.
 
+If ``lsctl`` does not run correctly, check if your distribution looks for
+libraries in ``/usr/local/lib`` or ``/usr/local/lib64``. Some distributions do
+not look for libraries in user-installed paths by default. To check the
+effective linker path, use ``ldconfig -v 2>/dev/null | grep -v ^$'\t'``.
+
 If you have installed kernel headers manually (see previous section), instead
 of running ``cmake ..``, run: ::
 
