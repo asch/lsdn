@@ -46,5 +46,12 @@ for kick-start.
 The complete documentation, including more detailed build and installation
 instructions is available at https://lsdn.readthedocs.io .
 
+## Contribution
+
+Feel free making a pull request with your patches. Please stick to [Linux kernel
+coding style](https://www.kernel.org/doc/html/v4.10/process/coding-style.html)
+with **one exception** --- the limit on the length of lines is 100 columns and
+not 80 as in the Linux kernel.
+
 ## Contact
 We can be reached on mailing list <sp@asch.cz>.
