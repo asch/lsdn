@@ -93,12 +93,11 @@ test_parts(geneve migrate ping)
 test_parts(geneve basic cleanup)
 test_parts(geneve migrate cleanup)
 
-
-#test_parts(geneve_e2e basic ping)
+test_parts(geneve_e2e basic ping)
 test_parts(geneve_e2e cbasic ping)
-#test_parts(geneve_e2e migrate ping)
-#test_parts(geneve_e2e basic cleanup)
-#test_parts(geneve_e2e migrate cleanup)
+test_parts(geneve_e2e migrate ping)
+test_parts(geneve_e2e basic cleanup)
+test_parts(geneve_e2e migrate cleanup)
 
 if(LARGE_TESTS)
 test_parts(vxlan_static large ping)
