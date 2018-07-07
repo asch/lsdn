@@ -803,6 +803,11 @@ struct lsdn_filter *lsdn_filter_flower_init(uint32_t if_index, uint32_t handle, 
 	return filter_init("flower", if_index, handle, parent, chain, prio);
 }
 
+struct lsdn_filter *lsdn_filter_fw_init(
+		uint32_t if_index, uint32_t handle, uint32_t parent, uint32_t chain, uint16_t prio)
+{
+	return filter_init("fw", if_index, handle, parent, chain, prio);
+}
 
 void lsdn_filter_free(struct lsdn_filter *f)
 {
@@ -828,6 +833,16 @@ static void filter_actions_end(struct lsdn_filter *f)
 void lsdn_flower_actions_end(struct lsdn_filter *f)
 {
 	filter_actions_end(f);
+}
+
+void lsdn_fw_actions_end(struct lsdn_filter *f)
+{
+	filter_actions_end(f);
+}
+
+void lsdn_fw_actions_start(struct lsdn_filter *f)
+{
+	filter_actions_start (f, TCA_FW_ACT);
 }
 
 static void action_mirred_add(struct lsdn_filter *f, uint16_t order,
@@ -1049,6 +1064,11 @@ void lsdn_action_skbmark(struct lsdn_filter *f, uint16_t order, uint32_t mark)
 	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
 	mnl_attr_put_strz(f->nlh, TCA_ACT_KIND, "skbedit");
 	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
+	struct tc_skbedit skbedit;
+	bzero(&skbedit, sizeof(skbedit));
+	skbedit.index = order;
+	skbedit.action = TC_ACT_PIPE;
+	mnl_attr_put(f->nlh, TCA_SKBEDIT_PARMS, sizeof(skbedit), &skbedit);
 	mnl_attr_put_u32(f->nlh, TCA_SKBEDIT_MARK, mark);
 
 	mnl_attr_nest_end(f->nlh, nested_attr2);

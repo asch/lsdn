@@ -234,7 +234,6 @@ static lsdn_err_t geneve_e2e_create_pa(struct lsdn_phys_attachment *pa)
 	lsdn_err_t err = geneve_use_stunnel(pa);
 	if (err != LSDNE_OK)
 		return err;
-	printf("switched pa for geneve\n");
 	err = lsdn_lbridge_init(pa->net->ctx, &pa->lbridge);
 	if (err != LSDNE_OK) {
 		geneve_release_stunnel(pa->net->settings);

@@ -135,6 +135,9 @@ struct lsdn_filter {
 struct lsdn_filter *lsdn_filter_flower_init(
 		uint32_t if_index, uint32_t handle, uint32_t parent, uint32_t chain, uint16_t prio);
 
+struct lsdn_filter *lsdn_filter_fw_init(
+		uint32_t if_index, uint32_t handle, uint32_t parent, uint32_t chain, uint16_t prio);
+
 void lsdn_filter_set_update(struct lsdn_filter *f);
 
 void lsdn_filter_free(struct lsdn_filter *f);
@@ -142,6 +145,10 @@ void lsdn_filter_free(struct lsdn_filter *f);
 void lsdn_flower_actions_start(struct lsdn_filter *f);
 
 void lsdn_flower_actions_end(struct lsdn_filter *f);
+
+void lsdn_fw_actions_end(struct lsdn_filter *f);
+
+void lsdn_fw_actions_start(struct lsdn_filter *f);
 
 void lsdn_action_redir_ingress_add(
 		struct lsdn_filter *f, uint16_t order, uint32_t ifindex);

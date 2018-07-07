@@ -45,9 +45,7 @@ struct lsdn_lbridge_route {
 	/* Ruleset for the "out" direction -- lbridge sending packets to the tunnel */
 	struct lsdn_ruleset ruleset;
 	struct lsdn_ruleset_prio *out_redir;
-	struct lsdn_ruleset_prio *out_filter;
 	struct lsdn_rule out_redir_rule;
-	struct lsdn_rule out_filter_rule;
 	struct lsdn_rule in_redir_rule;
 	struct lsdn_lbridge_if lbridge_if;
 };
