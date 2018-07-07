@@ -6,6 +6,7 @@
 #include <linux/tc_act/tc_mirred.h>
 #include <linux/tc_act/tc_gact.h>
 #include <linux/tc_act/tc_tunnel_key.h>
+#include <linux/tc_act/tc_skbedit.h>
 #include <linux/veth.h>
 #include <pthread.h>
 #include <assert.h>
@@ -1042,6 +1043,19 @@ void lsdn_action_goto_chain(struct lsdn_filter *f, uint16_t order, uint32_t chai
 	mnl_attr_nest_end(f->nlh, nested_attr);
 }
 
+void lsdn_action_skbmark(struct lsdn_filter *f, uint16_t order, uint32_t mark)
+{
+	tc_core_init_once();
+	struct nlattr* nested_attr = mnl_attr_nest_start(f->nlh, order);
+	mnl_attr_put_strz(f->nlh, TCA_ACT_KIND, "skbedit");
+	struct nlattr *nested_attr2 = mnl_attr_nest_start(f->nlh, TCA_ACT_OPTIONS);
+	mnl_attr_put_u32(f->nlh, TCA_SKBEDIT_MARK, mark);
+
+	mnl_attr_nest_end(f->nlh, nested_attr2);
+	mnl_attr_nest_end(f->nlh, nested_attr);
+}
+
+
 void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask)
 {
@@ -1087,6 +1101,34 @@ void lsdn_flower_set_dst_ipv6(struct lsdn_filter *f, const char *addr,
 void lsdn_flower_set_enc_key_id(struct lsdn_filter *f, uint32_t vni)
 {
 	mnl_attr_put_u32(f->nlh, TCA_FLOWER_KEY_ENC_KEY_ID, htonl(vni));
+}
+
+void lsdn_flower_set_enc_dst_ipv4(
+	struct lsdn_filter *f, const char *addr, const char *addr_mask)
+{
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ENC_IPV4_DST, 4, addr);
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ENC_IPV4_DST_MASK, 4, addr_mask);
+}
+
+void lsdn_flower_set_enc_dst_ipv6(
+	struct lsdn_filter *f, const char *addr, const char *addr_mask)
+{
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ENC_IPV6_DST, 16, addr);
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ENC_IPV6_DST_MASK, 16, addr_mask);
+}
+
+void lsdn_flower_set_enc_src_ipv4(
+	struct lsdn_filter *f, const char *addr, const char *addr_mask)
+{
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ENC_IPV4_SRC, 4, addr);
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ENC_IPV4_SRC_MASK, 4, addr_mask);
+}
+
+void lsdn_flower_set_enc_src_ipv6(
+	struct lsdn_filter *f, const char *addr, const char *addr_mask)
+{
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ENC_IPV6_SRC, 16, addr);
+	mnl_attr_put(f->nlh, TCA_FLOWER_KEY_ENC_IPV6_SRC_MASK, 16, addr_mask);
 }
 
 void lsdn_flower_set_eth_type(struct lsdn_filter *f, uint16_t eth_type)

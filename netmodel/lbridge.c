@@ -48,6 +48,7 @@ lsdn_err_t lsdn_lbridge_free(struct lsdn_lbridge *br)
  * @param iface Interface to connect. */
 lsdn_err_t lsdn_lbridge_add(struct lsdn_lbridge *br, struct lsdn_lbridge_if *br_if, struct lsdn_if *iface)
 {
+	printf("Add %s to bridge %s\n", iface->ifname, br->bridge_if.ifname);
 	lsdn_err_t err = lsdn_link_set_master(br->ctx->nlsock, br->bridge_if.ifindex, iface->ifindex);
 	if(err != LSDNE_OK)
 		return err;
@@ -142,6 +143,132 @@ lsdn_err_t lsdn_lbridge_remove_virt(struct lsdn_virt *v)
 	lsdn_ruleset_free(&v->rules_out);
 	acc_inconsistent(&err, lsdn_lbridge_remove(&v->lbridge_if));
 	acc_inconsistent(&err, lsdn_cleanup_rulesets(v->network->ctx, &v->committed_if, &v->rules_in, &v->rules_out));
+	return err;
+}
+
+static void encap_redir_mkaction(struct lsdn_filter *f, uint16_t order, void *user)
+{
+	struct lsdn_lbridge_route *route = user;
+	if (route->tunnel_action.fn) {
+		route->tunnel_action.fn(f, order, route->tunnel_action.user);
+		order += route->tunnel_action.actions_count;
+	}
+	lsdn_action_redir_egress_add(f, order, route->phys_if->iface->ifindex);
+}
+
+
+static void ingress_redir_mkaction(struct lsdn_filter *f, uint16_t order, void *user)
+{
+	struct lsdn_lbridge_route *route = user;
+	lsdn_action_redir_ingress_add(f, order++, route->dummy_if.ifindex);
+}
+
+static void drop_mkaction(struct lsdn_filter *f, uint16_t order, void *user)
+{
+	lsdn_action_drop(f, order);
+}
+
+#define LBRIDGE_FILTER 1
+#define LBRIDGE_REDIR 2
+lsdn_err_t lsdn_lbridge_add_route(struct lsdn_lbridge *br, struct lsdn_lbridge_route *route, uint32_t vid)
+{
+	struct lsdn_context *ctx = br->ctx;
+	lsdn_err_t err = LSDNE_OK;
+	err = lsdn_link_dummy_create(ctx->nlsock, &route->dummy_if, lsdn_mk_iface_name(ctx), false);
+	if (err != LSDNE_OK)
+		return err;
+	/* Prepare outgoing rules to forward the packet with appropriate encapsulation */
+	err = lsdn_prepare_rulesets(ctx, &route->dummy_if, NULL, &route->ruleset);
+	if (err != LSDNE_OK)
+		goto cleanup_if;
+
+	/* This rule filters out re-broadcasts coming from outside via the tunnel being
+	 * re-broadcasted */
+	if (!(route->out_filter = lsdn_ruleset_define_prio(&route->ruleset, LBRIDGE_FILTER))) {
+		err = LSDNE_NOMEM;
+		goto cleanup_ruleset;
+	}
+	route->out_filter->targets[0] = LSDN_MATCH_ENC_KEY_ID;
+
+	if (!(route->out_redir = lsdn_ruleset_define_prio(&route->ruleset, LBRIDGE_REDIR))) {
+		err = LSDNE_NOMEM;
+		goto cleanup_out_filter;
+	}
+
+	/* Filter rule */
+	struct lsdn_rule *r = &route->out_filter_rule;
+	r->subprio = 0;
+	r->matches[0].enc_key_id = vid;
+	lsdn_action_init(&r->action, 1, drop_mkaction, route);
+	err = lsdn_ruleset_add(route->out_filter, r);
+	if (err != LSDNE_OK)
+		goto cleanup_out_redir;
+
+
+	/* Redir rule */
+	r = &route->out_redir_rule;
+	r->subprio = 0;
+	lsdn_action_init(&r->action, route->tunnel_action.actions_count + 1,
+			 encap_redir_mkaction, route);
+	err = lsdn_ruleset_add(route->out_redir, r);
+	if (err != LSDNE_OK)
+		goto cleanup_out_filter_rule;
+
+	/* And a reverse forwarding on the tunnel for our VID. */
+	assert(route->phys_if->rules_source->targets[1] == route->vid_match);
+	assert(route->phys_if->rules_source->targets[0] == route->source_match);
+
+	struct lsdn_rule* in_rule = &route->in_redir_rule;
+	in_rule->subprio = LSDN_SBRIDGE_IF_SUBPRIO;
+	in_rule->matches[0] = route->source_matchdata;
+	in_rule->matches[1] = route->vid_matchdata;
+	lsdn_action_init(&in_rule->action, 1, ingress_redir_mkaction, route);
+	err = lsdn_ruleset_add(route->phys_if->rules_source, in_rule);
+	if (err != LSDNE_OK)
+		goto cleanup_out_redir_rule;
+
+	err = lsdn_lbridge_add(br, &route->lbridge_if, &route->dummy_if);
+	if (err != LSDNE_OK)
+		goto cleanup_tunnel_ruleset;
+	err = lsdn_link_set(ctx->nlsock, route->dummy_if.ifindex, true);
+	if (err != LSDNE_OK)
+		goto cleanup_lbridge;
+
+	return err;
+
+	cleanup_lbridge:
+	acc_inconsistent(&err, lsdn_lbridge_remove(&route->lbridge_if));
+	cleanup_tunnel_ruleset:
+	acc_inconsistent(&err, lsdn_ruleset_remove(in_rule));
+	cleanup_out_redir_rule:
+	acc_inconsistent(&err, lsdn_ruleset_remove(&route->out_redir_rule));
+	cleanup_out_filter_rule:
+	acc_inconsistent(&err, lsdn_ruleset_remove(&route->out_filter_rule));
+	cleanup_out_redir:
+	lsdn_ruleset_remove_prio(route->out_redir);
+	cleanup_out_filter:
+	lsdn_ruleset_remove_prio(route->out_filter);
+	cleanup_ruleset:
+	acc_inconsistent(&err, lsdn_cleanup_rulesets(ctx, &route->dummy_if, NULL, &route->ruleset));
+	cleanup_if:
+	acc_inconsistent(&err, lsdn_link_delete(ctx->nlsock, &route->dummy_if));
+	return err;
+}
+
+lsdn_err_t lsdn_lbridge_remove_route(struct lsdn_lbridge_route *route)
+{
+	struct lsdn_context *ctx = route->ruleset.ctx;
+
+	lsdn_err_t err = LSDNE_OK;
+	acc_inconsistent(&err, lsdn_lbridge_remove(&route->lbridge_if));
+	acc_inconsistent(&err, lsdn_ruleset_remove(&route->in_redir_rule));
+	acc_inconsistent(&err, lsdn_ruleset_remove(&route->out_filter_rule));
+	acc_inconsistent(&err, lsdn_ruleset_remove(&route->out_redir_rule));
+	lsdn_ruleset_remove_prio(route->out_redir);
+	acc_inconsistent(&err, lsdn_cleanup_rulesets(ctx, &route->dummy_if, NULL, &route->ruleset));
+	if (!ctx->disable_decommit)
+		acc_inconsistent(&err, lsdn_link_delete(ctx->nlsock, &route->dummy_if));
+	lsdn_if_free(&route->dummy_if);
 	return err;
 }
 

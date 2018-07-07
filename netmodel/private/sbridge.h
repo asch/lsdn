@@ -50,10 +50,12 @@ struct lsdn_sbridge_if {
 };
 
 struct lsdn_sbridge_phys_if {
+	/* TODO: Lbridge now can use it to, rename it and move it */
 	struct lsdn_if *iface;
 	struct lsdn_idalloc br_chain_ids;
 	struct lsdn_ruleset_prio *rules_match_mac;
 	struct lsdn_ruleset_prio *rules_fallback;
+	struct lsdn_ruleset_prio *rules_source;
 };
 
 /* Outgoing route from a bridge. because data outgoing from the bridge sometimes need a tunneling metadata,

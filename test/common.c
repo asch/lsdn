@@ -22,6 +22,8 @@ struct lsdn_settings *settings_from_env(struct lsdn_context *ctx) {
 		return lsdn_settings_new_direct(ctx);
 	} else if (!strcmp(nettype, "geneve")) {
 		return lsdn_settings_new_geneve(ctx, geneve_port);
+	} else if (!strcmp(nettype, "geneve/e2e")) {
+		return lsdn_settings_new_geneve_e2e(ctx, geneve_port);
 	} else {
 		fprintf(stderr, "Unknown nettype: %s\n", nettype);
 		abort();

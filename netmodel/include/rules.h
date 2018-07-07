@@ -25,7 +25,15 @@
 	/** Match destination IPv6 address. */ \
 	x(LSDN_MATCH_DST_IPV6, "dst_ipv6") \
 	/** Match tunnel key ID. */ \
-	x(LSDN_MATCH_ENC_KEY_ID, "enc_key_id")
+	x(LSDN_MATCH_ENC_KEY_ID, "enc_key_id") \
+	/** Match tunnel source IP address . */ \
+	x(LSDN_MATCH_ENC_KEY_SRC_IPV4, "enc_src_ipv4") \
+	/** Match tunnel source IP address . */ \
+	x(LSDN_MATCH_ENC_KEY_SRC_IPV6, "enc_src_ipv6") \
+	/** Match tunnel source IP address . */ \
+	x(LSDN_MATCH_ENC_KEY_DST_IPV4, "enc_dst_ipv4") \
+	/** Match tunnel source IP address . */ \
+	x(LSDN_MATCH_ENC_KEY_DST_IPV6, "enc_dst_ipv6") \
 
 /** Virt rule method generator.
  * For each of the possible virt rule match targets (see #lsdn_rule_target), the shortcuts

@@ -15,6 +15,7 @@
 #define LSDN_IF_PRIO_POLICING 0xFF00
 #define LSDN_IF_PRIO_MATCH 0xFF01
 #define LSDN_IF_PRIO_FALLBACK 0xFF02
+#define LSDN_IF_PRIO_SOURCE 0xFF03
 #define LSDN_SBRIDGE_IF_SUBPRIO 0xFFFFFF00
 
 /** Action generator callback signature.
@@ -58,6 +59,7 @@ union lsdn_matchdata {
 	lsdn_ipv6_t ipv6;
 	/** Value as tunnel key ID. */
 	uint32_t enc_key_id;
+	uint32_t skbmark;
 };
 
 #define LSDN_KEY_SIZE (LSDN_MAX_MATCH_LEN * LSDN_MAX_MATCHES)

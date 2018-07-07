@@ -226,3 +226,107 @@ struct lsdn_settings *lsdn_settings_new_geneve(struct lsdn_context *ctx, uint16_
 	s->geneve.refcount = 0;
 	return s;
 }
+
+/*********************************** LBRIDGE geneve ***************************************/
+
+static lsdn_err_t geneve_e2e_create_pa(struct lsdn_phys_attachment *pa)
+{
+	lsdn_err_t err = geneve_use_stunnel(pa);
+	if (err != LSDNE_OK)
+		return err;
+	printf("switched pa for geneve\n");
+	err = lsdn_lbridge_init(pa->net->ctx, &pa->lbridge);
+	if (err != LSDNE_OK) {
+		geneve_release_stunnel(pa->net->settings);
+		return err;
+	}
+
+	if (err != LSDNE_OK) {
+		geneve_release_stunnel(pa->net->settings);
+		acc_inconsistent(&err, lsdn_sbridge_free(&pa->sbridge));
+		return err;
+	}
+
+
+	return LSDNE_OK;
+}
+
+static lsdn_err_t geneve_e2e_destroy_pa(struct lsdn_phys_attachment *pa)
+{
+	lsdn_err_t err = LSDNE_OK;
+	acc_inconsistent(&err, lsdn_lbridge_free(&pa->lbridge));
+	geneve_release_stunnel(pa->net->settings);
+	return err;
+}
+
+static lsdn_err_t geneve_e2e_add_virt(struct lsdn_virt *virt)
+{
+	return lsdn_lbridge_add_virt(virt);
+}
+
+static lsdn_err_t geneve_e2e_remove_virt(struct lsdn_virt *virt)
+{
+	return lsdn_lbridge_remove_virt(virt);
+}
+
+static lsdn_err_t geneve_e2e_add_remote_pa (struct lsdn_remote_pa *pa)
+{
+	struct lsdn_action_desc *bra = &pa->lbridge_route.tunnel_action;
+	bra->actions_count = 1;
+	bra->fn = set_geneve_metadata;
+	bra->user = pa;
+	pa->lbridge_route.phys_if = &pa->local->net->settings->geneve.tunnel_sbridge;
+	pa->lbridge_route.vid_match = LSDN_MATCH_ENC_KEY_ID;
+	pa->lbridge_route.vid_matchdata.enc_key_id = pa->local->net->vnet_id;
+	if (pa->remote->phys->attr_ip->v == LSDN_IPv4) {
+		pa->lbridge_route.source_match = LSDN_MATCH_ENC_KEY_SRC_IPV4;
+		pa->lbridge_route.source_matchdata.ipv4 = pa->remote->phys->attr_ip->v4;
+	} else {
+		pa->lbridge_route.source_match = LSDN_MATCH_ENC_KEY_SRC_IPV6;
+		pa->lbridge_route.source_matchdata.ipv6 = pa->remote->phys->attr_ip->v6;
+	}
+	return lsdn_lbridge_add_route(&pa->local->lbridge, &pa->lbridge_route, pa->local->net->vnet_id);
+}
+
+static lsdn_err_t geneve_e2e_remove_remote_pa (struct lsdn_remote_pa *pa)
+{
+	return lsdn_lbridge_remove_route(&pa->lbridge_route);
+}
+
+struct lsdn_net_ops lsdn_net_geneve_e2e_ops = {
+	.type = "geneve",
+	.get_port = geneve_get_port,
+	.create_pa = geneve_e2e_create_pa,
+	.destroy_pa = geneve_e2e_destroy_pa,
+	.add_virt = geneve_e2e_add_virt,
+	.remove_virt = geneve_e2e_remove_virt,
+	.add_remote_pa = geneve_e2e_add_remote_pa,
+	.remove_remote_pa = geneve_e2e_remove_remote_pa,
+	.validate_net = geneve_validate_net,
+	.validate_pa = geneve_validate_pa,
+	.compute_tunneling_overhead = geneve_tunneling_overhead
+};
+
+/** Create settings for a new GENEVE network.
+ * @param ctx LSDN context.
+ * @param port UDP port for GENEVE tunnel.
+ * @return new #lsdn_settings instance. */
+struct lsdn_settings *lsdn_settings_new_geneve_e2e(struct lsdn_context *ctx, uint16_t port)
+{
+	struct lsdn_settings *s = malloc(sizeof(*s));
+	if(!s)
+		ret_ptr(ctx, NULL);
+
+	lsdn_err_t err = lsdn_settings_init_common(s, ctx);
+	assert(err != LSDNE_DUPLICATE);
+	if (err == LSDNE_NOMEM) {
+		free(s);
+		ret_ptr(ctx, NULL);
+	}
+	s->switch_type = LSDN_LEARNING_E2E;
+	s->nettype = LSDN_NET_GENEVE;
+	s->ops = &lsdn_net_geneve_e2e_ops;
+	s->geneve.port = port;
+	s->geneve.refcount = 0;
+	return s;
+}

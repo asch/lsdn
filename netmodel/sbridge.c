@@ -310,6 +310,8 @@ lsdn_err_t lsdn_sbridge_phys_if_init(
 	sbridge_if->iface = iface;
 	lsdn_idalloc_init(&sbridge_if->br_chain_ids, 1, 0xFFFF);
 
+	// TODO: different structure for the matches, maybe vid first?
+
 	// define the ruleset with priorities for match and fallback and subpriorities for us.
 	// Someone else (the firewall) can share the priorities with us.
 	struct lsdn_ruleset_prio *prio_match = sbridge_if->rules_match_mac =
@@ -323,19 +325,30 @@ lsdn_err_t lsdn_sbridge_phys_if_init(
 		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_match));
 		return err;
 	}
-
 	prio_match->targets[0] = LSDN_MATCH_DST_MAC;
 	prio_match->masks[0].mac = lsdn_multicast_mac_mask;
-	if (match_vni)
-		prio_match->targets[1]= LSDN_MATCH_ENC_KEY_ID;
 
-	if (match_vni)
+	struct lsdn_ruleset_prio *prio_source = sbridge_if->rules_source =
+		lsdn_ruleset_define_prio(rules_in, LSDN_IF_PRIO_SOURCE);
+	if(!prio_source) {
+		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_match));
+		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_fallback));
+		return err;
+	}
+	prio_source->targets[0] = LSDN_MATCH_ENC_KEY_SRC_IPV4;
+	prio_source->masks[0].ipv4 = lsdn_single_ipv4_mask.v4;
+
+	if (match_vni) {
+		prio_match->targets[1]= LSDN_MATCH_ENC_KEY_ID;
+		prio_source->targets[1]= LSDN_MATCH_ENC_KEY_ID;
 		prio_fallback->targets[0]= LSDN_MATCH_ENC_KEY_ID;
+	}
 
 	err = lsdn_link_set(ctx->nlsock, iface->ifindex, true);
 	if(err != LSDNE_OK) {
 		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_match));
 		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_fallback));
+		acc_inconsistent(&err, lsdn_ruleset_remove_prio(prio_source));
 		return err;
 	}
 

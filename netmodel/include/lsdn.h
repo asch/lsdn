@@ -190,6 +190,7 @@ struct lsdn_settings *lsdn_settings_new_vxlan_mcast(struct lsdn_context *ctx, ls
 struct lsdn_settings *lsdn_settings_new_vxlan_e2e(struct lsdn_context *ctx, uint16_t port);
 struct lsdn_settings *lsdn_settings_new_vxlan_static(struct lsdn_context *ctx, uint16_t port);
 struct lsdn_settings *lsdn_settings_new_geneve(struct lsdn_context *ctx, uint16_t port);
+struct lsdn_settings *lsdn_settings_new_geneve_e2e(struct lsdn_context *ctx, uint16_t port);
 void lsdn_settings_free(struct lsdn_settings *settings);
 void lsdn_settings_register_user_hooks(struct lsdn_settings *settings, struct lsdn_user_hooks *user_hooks);
 lsdn_err_t lsdn_settings_set_name(struct lsdn_settings *s, const char *name);

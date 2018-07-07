@@ -24,8 +24,10 @@ struct lsdn_remote_pa {
 	struct lsdn_list_entry remote_virt_list;
 	struct lsdn_phys_attachment *local;
 	struct lsdn_phys_attachment *remote;
-
-	struct lsdn_sbridge_route sbridge_route;
+	union {
+		struct lsdn_sbridge_route sbridge_route;
+		struct lsdn_lbridge_route lbridge_route;
+	};
 };
 
 /** Per-local PA view of a remote virt. TODO

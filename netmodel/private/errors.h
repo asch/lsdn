@@ -58,6 +58,7 @@ static inline bool mark_commit_err(
 	} else if (err == LSDNE_OK) {
 		return false;
 	} else {
+		fprintf(stderr, "Unknwon error: %d\n", err);
 		abort();
 	}
 }
@@ -67,6 +68,7 @@ static inline bool state_ok(enum lsdn_state state)
 	return state == LSDN_STATE_OK || state == LSDN_STATE_NEW;
 }
 
+/* Transform (accumulate) any error into INCONSISTENT error */
 static inline void acc_inconsistent(lsdn_err_t *dst, lsdn_err_t src)
 {
 	if (src != LSDNE_OK)

@@ -217,6 +217,8 @@ void lsdn_action_continue(struct lsdn_filter *f, uint16_t order);
 
 void lsdn_action_goto_chain(struct lsdn_filter *f, uint16_t order, uint32_t chain);
 
+void lsdn_action_skbmark(struct lsdn_filter *f, uint16_t order, uint32_t mark);
+
 void lsdn_flower_set_src_mac(struct lsdn_filter *f, const char *addr,
 		const char *addr_mask);
 
@@ -238,6 +240,14 @@ void lsdn_flower_set_dst_ipv6(struct lsdn_filter *f, const char *addr,
 void lsdn_flower_set_enc_key_id(struct lsdn_filter *f, uint32_t vni);
 
 void lsdn_flower_set_eth_type(struct lsdn_filter *f, uint16_t eth_type);
+void lsdn_flower_set_enc_dst_ipv4(
+	struct lsdn_filter *f, const char *addr, const char *addr_mask);
+void lsdn_flower_set_enc_dst_ipv6(
+	struct lsdn_filter *f, const char *addr, const char *addr_mask);
+void lsdn_flower_set_enc_src_ipv4(
+	struct lsdn_filter *f, const char *addr, const char *addr_mask);
+void lsdn_flower_set_enc_src_ipv6(
+	struct lsdn_filter *f, const char *addr, const char *addr_mask);
 
 lsdn_err_t lsdn_filter_create(struct mnl_socket *sock, struct lsdn_filter *f);
 

@@ -300,7 +300,10 @@ static uint16_t key_ethtype(enum lsdn_rule_target t)
 	case LSDN_MATCH_DST_IPV6:
 		return ETH_P_IPV6;
 	case LSDN_MATCH_ENC_KEY_ID:
-		return ETH_P_ALL;
+	case LSDN_MATCH_ENC_KEY_DST_IPV4:
+	case LSDN_MATCH_ENC_KEY_SRC_IPV4:
+	case LSDN_MATCH_ENC_KEY_DST_IPV6:
+	case LSDN_MATCH_ENC_KEY_SRC_IPV6:
 	case LSDN_MATCH_NONE:
 		return ETH_P_ALL;
 	default:
@@ -369,6 +372,18 @@ static lsdn_err_t flush_fl_rule(struct lsdn_flower_rule *fl, struct lsdn_ruleset
 			break;
 		case LSDN_MATCH_ENC_KEY_ID:
 			lsdn_flower_set_enc_key_id(filter, fl->matches[i].enc_key_id);
+			break;
+		case LSDN_MATCH_ENC_KEY_SRC_IPV4:
+			lsdn_flower_set_enc_src_ipv4(filter, match->ipv4.chr, mask->ipv4.chr);
+			break;
+		case LSDN_MATCH_ENC_KEY_SRC_IPV6:
+			lsdn_flower_set_enc_src_ipv6(filter, match->ipv4.chr, mask->ipv4.chr);
+			break;
+		case LSDN_MATCH_ENC_KEY_DST_IPV4:
+			lsdn_flower_set_enc_dst_ipv4(filter, match->ipv4.chr, mask->ipv4.chr);
+			break;
+		case LSDN_MATCH_ENC_KEY_DST_IPV6:
+			lsdn_flower_set_enc_dst_ipv6(filter, match->ipv4.chr, mask->ipv4.chr);
 			break;
 		case LSDN_MATCH_NONE:
 			break;
