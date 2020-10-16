@@ -1,4 +1,4 @@
-# LSDN - Linux Software Defined Networking
+# LSDN: Linux Software Defined Networking
 
 [![Build Status](https://travis-ci.org/asch/lsdn.svg?branch=master)](https://travis-ci.org/asch/lsdn)
 [![Build Status](https://readthedocs.org/projects/lsdn/badge/?version=latest)](https://lsdn.readthedocs.io)
